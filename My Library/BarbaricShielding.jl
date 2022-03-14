@@ -17,70 +17,6 @@ function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, a
 end
 
 
-function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action, value)
-	Ivl, Ivu, Ipl, Ipu = bounds(square)
-	step = square.grid.G/resolution
-	for v in Ivl:step:(Ivu-step)
-		for p in Ipl:step:(Ipu-step)
-			w, q = simulate_point(v, p, β1, β2, t, g, action)
-			
-			if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
-				continue
-			end
-			
-			square′ = box(square.grid, w, q)
-			set_value!(square′, value)
-		end
-	end
-end
-
-
-"""Compute the new value of a single square.
-
-Value can be either 0, if this square cannot reach any bad squares, 1 if the ball must be hit to avoid reaching bad squares, or 2 if reaching a bad square is inevitable.
-"""
-function get_new_value(square::Square, grid::Grid, resolution, β1, β2, t, g)
-	value = get_value(square)
-
-	if value == 2 # Bad squares stay bad. 
-		return 2
-	end
-
-	Ivl, Ivu, Ipl, Ipu = bounds(square) # Barbaric method
-	step = square.grid.G/resolution
-	for v in Ivl:step:(Ivu-step)
-		for p in Ipl:step:(Ipu-step)
-			w, q = simulate_point(v, p, β1, β2, t, g, "nohit") # Try not hitting it
-
-			if !(grid.v_min <= w <= grid.v_max) || !(grid.p_min <= q <= grid.p_max)
-				continue
-			end
-			
-			square′ = box(square.grid, w, q)
-			value′ = get_value(square′)
-
-			if value′ == 2
-				w, q = simulate_point(v, p, β1, β2, t, g, "hit")
-				
-				if !(grid.v_min <= w <= grid.v_max) || !(grid.p_min <= q <= grid.p_max)
-					continue
-				end
-				
-				square′ = box(square.grid, w, q)
-				value′ = get_value(square′)
-				if value′ == 2
-					return 2
-				else
-					return 1
-				end
-			end
-		end
-	end
-
-	return 0
-end
-
-
 """Get a list of grid indexes representing reachable squares. 
 
 I could have used proper squares for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
@@ -108,6 +44,24 @@ function get_reachable_area(square::Square, resolution, β1, β2, t, g, action)
 end
 
 
+function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action, value)
+	Ivl, Ivu, Ipl, Ipu = bounds(square)
+	step = square.grid.G/resolution
+	for v in Ivl:step:(Ivu-step)
+		for p in Ipl:step:(Ipu-step)
+			w, q = simulate_point(v, p, β1, β2, t, g, action)
+			
+			if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
+				continue
+			end
+			
+			square′ = box(square.grid, w, q)
+			set_value!(square′, value)
+		end
+	end
+end
+
+
 """Computes and returns the tuple `(hit, nohit)`.
 
 `hit` is a 2D-array of vectors of the same layout as the `array` of the given `grid`. If a square in `grid` has index `iv, ip`, then the vector at `hit[iv, ip]` will contain tuples `(ivʹ, ipʹ)` of square indexes that are reachable by hitting the ball from `iv, ip`. 
@@ -131,6 +85,8 @@ end
 
 
 """Compute the new value of a single square.
+
+NOTE: Requires pre-baked transition matrices `reachable_hit` and `reachable_nohit`. Get these by calling `get_transitions`. 
 
 Value can be either 0, if this square cannot reach any bad squares, 1 if the ball must be hit to avoid reaching bad squares, or 2 if reaching a bad square is inevitable.
 """
@@ -170,40 +126,6 @@ end
 
 """Take a single step in the fixed point compuation.
 """
-function shield_step(grid::Grid, resolution, β1, β2, t, g)
-	grid′ = Grid(grid.G, grid.v_min, grid.v_max, grid.p_min, grid.p_max)
-	
-	for iv in 1:grid.v_count
-		for ip in 1:grid.p_count
-			grid′.array[iv, ip] = Int(get_new_value(Square(grid, iv, ip), grid, resolution, β1, β2, t, g))
-		end
-	end
-	grid′
-end
-
-
-"""Generate shield. 
-
-Given some initial grid, returns a tuple `(shield, terminated_early)`. 
-
-`shield` is a new grid containing the fixed point for the given values. 
-
-`terminted_early` is a boolean value indicated if `max_steps` were exceeded before the fixed point could be reached.
-"""
-function make_shield(grid::Grid, resolution, β1, β2, t, g; max_steps=1000)
-	grid′ = grid
-	i = max_steps
-	while i > 0
-		grid′ = shield_step(grid′, resolution, β1, β2, t, g)
-		i -= 1
-	end
-	grid′, i==0
-		
-end
-
-
-"""Take a single step in the fixed point compuation.
-"""
 function shield_step( reachable_hit::Matrix{Vector{Any}}, 
 					  reachable_nohit::Matrix{Vector{Any}}, 
 					  grid::Grid, 
@@ -227,7 +149,7 @@ Given some initial grid, returns a tuple `(shield, terminated_early)`.
 
 `terminted_early` is a boolean value indicating if `max_steps` were exceeded before the fixed point could be reached.
 """
-function make_shield_quickly(grid::Grid, resolution, β1, β2, t, g; max_steps=1000)
+function make_shield(grid::Grid, resolution, β1, β2, t, g; max_steps=1000)
 	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
 	
 	grid′ = grid

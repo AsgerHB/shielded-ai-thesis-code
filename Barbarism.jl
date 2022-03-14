@@ -314,104 +314,6 @@ function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, a
 	scatter!(v_end, p_end, label="end", markersize=1, markerstrokewidth=0, markercolor=c8)
 end
 
-# ╔═╡ 7fff10bd-8d93-41fa-ba2b-73756a73ffeb
-"""Update the value of every square reachable from the given `square`.
-"""
-function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action, value)
-	Ivl, Ivu, Ipl, Ipu = bounds(square)
-	step = square.grid.G/resolution
-	for v in Ivl:step:(Ivu-step)
-		for p in Ipl:step:(Ipu-step)
-			w, q = simulate_point(v, p, β1, β2, t, g, action)
-			
-			if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
-				continue
-			end
-			
-			square′ = box(square.grid, w, q)
-			set_value!(square′, value)
-		end
-	end
-end
-
-# ╔═╡ 9af9a4ce-361b-4168-8681-f4a92f17ed16
-begin
-	t2 = 0.32
-	grid2 = Grid(1, -10, 10, 0, 5)
-	square2 = box(grid2, -4, 1)
-	set_value!(square2, 1)
-	set_reachable_area!(square2, resolution, β1, β2, t2, g, "nohit", 2)
-	draw(grid2, colors=[:white, c5, c4], show_grid=true)
-	draw_barbaric_transition!(square2, resolution, β1, β2, t2, g, "nohit")
-end
-
-# ╔═╡ 4056f546-1b54-4f52-82bb-35f26ebfab5b
-"""Compute the new value of a single square.
-
-Value can be either 0, if this square cannot reach any bad squares, 1 if the ball must be hit to avoid reaching bad squares, or 2 if reaching a bad square is inevitable.
-"""
-function get_new_value(square::Square, grid::Grid, resolution, β1, β2, t, g)
-	value = get_value(square)
-
-	if value == 2 # Bad squares stay bad. 
-		return 2
-	end
-
-	Ivl, Ivu, Ipl, Ipu = bounds(square) # Barbaric method
-	step = square.grid.G/resolution
-	for v in Ivl:step:(Ivu-step)
-		for p in Ipl:step:(Ipu-step)
-			w, q = simulate_point(v, p, β1, β2, t, g, "nohit") # Try not hitting it
-
-			if !(grid.v_min <= w <= grid.v_max) || !(grid.p_min <= q <= grid.p_max)
-				continue
-			end
-			
-			square′ = box(square.grid, w, q)
-			value′ = get_value(square′)
-
-			if value′ == 2
-				w, q = simulate_point(v, p, β1, β2, t, g, "hit")
-				
-				if !(grid.v_min <= w <= grid.v_max) || !(grid.p_min <= q <= grid.p_max)
-					continue
-				end
-				
-				square′ = box(square.grid, w, q)
-				value′ = get_value(square′)
-				if value′ == 2
-					return 2
-				else
-					return 1
-				end
-			end
-		end
-	end
-
-	return 0
-end
-
-# ╔═╡ 7323223a-f223-478c-9249-661eca00f0e2
-# Try with v=0, p=5 to see that it is able to know that you have to hit the ball. 
-begin
-	t3 = 0.32
-	grid3 = Grid(1, -10, 10, 0, 10)
-	square3 = box(grid3, 1, 5)
-	clear(grid3)
-	set_value!(box(grid3, -3, 5), 2)
-	draw(grid3, colors=[c1, c2, c3], show_grid=true)
-	draw_barbaric_transition!(square3, resolution, β1, β2, t3, g, "nohit")
-	draw_barbaric_transition!(square3, resolution, β1, β2, t3, g, "hit")
-end
-
-# ╔═╡ c41d8b89-de18-421e-b208-707d7aa7c64a
-md"""Notice how in the illustration above you have to hit the ball to prevent it from going into the red square. My function states as much:"""
-
-# ╔═╡ 2461801c-9efd-44fc-8d94-aa2eac826c64
-md"""
-`steps = ` $(@bind steps html"<input type=number style='width:5em' step='1' value='3'>")
-"""
-
 # ╔═╡ 14fadc22-1218-43c1-8e7b-7b58256594d1
 """Get a list of grid indexes representing reachable squares. 
 
@@ -439,19 +341,41 @@ function get_reachable_area(square::Square, resolution, β1, β2, t, g, action)
 	result
 end
 
-# ╔═╡ 01cb5377-575a-4f5c-a1d6-f12a60d46dc9
-call(() -> begin
-	t4 = 0.32
-	grid4 = Grid(1, -10, 10, 0, 5)
-	square4 = box(grid4, -4, 1)
-	set_value!(square4, 1)
-	result4 = get_reachable_area(square4, resolution, β1, β2, t4, g, "nohit")
-	for s in result4
-		grid4.array[s...] = 2
+# ╔═╡ 7fff10bd-8d93-41fa-ba2b-73756a73ffeb
+"""Update the value of every square reachable from the given `square`.
+"""
+function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action, value)
+	Ivl, Ivu, Ipl, Ipu = bounds(square)
+	step = square.grid.G/resolution
+	for v in Ivl:step:(Ivu-step)
+		for p in Ipl:step:(Ipu-step)
+			w, q = simulate_point(v, p, β1, β2, t, g, action)
+			
+			if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
+				continue
+			end 
+			
+			square′ = box(square.grid, w, q)
+			set_value!(square′, value)
+		end
 	end
-	draw(grid4, colors=[:white, c5, c4], show_grid=true)
-	draw_barbaric_transition!(square4, resolution, β1, β2, t4, g, "nohit")
-end)
+end
+
+# ╔═╡ 9af9a4ce-361b-4168-8681-f4a92f17ed16
+begin
+	t2 = 0.32
+	grid2 = Grid(1, -10, 10, 0, 5)
+	square2 = box(grid2, -4, 1)
+	set_value!(square2, 1)
+	set_reachable_area!(square2, resolution, β1, β2, t2, g, "nohit", 2)
+	draw(grid2, colors=[:white, c5, c4], show_grid=true)
+	draw_barbaric_transition!(square2, resolution, β1, β2, t2, g, "nohit")
+end
+
+# ╔═╡ 2461801c-9efd-44fc-8d94-aa2eac826c64
+md"""
+`steps = ` $(@bind steps html"<input type=number style='width:5em' step='1' value='3'>")
+"""
 
 # ╔═╡ 869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 """Computes and returns the tuple `(hit, nohit)`.
@@ -505,6 +429,8 @@ end)
 # ╔═╡ 8ee09119-9eba-4dfd-ad25-5496e714892c
 """Compute the new value of a single square.
 
+NOTE: Requires pre-baked transition matrices `reachable_hit` and `reachable_nohit`. Get these by calling `get_transitions`. 
+
 Value can be either 0, if this square cannot reach any bad squares, 1 if the ball must be hit to avoid reaching bad squares, or 2 if reaching a bad square is inevitable.
 """
 function get_new_value( reachable_hit::Matrix{Vector{Any}}, 
@@ -540,23 +466,6 @@ function get_new_value( reachable_hit::Matrix{Vector{Any}},
 	end
 end
 
-# ╔═╡ e5a287b8-b033-45d4-9631-a0fc438a7990
-get_new_value(square3, grid3, resolution, β1, β2, t3, g)
-
-# ╔═╡ ac6e2560-2127-46b9-9841-3579bdd96cc4
-"""Take a single step in the fixed point compuation.
-"""
-function shield_step(grid::Grid, resolution, β1, β2, t, g)
-	grid′ = Grid(grid.G, grid.v_min, grid.v_max, grid.p_min, grid.p_max)
-	
-	for iv in 1:grid.v_count
-		for ip in 1:grid.p_count
-			grid′.array[iv, ip] = Int(get_new_value(Square(grid, iv, ip), grid, resolution, β1, β2, t, g))
-		end
-	end
-	grid′
-end
-
 # ╔═╡ 04b99556-60d4-46a8-8714-e3f349df9e1a
 call(() -> begin
 	t = 0.32
@@ -568,8 +477,8 @@ call(() -> begin
 	new_value = get_new_value(reachable_hit, reachable_nohit, square, grid, β1, β2, t, g)
 	set_value!(square, new_value)
 	draw(grid, colors=[c1, c2, c3])
-	draw_barbaric_transition!(square, resolution, β1, β2, t3, g, "nohit")
-	draw_barbaric_transition!(square, resolution, β1, β2, t3, g, "hit")
+	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit")
+	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "hit")
 	title!("Square type: $(new_value)")
 end)
 
@@ -590,36 +499,6 @@ function shield_step( reachable_hit::Matrix{Vector{Any}},
 	grid′
 end
 
-# ╔═╡ 2cf16278-6628-4ca4-99b8-e3141808522e
-"""Generate shield. 
-
-Given some initial grid, returns a tuple `(shield, terminated_early)`. 
-
-`shield` is a new grid containing the fixed point for the given values. 
-
-`terminted_early` is a boolean value indicated if `max_steps` were exceeded before the fixed point could be reached.
-"""
-function make_shield(grid::Grid, resolution, β1, β2, t, g; max_steps=1000)
-	grid′ = grid
-	i = max_steps
-	while i > 0
-		grid′ = shield_step(grid′, resolution, β1, β2, t, g)
-		i -= 1
-	end
-	grid′, i==0
-		
-end
-
-# ╔═╡ 3e78a89e-3188-4eb7-8596-2b6064ad1921
-begin
-	initialize(grid)
-	shield, terminated_early = make_shield(grid, resolution, β1, β2, t, g, max_steps=steps)
-	draw(shield, colors=[c1, c2, c3])
-end
-
-# ╔═╡ af9fece3-c5ad-46ac-a0bf-e0b4b5925e73
-terminated_early
-
 # ╔═╡ 9d9132b8-4df0-4f45-a9c9-58b99c280a9c
 """Generate shield. 
 
@@ -629,7 +508,7 @@ Given some initial grid, returns a tuple `(shield, terminated_early)`.
 
 `terminted_early` is a boolean value indicating if `max_steps` were exceeded before the fixed point could be reached.
 """
-function make_shield_quickly(grid::Grid, resolution, β1, β2, t, g; max_steps=1000)
+function make_shield(grid::Grid, resolution, β1, β2, t, g; max_steps=1000)
 	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
 	
 	grid′ = grid
@@ -645,7 +524,7 @@ end
 # ╔═╡ 15494211-c698-486f-bee6-74fc34e584bb
 call(() -> begin
 	initialize(grid)
-	shield, terminated_early = make_shield_quickly(grid, resolution, β1, β2, t, g, max_steps=steps)
+	shield, terminated_early = make_shield(grid, resolution, β1, β2, t, g, max_steps=steps)
 	draw(shield, colors=[c1, c2, c3])
 end)
 
@@ -1566,19 +1445,10 @@ version = "0.9.1+5"
 # ╟─d8eb0ab7-b335-4191-adc5-586ad4dab074
 # ╟─21cbae28-9e2a-4a45-8157-d2ef2a0189e9
 # ╠═2716a75b-db77-4de2-87fe-8460dfa4a8ad
+# ╠═14fadc22-1218-43c1-8e7b-7b58256594d1
 # ╠═7fff10bd-8d93-41fa-ba2b-73756a73ffeb
 # ╠═9af9a4ce-361b-4168-8681-f4a92f17ed16
-# ╠═4056f546-1b54-4f52-82bb-35f26ebfab5b
-# ╠═7323223a-f223-478c-9249-661eca00f0e2
-# ╟─c41d8b89-de18-421e-b208-707d7aa7c64a
-# ╠═e5a287b8-b033-45d4-9631-a0fc438a7990
-# ╠═ac6e2560-2127-46b9-9841-3579bdd96cc4
-# ╠═2cf16278-6628-4ca4-99b8-e3141808522e
 # ╟─2461801c-9efd-44fc-8d94-aa2eac826c64
-# ╠═3e78a89e-3188-4eb7-8596-2b6064ad1921
-# ╠═af9fece3-c5ad-46ac-a0bf-e0b4b5925e73
-# ╠═14fadc22-1218-43c1-8e7b-7b58256594d1
-# ╠═01cb5377-575a-4f5c-a1d6-f12a60d46dc9
 # ╠═869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 # ╠═d2b82214-239b-4a5c-9654-49006caaa295
 # ╠═02893fb2-58ce-46f9-b609-3b2cb13e67b0
