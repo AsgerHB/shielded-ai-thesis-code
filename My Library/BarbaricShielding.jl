@@ -12,8 +12,8 @@ function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, a
 			push!(p_end, q)
 		end
 	end
-	scatter!(v_start, p_start, label="start", markersize=1, markerstrokewidth=0, markercolor=c7)
-	scatter!(v_end, p_end, label="end", markersize=1, markerstrokewidth=0, markercolor=c8)
+	scatter!(v_start, p_start, label="start", markersize=1, markerstrokewidth=0, markercolor="#888A85")
+	scatter!(v_end, p_end, label="end", markersize=1, markerstrokewidth=0, markercolor="#000000")
 end
 
 
@@ -68,15 +68,15 @@ end
 
 The same goes for `nohit` just with the "nohit" action. 
 """
-function get_transitions(grid, resolution, β1, β2, t4, g)
+function get_transitions(grid, resolution, β1, β2, t, g)
 	hit = Array{Vector{Any}}(undef, (grid.v_count, grid.p_count))
 	nohit = Array{Vector{Any}}(undef, (grid.v_count, grid.p_count))
 	
 	for iv in 1:grid.v_count
 		for ip in 1:grid.p_count
 			square = Square(grid, iv, ip)
-			hit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t4, g, "hit")
-			nohit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t4, g, "nohit")
+			hit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, "hit")
+			nohit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, "nohit")
 		end
 	end
 	hit, nohit
@@ -141,7 +141,6 @@ function shield_step( reachable_hit::Matrix{Vector{Any}},
 end
 
 
-# ╔═╡ b58f2d76-15a4-4067-8309-09f962b5f16c
 """Generate shield. 
 
 Given some initial grid, returns a tuple `(shield, terminated_early)`. 
@@ -154,18 +153,20 @@ function make_shield( reachable_hit::Matrix{Vector{Any}},
 					  reachable_nohit::Matrix{Vector{Any}}, 
 					  grid::Grid, 
 					  resolution, β1, β2, t, g; max_steps=1000)	
-	grid′ = grid
 	i = max_steps
+	grid′ = nothing
 	while i > 0
-		grid′ = shield_step(reachable_hit, reachable_nohit, grid′, resolution, β1, β2, t, g)
+		grid′ = shield_step(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g)
+		if grid′.array == grid.array
+			break
+		end
+		grid = grid′
 		i -= 1
 	end
 	grid′, i==0
-		
 end
 
 
-# ╔═╡ 9d9132b8-4df0-4f45-a9c9-58b99c280a9c
 """Generate shield. 
 
 Given some initial grid, returns a tuple `(shield, terminated_early)`. 

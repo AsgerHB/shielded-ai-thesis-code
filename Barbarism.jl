@@ -372,11 +372,6 @@ begin
 	draw_barbaric_transition!(square2, resolution, β1, β2, t2, g, "nohit")
 end
 
-# ╔═╡ 2461801c-9efd-44fc-8d94-aa2eac826c64
-md"""
-`steps = ` $(@bind steps html"<input type=number style='width:5em' step='1' value='3'>")
-"""
-
 # ╔═╡ 869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 """Computes and returns the tuple `(hit, nohit)`.
 
@@ -512,14 +507,17 @@ function make_shield( reachable_hit::Matrix{Vector{Any}},
 					  reachable_nohit::Matrix{Vector{Any}}, 
 					  grid::Grid, 
 					  resolution, β1, β2, t, g; max_steps=1000)	
-	grid′ = grid
 	i = max_steps
+	grid′ = nothing
 	while i > 0
-		grid′ = shield_step(reachable_hit, reachable_nohit, grid′, resolution, β1, β2, t, g)
+		grid′ = shield_step(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g)
+		if grid′.array == grid.array
+			break
+		end
+		grid = grid′
 		i -= 1
 	end
 	grid′, i==0
-		
 end
 
 # ╔═╡ 9d9132b8-4df0-4f45-a9c9-58b99c280a9c
@@ -537,11 +535,17 @@ function make_shield(grid::Grid, resolution, β1, β2, t, g; max_steps=1000)
 	return make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g; max_steps=max_steps)		
 end
 
+# ╔═╡ 2461801c-9efd-44fc-8d94-aa2eac826c64
+md"""
+`steps = ` $(@bind steps html"<input type=number style='width:5em' step='1' value='3'>")
+"""
+
 # ╔═╡ 15494211-c698-486f-bee6-74fc34e584bb
 call(() -> begin
 	initialize(grid)
 	shield, terminated_early = make_shield(grid, resolution, β1, β2, t, g, max_steps=steps)
 	draw(shield, colors=[c1, c2, c3])
+	title!("max_steps reached: $(terminated_early)")
 end)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1464,7 +1468,6 @@ version = "0.9.1+5"
 # ╠═14fadc22-1218-43c1-8e7b-7b58256594d1
 # ╠═7fff10bd-8d93-41fa-ba2b-73756a73ffeb
 # ╠═9af9a4ce-361b-4168-8681-f4a92f17ed16
-# ╟─2461801c-9efd-44fc-8d94-aa2eac826c64
 # ╠═869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 # ╠═d2b82214-239b-4a5c-9654-49006caaa295
 # ╠═02893fb2-58ce-46f9-b609-3b2cb13e67b0
@@ -1473,6 +1476,7 @@ version = "0.9.1+5"
 # ╠═030b4085-0c00-470b-82fa-1cc603dd189f
 # ╠═b58f2d76-15a4-4067-8309-09f962b5f16c
 # ╠═9d9132b8-4df0-4f45-a9c9-58b99c280a9c
+# ╟─2461801c-9efd-44fc-8d94-aa2eac826c64
 # ╠═15494211-c698-486f-bee6-74fc34e584bb
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
