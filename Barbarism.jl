@@ -15,7 +15,10 @@ macro bind(def, element)
 end
 
 # ╔═╡ 5f0278a4-29bc-43fc-af88-922f86ab5931
-using Plots
+begin
+	using Plots
+	using Random
+end
 
 # ╔═╡ 77171eaa-f29d-49f7-962f-d81b95092540
 call(f) = f()
@@ -90,11 +93,12 @@ function simulate_point(v, p, β1, β2, t, g, action)
 end
 
 # ╔═╡ 95dd69fb-14c1-4745-ae1d-e5596b37581d
-function simulate_sequence(v0, p0, β1, β2, t, g, policy, duration)
+function simulate_sequence(v0, p0, t, g, policy, duration)
     velocities::Array{Real}, positions::Array{Real}, times::Array{Real} = [v0], [p0], [0.0]
     v, p = v0, p0
     for i in 1:ceil(duration/t)
         action = policy(v, p)
+		β1, β2 = rand(0.85:0.01:0.97), rand(0.9:0.01:1.0)
         v, p = simulate_point(v, p, β1, β2, t, -9.81, action)
         push!(velocities, v)
         push!(positions, p)
@@ -121,7 +125,7 @@ md"""
 
 # ╔═╡ 8bd60185-b7a4-437c-9b1c-77aa24b9f068
 begin
-	vv, pp, tt = simulate_sequence(v, p, β1, β2, t, g, (v, p)->"nohit", 10)
+	vv, pp, tt = simulate_sequence(v, p, t, g, (v, p)->"nohit", 10)
 	plot(tt, pp)
 end
 
@@ -193,7 +197,7 @@ function box(grid::Grid, v, p)::Square
 		error("v value out of bounds.")
 	end
 	if p < grid.p_min || p > grid.p_max
-		error("v value out of bounds.")
+		error("p value out of bounds.")
 	end
 
 	iv = floor(Int, (v - grid.v_min)/grid.G) + 1
@@ -552,6 +556,7 @@ end)
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
 Plots = "~1.26.0"

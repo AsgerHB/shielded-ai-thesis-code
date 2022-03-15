@@ -17,9 +17,11 @@ end
 # ╔═╡ ef673aea-a39c-11ec-1e49-a7ea73ad56c5
 begin
 	using Plots
+	using Random
 	include("My Library/Ball.jl")
 	include("My Library/Squares.jl")
 	include("My Library/BarbaricShielding.jl")
+	nothing
 end
 
 # ╔═╡ f8a5cb49-a41b-4cca-9b05-b5e50528bff5
@@ -95,7 +97,7 @@ end
 
 # ╔═╡ 9e798144-4386-485b-99e9-682bf1535ff5
 call( () -> begin
-	vv, pp, tt = simulate_sequence(v, p, β1, β2, t, g, (v, p)->"nohit", 10)
+	vv, pp, tt = simulate_sequence(v, p, t, g, (v, p)->"nohit", 10)
 	plot(tt, pp)
 end)
 
@@ -128,6 +130,11 @@ begin
 	grid = Grid(G, v_min, v_max, p_min, p_max)
 	square = box(grid, v, p)
 end
+
+# ╔═╡ 66924f99-8783-47e7-9cb3-1cf10e099051
+md"""
+Size of the grid: $(length(grid.array))
+"""
 
 # ╔═╡ 9227ef36-4df3-4ff1-be01-5289634e9ce3
 md"""
@@ -168,14 +175,51 @@ begin
 	initialize(grid)
 	shield, terminated_early = make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g, max_steps=max_steps)
 	draw(shield, colors=[c1, c2, c3])
-	title!("max_steps reached: $(terminated_early)")
 end
+
+# ╔═╡ 1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
+md"""
+resolution = $(resolution), 
+G = $(G), 
+β1 = $(β1), 
+β2 = $(β2), 
+t = $(t), 
+g = $(g), 
+max\_steps = $(max_steps)
+
+Terminated early: $(terminated_early)"""
+
+# ╔═╡ b0e0e604-305f-405d-a647-147241b89a0e
+function shield_action(shield:: Grid, v, p, action)
+	if v < grid.v_min || v > grid.v_max || p < grid.p_min || p > grid.p_max
+		return action
+	end
+	square = box(shield, v, p)
+	if get_value(square) == 1
+		return "hit"
+	else
+		return action
+	end
+end
+
+# ╔═╡ 31118d17-e6cb-45c3-8362-1668c6add72a
+shield_action(shield, 5.5, 4.4, "nohit")
+
+# ╔═╡ 4da5c6da-92de-446a-9af7-4485d943a5a0
+call(() -> begin
+	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded loafer agent
+	v0, p0 = 0, rand(7:1:10)
+	vv, pp, tt = simulate_sequence(v0, p0, t, g, policy, 500)
+	draw(shield, colors=[c1, c2, c3])
+	plot!(vv, pp, color=:black)
+end)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
 Plots = "~1.27.0"
@@ -1097,15 +1141,20 @@ version = "0.9.1+5"
 # ╟─c4018e8a-bc73-4f37-bbc4-56fc1a1d7763
 # ╟─fab78e11-174b-431e-bb8f-901c24639972
 # ╟─190d3d5a-d225-4068-b924-a2dcf406c007
-# ╠═be37bad7-049d-49de-9b56-1e60126f675c
+# ╟─be37bad7-049d-49de-9b56-1e60126f675c
 # ╟─9e798144-4386-485b-99e9-682bf1535ff5
 # ╟─4461bf98-c33c-47b1-9b8b-055c928325e0
 # ╟─765f3756-7828-4da7-9471-b22c3b384878
+# ╟─66924f99-8783-47e7-9cb3-1cf10e099051
 # ╠═8e1c8e2e-5dad-4fe7-a8ed-9f552e78cb61
 # ╟─9227ef36-4df3-4ff1-be01-5289634e9ce3
 # ╠═f411721a-8442-4b3d-9d33-5e7b831031fc
 # ╟─343be082-c97c-4000-b4bf-3e2e72642a96
 # ╟─5c86f796-5fdd-4be0-a0c6-f66e19613d66
+# ╟─1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
 # ╠═901d0f5a-c7e5-478b-bd1a-60290c4d8b06
+# ╠═b0e0e604-305f-405d-a647-147241b89a0e
+# ╠═31118d17-e6cb-45c3-8362-1668c6add72a
+# ╠═4da5c6da-92de-446a-9af7-4485d943a5a0
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
