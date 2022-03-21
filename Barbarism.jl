@@ -381,17 +381,6 @@ function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action,
 	end
 end
 
-# ╔═╡ 9af9a4ce-361b-4168-8681-f4a92f17ed16
-begin
-	t2 = 0.32
-	grid2 = Grid(1, -10, 10, 0, 5)
-	square2 = box(grid2, -4, 1)
-	set_value!(square2, 1)
-	set_reachable_area!(square2, resolution, β1, β2, t2, g, "nohit", 2)
-	draw(grid2, colors=[:white, c5, c4], show_grid=true)
-	draw_barbaric_transition!(square2, resolution, β1, β2, t2, g, "nohit")
-end
-
 # ╔═╡ 869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 """Computes and returns the tuple `(hit, nohit)`.
 
@@ -1492,7 +1481,6 @@ version = "0.9.1+5"
 # ╠═2716a75b-db77-4de2-87fe-8460dfa4a8ad
 # ╠═14fadc22-1218-43c1-8e7b-7b58256594d1
 # ╠═7fff10bd-8d93-41fa-ba2b-73756a73ffeb
-# ╠═9af9a4ce-361b-4168-8681-f4a92f17ed16
 # ╠═869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 # ╠═d2b82214-239b-4a5c-9654-49006caaa295
 # ╠═02893fb2-58ce-46f9-b609-3b2cb13e67b0
