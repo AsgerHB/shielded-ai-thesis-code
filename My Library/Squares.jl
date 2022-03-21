@@ -70,15 +70,12 @@ function clear(grid::Grid)
 end
 
 
-function initialize(grid::Grid)
+function initialize!(grid::Grid, value_function=
+								(Ivl, Ivu, Ipl, Ipu) -> Ivl == 0 && Ipl == 0 ? 2 : 1)
 	for iv in 1:grid.v_count
 		for ip in 1:grid.p_count
-			Ivl, Ivu, Ipl, Ipu = bounds(Square(grid, iv, ip))
-			if Ivl ==0 && Ipl == 0
-				grid.array[iv, ip] = 2
-			else
-				grid.array[iv, ip] = 0
-			end
+			square = Square(grid, iv, ip)
+			set_value!(square, value_function(bounds(square)...))
 		end
 	end
 end

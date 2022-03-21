@@ -258,15 +258,12 @@ function clear(grid::Grid)
 end
 
 # ╔═╡ 47a14ed7-e795-4e05-9d01-c7510c2c13bb
-function initialize(grid::Grid)
+function initialize!(grid::Grid, value_function=
+								(Ivl, Ivu, Ipl, Ipu) -> Ivl == 0 && Ipl == 0 ? 2 : 1)
 	for iv in 1:grid.v_count
 		for ip in 1:grid.p_count
-			Ivl, Ivu, Ipl, Ipu = bounds(Square(grid, iv, ip))
-			if Ivl ==0 && Ipl == 0
-				grid.array[iv, ip] = 2
-			else
-				grid.array[iv, ip] = 0
-			end
+			square = Square(grid, iv, ip)
+			set_value!(square, value_function(bounds(square)...))
 		end
 	end
 end
@@ -293,6 +290,14 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 
 	return hm
 end
+
+# ╔═╡ 2be42d55-8736-43ae-b154-9a3a716f8323
+call(() -> begin
+	grid = Grid(G, v_min, v_max, p_min, p_max)
+	value_function(Ivl, Ivu, Ipl, Ipu) = e_mek(g, Ivu, Ipu) < e_mek(g, 0, 4) ? 2 : 0
+	initialize!(grid, value_function)
+	draw(grid, colors=[c1, c2, c3])
+end)
 
 # ╔═╡ bafefabb-50c2-421e-80b4-044c1488a24a
 begin
@@ -1448,7 +1453,7 @@ version = "0.9.1+5"
 # ╠═5f0278a4-29bc-43fc-af88-922f86ab5931
 # ╠═77171eaa-f29d-49f7-962f-d81b95092540
 # ╟─89cee980-3094-43eb-99e5-fdc6f6ca4d6a
-# ╟─f9f31a6f-6267-4afc-baf8-ef62a8425000
+# ╠═f9f31a6f-6267-4afc-baf8-ef62a8425000
 # ╟─c5942a34-159f-412a-bfd5-0518115afedf
 # ╠═412a16e6-a059-11ec-2a22-f557508307c3
 # ╠═95dd69fb-14c1-4745-ae1d-e5596b37581d
@@ -1473,6 +1478,7 @@ version = "0.9.1+5"
 # ╠═20f6e0cd-767f-4de5-b7ee-cf77f01126a7
 # ╠═18f87faf-b3c8-46ee-9d38-00b30fb94137
 # ╠═47a14ed7-e795-4e05-9d01-c7510c2c13bb
+# ╠═2be42d55-8736-43ae-b154-9a3a716f8323
 # ╟─a9870679-d2dd-48f7-9193-050996ff9ff8
 # ╠═f10b185d-212b-4882-b64e-6dc67d88f5e9
 # ╠═bafefabb-50c2-421e-80b4-044c1488a24a

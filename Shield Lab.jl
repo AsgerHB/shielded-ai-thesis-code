@@ -165,15 +165,26 @@ call(() -> begin
 	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit")
 end)
 
+# ╔═╡ 901d0f5a-c7e5-478b-bd1a-60290c4d8b06
+begin
+	initial_value(Ivl, Ivu, Ipl, Ipu) = Ipl == 0 && 0 <= Ivl < 1 ? 2 : 0
+	initialize!(grid, initial_value)
+	draw(grid, colors=[c1, c2, c3])
+end
+
 # ╔═╡ 5c86f796-5fdd-4be0-a0c6-f66e19613d66
 md"""
-`max_steps = ` $(@bind max_steps confirm(NumberField(1:typemax(Int))))
+`max_steps = ` $(@bind max_steps confirm(NumberField(0:typemax(Int), default=100)))
 """
 
 # ╔═╡ 901d0f5a-c7e5-478b-bd1a-60290c4d8b06
+# ╔═╡ b1de6876-b41d-4b00-ba88-e504a65e07dc
 begin
-	initialize(grid)
-	shield, terminated_early = make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g, max_steps=max_steps)
+	if max_steps >= 1 
+		shield, terminated_early, animation = make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g, max_steps=max_steps, animate=animate)
+	else
+		shield, terminated_early, animation = grid, true, nothing
+	end
 	draw(shield, colors=[c1, c2, c3])
 end
 
@@ -1150,9 +1161,10 @@ version = "0.9.1+5"
 # ╟─9227ef36-4df3-4ff1-be01-5289634e9ce3
 # ╠═f411721a-8442-4b3d-9d33-5e7b831031fc
 # ╟─343be082-c97c-4000-b4bf-3e2e72642a96
+# ╠═901d0f5a-c7e5-478b-bd1a-60290c4d8b06
 # ╟─5c86f796-5fdd-4be0-a0c6-f66e19613d66
 # ╟─1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
-# ╠═901d0f5a-c7e5-478b-bd1a-60290c4d8b06
+# ╠═b1de6876-b41d-4b00-ba88-e504a65e07dc
 # ╠═b0e0e604-305f-405d-a647-147241b89a0e
 # ╠═31118d17-e6cb-45c3-8362-1668c6add72a
 # ╠═4da5c6da-92de-446a-9af7-4485d943a5a0
