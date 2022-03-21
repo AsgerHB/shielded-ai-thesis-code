@@ -18,14 +18,12 @@ end
 begin
 	using Plots
 	using Random
+	using PlutoUI
 	include("My Library/Ball.jl")
 	include("My Library/Squares.jl")
 	include("My Library/BarbaricShielding.jl")
 	nothing
 end
-
-# ╔═╡ f8a5cb49-a41b-4cca-9b05-b5e50528bff5
-using PlutoUI
 
 # ╔═╡ 0253730c-3cb9-4489-af7c-dc907212f4fe
 """Used for getting a local variable context inside a cell."""
@@ -225,19 +223,6 @@ begin
 	draw(shield, colors=[c1, c2, c3])
 	draw_barbaric_transition!(box(shield, v′, p′), resolution, β1, β2, t, g, "nohit")
 	draw_barbaric_transition!(box(shield, v′, p′), resolution, β1, β2, t, g, "hit")
-end
-
-# ╔═╡ b0e0e604-305f-405d-a647-147241b89a0e
-function shield_action(shield:: Grid, v, p, action)
-	if v < grid.v_min || v > grid.v_max || p < grid.p_min || p > grid.p_max
-		return action
-	end
-	square = box(shield, v, p)
-	if get_value(square) == 1
-		return "hit"
-	else
-		return action
-	end
 end
 
 # ╔═╡ 31118d17-e6cb-45c3-8362-1668c6add72a
@@ -1190,7 +1175,6 @@ version = "0.9.1+5"
 
 # ╔═╡ Cell order:
 # ╠═ef673aea-a39c-11ec-1e49-a7ea73ad56c5
-# ╠═f8a5cb49-a41b-4cca-9b05-b5e50528bff5
 # ╠═0253730c-3cb9-4489-af7c-dc907212f4fe
 # ╠═b32b5260-5e6e-4f10-8505-00d2b139e35d
 # ╟─2e5664d6-cfbf-4961-b9ef-df977c2542b0
@@ -1218,7 +1202,6 @@ version = "0.9.1+5"
 # ╟─1ee975f2-1369-4a8d-b8c1-5d1cdde0ab1c
 # ╟─c366d4fa-7179-4de5-a154-4d97bc792354
 # ╠═f767940c-7f07-46b8-a511-815a0ac890f0
-# ╠═b0e0e604-305f-405d-a647-147241b89a0e
 # ╠═31118d17-e6cb-45c3-8362-1668c6add72a
 # ╟─5bc8a442-0628-463f-9de3-8ddc93b0ef88
 # ╠═4da5c6da-92de-446a-9af7-4485d943a5a0

@@ -193,3 +193,16 @@ function make_shield(grid::Grid, resolution, β1, β2, t, g;
 	
 	return make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g; max_steps=max_steps, animate=animate)		
 end
+
+
+function shield_action(shield::Grid, v, p, action)
+	if v < shield.v_min || v > shield.v_max || p < shield.p_min || p > shield.p_max
+		return action
+	end
+	square = box(shield, v, p)
+	if get_value(square) == 1
+		return "hit"
+	else
+		return action
+	end
+end
