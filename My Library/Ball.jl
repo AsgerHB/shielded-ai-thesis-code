@@ -42,3 +42,7 @@ function simulate_sequence(v0, p0, t, g, policy, duration)
     end
     velocities, positions, times
 end
+
+e_pot(g, p) = abs(g)*p
+e_kin(g, v) = 0.5*v^2
+e_mek(g, v, p) = e_kin(g, v) + e_pot(g, p)

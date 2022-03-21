@@ -132,6 +132,18 @@ end
 # ╔═╡ 533b6eb7-c32c-432d-9e64-2b23e15677a5
 plot(vv, pp)
 
+# ╔═╡ 19b49458-3b8c-4e14-88cb-bdf01f242322
+e_kin(g, v) = 0.5*abs(g)*v^2
+
+# ╔═╡ 708acd2e-2d8d-4282-b8e1-75b0b21984a4
+e_pot(g, p) = abs(g)*p
+
+# ╔═╡ e6e78566-99e0-4e71-8695-dd94c93f14bc
+e_mek(g, v, p) = e_kin(g, v) + e_pot(g, p)
+
+# ╔═╡ 2ca38f3f-272b-4226-91e2-8424f6e0dd99
+e_mek(g, 0, 4)
+
 # ╔═╡ 15992982-642a-4ec4-84ec-fad542e783c3
 md"""
 ## Structs for the grid and squares
@@ -1450,6 +1462,10 @@ version = "0.9.1+5"
 # ╟─fdeb89e9-4cc1-403d-b7c0-5e91429bc696
 # ╠═8bd60185-b7a4-437c-9b1c-77aa24b9f068
 # ╠═533b6eb7-c32c-432d-9e64-2b23e15677a5
+# ╠═e6e78566-99e0-4e71-8695-dd94c93f14bc
+# ╠═2ca38f3f-272b-4226-91e2-8424f6e0dd99
+# ╠═19b49458-3b8c-4e14-88cb-bdf01f242322
+# ╠═708acd2e-2d8d-4282-b8e1-75b0b21984a4
 # ╟─15992982-642a-4ec4-84ec-fad542e783c3
 # ╠═05653eb5-f871-4119-8b9d-7df86fd6561a
 # ╟─caf7fe7c-defe-4e92-a258-484090873dda
