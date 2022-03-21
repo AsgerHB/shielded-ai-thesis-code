@@ -4,24 +4,119 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
 # ╔═╡ dd89fc0d-63b9-417d-938a-f2396ddea9c7
-begin
+begin 
+	using PlutoUI
 	using Plots
+end
+
+# ╔═╡ 9dd60bfc-63c8-4cec-afa5-52bb3419f2c0
+begin 
 	include("My Library/Ball.jl")
 	include("My Library/Squares.jl")
 	include("My Library/BarbaricShielding.jl")
 end
 
-# ╔═╡ 9432c4c6-2c5d-43b4-a084-84d376b47ad4
-make_shield_quickly
+# ╔═╡ 334fe3dc-a156-45a2-b091-1446b50e4077
+md"""
+## Color scheme
+Shield colors:
+$(@bind c1 html"<input type=color style='width:5em' step='0.01' value='#90ee90'>")
+$(@bind c2 html"<input type=color style='width:5em' step='0.01' value='#ffffe0'>")
+$(@bind c3 html"<input type=color style='width:5em' step='0.01' value='#ea786b'>")
+
+Transition indicators:
+$(@bind c4 html"<input type=color style='width:5em' step='0.01' value='#c8dcc8'>")
+$(@bind c5 html"<input type=color style='width:5em' step='0.01' value='#c7d2e3'>")
+
+Grid color:
+$(@bind c6 html"<input type=color style='width:5em' step='0.01' value='#afafaf'>")
+
+Resp. start/end marker color:
+$(@bind c7 html"<input type=color style='width:5em' step='0.01' value='#888A85'>")
+$(@bind c8 html"<input type=color style='width:5em' step='0.01' value='#000000'>")
+"""
+
+# ╔═╡ bb720960-545d-49b1-921c-120a66cb52f8
+
+md"""
+### Configure parameters controlling the ball
+
+`t = ` $(@bind t html"<input type=number style='width:5em' step='0.01' value='0.10'>")
+
+`g = ` $(@bind g html"<input type=number style='width:5em' step='0.01' value='-9.81'>")
+
+`β1 = ` $(@bind β1 html"<input type=number style='width:5em' step='0.01' value='0.85'>")
+`β2  = ` $(@bind β2 html"<input type=number style='width:5em' step='0.01' value='0.90'>")
+
+`v = ` $(@bind v html"<input type=number style='width:5em' step='0.1' value='-4'>")
+`p = ` $(@bind p html"<input type=number style='width:5em' step='0.1' value='1'>")
+"""
+
+# ╔═╡ 2d8d03b5-b24e-4554-950a-ff93e19de420
+md"""
+### Configure grid
+`G = ` $(@bind G html"<input type=number style='width:5em' step='0.05' value='1'>")
+
+`v ∈  [ ` $(@bind v_min html"<input type=number style='width:5em' value='-10'>")
+	   `;`
+		$(@bind v_max html"<input type=number style='width:5em' value='10'>") `]`
+
+`p ∈  [` $(@bind p_min html"<input type=number style='width:5em' value='0'>")
+	   `;`
+		$(@bind p_max html"<input type=number style='width:5em' value='13'>") `]`
+"""
+
+# ╔═╡ cb4b70dd-0ba9-46a1-95b4-79778a7d514b
+grid = Grid(G, v_min, v_max, p_min, p_max)
+
+# ╔═╡ 9f21238a-a57d-4e50-a35e-22798e35bbef
+md"""Size of grid: $(length(grid.array))"""
+
+# ╔═╡ e4f18c6c-e2f0-4d3f-9b91-95b9e4206766
+square = box(grid, v, p)
+
+# ╔═╡ 0e21f722-40bd-4e74-8ab9-91c5688286de
+md"""
+resolution = $(@bind resolution NumberField(1:100, default=10))
+"""
+
+# ╔═╡ d9535c71-abe2-4c04-9c2a-efc9bb18a326
+anim = @animate for t′ in 0.01:0.01:1
+	clear(grid)
+	set_value!(square, 1)
+	set_reachable_area!(square, resolution, β1, β2, t′, g, "nohit", 2)
+	draw(grid, colors=[:white, c4, c5])
+	draw_barbaric_transition!(square, resolution, β1, β2, t′, g, "nohit")
+end
+
+# ╔═╡ 49e758ea-1a38-460a-83a4-2442cc6303fd
+md"""
+fps = $(@bind fps NumberField(1:100, default=5))
+"""
+
+# ╔═╡ 873ac0ca-5767-43c8-8315-d2ea461cb005
+gif(anim, fps=fps)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 
 [compat]
-Plots = "~1.27.0"
+Plots = "~1.27.1"
+PlutoUI = "~0.7.37"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -30,6 +125,12 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.7.2"
 manifest_format = "2.0"
+
+[[deps.AbstractPlutoDingetjes]]
+deps = ["Pkg"]
+git-tree-sha1 = "8eaf9f1b4921132a4cff3f36a1d9ba923b14a481"
+uuid = "6e696c72-6542-2067-7265-42206c756150"
+version = "1.1.4"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -255,6 +356,23 @@ git-tree-sha1 = "129acf094d168394e80ee1dc4bc06ec835e510a3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "2.8.1+1"
 
+[[deps.Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.4"
+
+[[deps.HypertextLiteral]]
+git-tree-sha1 = "2b078b5a615c6c0396c77810d92ee8c6f470d238"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.3"
+
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.2"
+
 [[deps.IniFile]]
 git-tree-sha1 = "f550e6e32074c939295eb5ea6de31849ac2c9625"
 uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
@@ -405,9 +523,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LogExpFunctions]]
 deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "56ad13e26b7093472eba53b418eba15ad830d6b5"
+git-tree-sha1 = "58f25e56b706f95125dcb796f39e1fb01d913a71"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.9"
+version = "0.3.10"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -469,9 +587,9 @@ uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
 
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "648107615c15d4e09f7eca16307bc821c1f718d8"
+git-tree-sha1 = "ab05aa4cc89736e95915b01e7279e61b1bfe33b8"
 uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
-version = "1.1.13+0"
+version = "1.1.14+0"
 
 [[deps.Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -514,15 +632,21 @@ version = "2.0.1"
 
 [[deps.PlotUtils]]
 deps = ["ColorSchemes", "Colors", "Dates", "Printf", "Random", "Reexport", "Statistics"]
-git-tree-sha1 = "6f1b25e8ea06279b5689263cc538f51331d7ca17"
+git-tree-sha1 = "bb16469fd5224100e422f0b027d26c5a25de1200"
 uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
-version = "1.1.3"
+version = "1.2.0"
 
 [[deps.Plots]]
 deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "GeometryBasics", "JSON", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "Unzip"]
-git-tree-sha1 = "9213b4c18b57b7020ee20f33a4ba49eb7bef85e0"
+git-tree-sha1 = "1690b713c3b460c955a2957cd7487b1b725878a7"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.27.0"
+version = "1.27.1"
+
+[[deps.PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
+git-tree-sha1 = "bf0a1121af131d9974241ba53f601211e9303a9e"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.37"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -613,9 +737,9 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "74fb527333e72ada2dd9ef77d98e4991fb185f04"
+git-tree-sha1 = "6976fab022fea2ffea3d945159317556e5dad87c"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.4.1"
+version = "1.4.2"
 
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -903,6 +1027,16 @@ version = "0.9.1+5"
 
 # ╔═╡ Cell order:
 # ╠═dd89fc0d-63b9-417d-938a-f2396ddea9c7
-# ╠═9432c4c6-2c5d-43b4-a084-84d376b47ad4
+# ╠═9dd60bfc-63c8-4cec-afa5-52bb3419f2c0
+# ╟─334fe3dc-a156-45a2-b091-1446b50e4077
+# ╟─bb720960-545d-49b1-921c-120a66cb52f8
+# ╟─2d8d03b5-b24e-4554-950a-ff93e19de420
+# ╠═cb4b70dd-0ba9-46a1-95b4-79778a7d514b
+# ╟─9f21238a-a57d-4e50-a35e-22798e35bbef
+# ╠═e4f18c6c-e2f0-4d3f-9b91-95b9e4206766
+# ╟─0e21f722-40bd-4e74-8ab9-91c5688286de
+# ╠═d9535c71-abe2-4c04-9c2a-efc9bb18a326
+# ╟─49e758ea-1a38-460a-83a4-2442cc6303fd
+# ╠═873ac0ca-5767-43c8-8315-d2ea461cb005
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
