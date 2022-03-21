@@ -92,22 +92,6 @@ function simulate_point(v, p, β1, β2, t, g, action)
     new_v, new_p
 end
 
-# ╔═╡ fdeb89e9-4cc1-403d-b7c0-5e91429bc696
-
-md"""
-### Configure parameters controlling the ball
-
-`t = ` $(@bind t html"<input type=number style='width:5em' step='0.01' value='0.10'>")
-
-`g = ` $(@bind g html"<input type=number style='width:5em' step='0.01' value='-9.81'>")
-
-`β1 = ` $(@bind β1 html"<input type=number style='width:5em' step='0.01' value='0.85'>")
-`β2  = ` $(@bind β2 html"<input type=number style='width:5em' step='0.01' value='0.90'>")
-
-`v = ` $(@bind v html"<input type=number style='width:5em' step='0.1' value='-4'>")
-`p = ` $(@bind p html"<input type=number style='width:5em' step='0.1' value='1'>")
-"""
-
 # ╔═╡ 95dd69fb-14c1-4745-ae1d-e5596b37581d
 function simulate_sequence(v0, p0, t, g, policy, duration; worst_case=false)
     velocities::Array{Real}, positions::Array{Real}, times::Array{Real} = [v0], [p0], [0.0]
@@ -126,6 +110,22 @@ function simulate_sequence(v0, p0, t, g, policy, duration; worst_case=false)
     end
     velocities, positions, times
 end
+
+# ╔═╡ fdeb89e9-4cc1-403d-b7c0-5e91429bc696
+
+md"""
+### Configure parameters controlling the ball
+
+`t = ` $(@bind t html"<input type=number style='width:5em' step='0.01' value='0.10'>")
+
+`g = ` $(@bind g html"<input type=number style='width:5em' step='0.01' value='-9.81'>")
+
+`β1 = ` $(@bind β1 html"<input type=number style='width:5em' step='0.01' value='0.85'>")
+`β2  = ` $(@bind β2 html"<input type=number style='width:5em' step='0.01' value='0.90'>")
+
+`v = ` $(@bind v html"<input type=number style='width:5em' step='0.1' value='-4'>")
+`p = ` $(@bind p html"<input type=number style='width:5em' step='0.1' value='1'>")
+"""
 
 # ╔═╡ 8bd60185-b7a4-437c-9b1c-77aa24b9f068
 begin
@@ -151,6 +151,10 @@ e_mek(g, 0, 4)
 # ╔═╡ 15992982-642a-4ec4-84ec-fad542e783c3
 md"""
 ## Structs for the grid and squares
+
+A Grid is an array which represents a part of the state space. The bounds of the state space as part of the struct, and the size of the array is dependent on these bounds as well as the granularity. 
+
+A Square is a pair of indexes into a grid, as well as a reference to the grid these indexes are for. 
 """
 
 # ╔═╡ 05653eb5-f871-4119-8b9d-7df86fd6561a
@@ -198,7 +202,8 @@ begin
 		iv::Int
 		ip::Int
 	end
-	
+
+	# We absolutely do not want to print the full grid when showing a square.
 	Base.show(io::IO, ::MIME"text/plain", square::Square) = println(io, "Square(_, $(square.iv), $(square.ip))")
 end
 
@@ -583,9 +588,6 @@ end
 # ╔═╡ 8b46e388-f6f9-42eb-be92-230742c59fcc
 "max_steps reached: $(terminated_early)"
 
-# ╔═╡ 138712ea-a7bd-4a08-bd44-f8b6ecf229bc
-animation != nothing ? gif(animation, "shield.gif", fps=1) : nothing
-
 # ╔═╡ a07a9512-bef9-4317-9f26-e1d143b85657
 function shield_action(shield:: Grid, v, p, action)
 	if v < grid.v_min || v > grid.v_max || p < grid.p_min || p > grid.p_max
@@ -613,6 +615,9 @@ call(() -> begin
 	draw(shield, colors=[c1, c2, c3])
 	plot!(vv, pp, color=:black)
 end)
+
+# ╔═╡ 138712ea-a7bd-4a08-bd44-f8b6ecf229bc
+animation != nothing ? gif(animation, "shield.gif", fps=1) : nothing
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1555,8 +1560,5 @@ version = "0.9.1+5"
 # ╠═bbd43aa2-7aae-474f-826f-869cc6d8651b
 # ╠═7e55b882-892d-4b7a-bdbd-a52055f45732
 # ╟─138712ea-a7bd-4a08-bd44-f8b6ecf229bc
-# ╠═a07a9512-bef9-4317-9f26-e1d143b85657
-# ╠═bbd43aa2-7aae-474f-826f-869cc6d8651b
-# ╠═7e55b882-892d-4b7a-bdbd-a52055f45732
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

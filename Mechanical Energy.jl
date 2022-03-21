@@ -42,7 +42,7 @@ g = -9.81
 md"""
 `v = ` $(@bind v NumberField(-100:1:100, default = 0))
 
-`p = ` $(@bind p NumberField(0:1:100, default = 0))
+`p = ` $(@bind p NumberField(0:1:100, default = 6))
 
 `t = ` $(@bind t NumberField(0.01:0.01:1, default = 0.1))
 """

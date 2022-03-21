@@ -147,23 +147,10 @@ begin
 	reachable_hit[square.iv, square.ip]
 end
 
-# ╔═╡ 343be082-c97c-4000-b4bf-3e2e72642a96
-call(() -> begin
-	grid = Grid(G, v_min, v_max, p_min, p_max)
-	square = box(grid, v, p)
-	set_value!(square, 1)
-	for (iv, ip) in reachable_hit[square.iv, square.ip]
-		square′ = Square(grid, iv, ip)
-		set_value!(square′, 2)
-	end
-	for (iv, ip) in reachable_nohit[square.iv, square.ip]
-		square′ = Square(grid, iv, ip)
-		set_value!(square′, 2)
-	end
-	draw(grid, colors=[:white, c4, c5])
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "hit")
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit")
-end)
+# ╔═╡ 3884c0af-f085-4e81-83c0-973d0d2bd6b7
+md"""
+## Initialization
+"""
 
 # ╔═╡ 901d0f5a-c7e5-478b-bd1a-60290c4d8b06
 begin
@@ -171,6 +158,11 @@ begin
 	initialize!(grid, initial_value)
 	draw(grid, colors=[c1, c2, c3])
 end
+
+# ╔═╡ 3e12d7a7-4037-453d-b1e7-b3b5f66895d4
+md"""
+## Generating shield
+"""
 
 # ╔═╡ 5c86f796-5fdd-4be0-a0c6-f66e19613d66
 md"""
@@ -211,6 +203,16 @@ animate ? md"""
 
 # ╔═╡ 0825be60-7bc0-472e-9140-a4313bcf1ef0
 animation != nothing ? gif(animation, "shield.gif", fps=fps) : nothing
+
+# ╔═╡ d4ddf358-6a8f-468c-bbc3-7b9b712f0d67
+md"""
+## Inspect Shield
+"""
+
+# ╔═╡ 1ee975f2-1369-4a8d-b8c1-5d1cdde0ab1c
+md"""
+### View transition of square v′, p′ overlaid the shield
+"""
 
 # ╔═╡ c366d4fa-7179-4de5-a154-4d97bc792354
 md"""
@@ -1203,14 +1205,17 @@ version = "0.9.1+5"
 # ╠═8e1c8e2e-5dad-4fe7-a8ed-9f552e78cb61
 # ╟─9227ef36-4df3-4ff1-be01-5289634e9ce3
 # ╠═f411721a-8442-4b3d-9d33-5e7b831031fc
-# ╟─343be082-c97c-4000-b4bf-3e2e72642a96
+# ╟─3884c0af-f085-4e81-83c0-973d0d2bd6b7
 # ╠═901d0f5a-c7e5-478b-bd1a-60290c4d8b06
+# ╟─3e12d7a7-4037-453d-b1e7-b3b5f66895d4
 # ╟─5c86f796-5fdd-4be0-a0c6-f66e19613d66
 # ╟─1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
 # ╠═b1de6876-b41d-4b00-ba88-e504a65e07dc
 # ╟─3e486218-e716-4fcb-9f85-1a98cb394829
 # ╟─ecd4cf78-21f2-4d1a-b621-986648211401
 # ╟─0825be60-7bc0-472e-9140-a4313bcf1ef0
+# ╟─d4ddf358-6a8f-468c-bbc3-7b9b712f0d67
+# ╟─1ee975f2-1369-4a8d-b8c1-5d1cdde0ab1c
 # ╟─c366d4fa-7179-4de5-a154-4d97bc792354
 # ╠═f767940c-7f07-46b8-a511-815a0ac890f0
 # ╠═b0e0e604-305f-405d-a647-147241b89a0e
