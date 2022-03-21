@@ -152,7 +152,15 @@ Given some initial grid, returns a tuple `(shield, terminated_early)`.
 function make_shield( reachable_hit::Matrix{Vector{Any}}, 
 					  reachable_nohit::Matrix{Vector{Any}}, 
 					  grid::Grid, 
-					  resolution, β1, β2, t, g; max_steps=1000)	
+					  resolution, β1, β2, t, g; 
+					  max_steps=1000,
+					  animate=false)
+	animation = nothing
+	if animate
+		animation = Animation()
+		draw(grid, colors=["#90ee90", "#ffffe0", "#ea786b"])
+		frame(animation)
+	end
 	i = max_steps
 	grid′ = nothing
 	while i > 0
@@ -162,8 +170,12 @@ function make_shield( reachable_hit::Matrix{Vector{Any}},
 		end
 		grid = grid′
 		i -= 1
+		if animate
+			draw(grid, colors=["#90ee90", "#ffffe0", "#ea786b"])
+			frame(animation)
+		end
 	end
-	grid′, i==0
+	grid′, i==0, animation
 end
 
 
@@ -175,8 +187,9 @@ Given some initial grid, returns a tuple `(shield, terminated_early)`.
 
 `terminted_early` is a boolean value indicating if `max_steps` were exceeded before the fixed point could be reached.
 """
-function make_shield(grid::Grid, resolution, β1, β2, t, g; max_steps=1000)
+function make_shield(grid::Grid, resolution, β1, β2, t, g;
+					 max_steps=1000, animate=false)
 	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
 	
-	return make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g; max_steps=max_steps)		
+	return make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g; max_steps=max_steps, animate=animate)		
 end

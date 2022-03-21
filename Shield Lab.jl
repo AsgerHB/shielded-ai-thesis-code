@@ -177,7 +177,11 @@ md"""
 `max_steps = ` $(@bind max_steps confirm(NumberField(0:typemax(Int), default=100)))
 """
 
-# ╔═╡ 901d0f5a-c7e5-478b-bd1a-60290c4d8b06
+# ╔═╡ 3e486218-e716-4fcb-9f85-1a98cb394829
+md"""
+animate: $(@bind animate CheckBox())
+"""
+
 # ╔═╡ b1de6876-b41d-4b00-ba88-e504a65e07dc
 begin
 	if max_steps >= 1 
@@ -198,7 +202,28 @@ t = $(t),
 g = $(g), 
 max\_steps = $(max_steps)
 
-Terminated early: $(terminated_early)"""
+More steps: $(terminated_early)"""
+
+# ╔═╡ ecd4cf78-21f2-4d1a-b621-986648211401
+animate ? md"""
+`fps = ` $(@bind fps NumberField(1:100, default=2))
+""" : nothing
+
+# ╔═╡ 0825be60-7bc0-472e-9140-a4313bcf1ef0
+animation != nothing ? gif(animation, "shield.gif", fps=fps) : nothing
+
+# ╔═╡ c366d4fa-7179-4de5-a154-4d97bc792354
+md"""
+`v′ = ` $(@bind v′ NumberField(v_min:G:v_max, default=4))
+`p′ = ` $(@bind p′ NumberField(p_min:G:p_max, default=4))
+"""
+
+# ╔═╡ f767940c-7f07-46b8-a511-815a0ac890f0
+begin
+	draw(shield, colors=[c1, c2, c3])
+	draw_barbaric_transition!(box(shield, v′, p′), resolution, β1, β2, t, g, "nohit")
+	draw_barbaric_transition!(box(shield, v′, p′), resolution, β1, β2, t, g, "hit")
+end
 
 # ╔═╡ b0e0e604-305f-405d-a647-147241b89a0e
 function shield_action(shield:: Grid, v, p, action)
@@ -1147,7 +1172,7 @@ version = "0.9.1+5"
 # ╠═ef673aea-a39c-11ec-1e49-a7ea73ad56c5
 # ╠═f8a5cb49-a41b-4cca-9b05-b5e50528bff5
 # ╠═0253730c-3cb9-4489-af7c-dc907212f4fe
-# ╟─b32b5260-5e6e-4f10-8505-00d2b139e35d
+# ╠═b32b5260-5e6e-4f10-8505-00d2b139e35d
 # ╟─2e5664d6-cfbf-4961-b9ef-df977c2542b0
 # ╟─c4018e8a-bc73-4f37-bbc4-56fc1a1d7763
 # ╟─fab78e11-174b-431e-bb8f-901c24639972
@@ -1165,6 +1190,11 @@ version = "0.9.1+5"
 # ╟─5c86f796-5fdd-4be0-a0c6-f66e19613d66
 # ╟─1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
 # ╠═b1de6876-b41d-4b00-ba88-e504a65e07dc
+# ╟─3e486218-e716-4fcb-9f85-1a98cb394829
+# ╟─ecd4cf78-21f2-4d1a-b621-986648211401
+# ╟─0825be60-7bc0-472e-9140-a4313bcf1ef0
+# ╟─c366d4fa-7179-4de5-a154-4d97bc792354
+# ╠═f767940c-7f07-46b8-a511-815a0ac890f0
 # ╠═b0e0e604-305f-405d-a647-147241b89a0e
 # ╠═31118d17-e6cb-45c3-8362-1668c6add72a
 # ╠═4da5c6da-92de-446a-9af7-4485d943a5a0

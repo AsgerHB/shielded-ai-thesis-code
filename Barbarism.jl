@@ -520,7 +520,15 @@ Given some initial grid, returns a tuple `(shield, terminated_early)`.
 function make_shield( reachable_hit::Matrix{Vector{Any}}, 
 					  reachable_nohit::Matrix{Vector{Any}}, 
 					  grid::Grid, 
-					  resolution, β1, β2, t, g; max_steps=1000)	
+					  resolution, β1, β2, t, g; 
+					  max_steps=1000,
+					  animate=false)
+	animation = nothing
+	if animate
+		animation = Animation()
+		draw(grid, colors=[c1, c2, c3])
+		frame(animation)
+	end
 	i = max_steps
 	grid′ = nothing
 	while i > 0
@@ -530,8 +538,12 @@ function make_shield( reachable_hit::Matrix{Vector{Any}},
 		end
 		grid = grid′
 		i -= 1
+		if animate
+			draw(grid, colors=[c1, c2, c3])
+			frame(animation)
+		end
 	end
-	grid′, i==0
+	grid′, i==0, animation
 end
 
 # ╔═╡ 9d9132b8-4df0-4f45-a9c9-58b99c280a9c
@@ -543,10 +555,11 @@ Given some initial grid, returns a tuple `(shield, terminated_early)`.
 
 `terminted_early` is a boolean value indicating if `max_steps` were exceeded before the fixed point could be reached.
 """
-function make_shield(grid::Grid, resolution, β1, β2, t, g; max_steps=1000)
+function make_shield(grid::Grid, resolution, β1, β2, t, g;
+					 max_steps=1000, animate=false)
 	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
 	
-	return make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g; max_steps=max_steps)		
+	return make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g; max_steps=max_steps, animate=animate)		
 end
 
 # ╔═╡ 2461801c-9efd-44fc-8d94-aa2eac826c64
@@ -554,7 +567,24 @@ md"""
 `steps = ` $(@bind steps html"<input type=number style='width:5em' step='1' value='3'>")
 """
 
+# ╔═╡ a39a4a22-8c39-497f-9b26-3d0ee5c53564
+md"""
+animate: $(@bind animate html"<input type='checkbox'/>")
+"""
+
 # ╔═╡ 15494211-c698-486f-bee6-74fc34e584bb
+begin
+	initialize!(grid)
+	shield, terminated_early, animation = make_shield(grid, resolution, β1, β2, t, g,
+										  max_steps=steps, animate=animate)
+	draw(shield, colors=[c1, c2, c3], show_grid=true)
+end
+
+# ╔═╡ 8b46e388-f6f9-42eb-be92-230742c59fcc
+"max_steps reached: $(terminated_early)"
+
+# ╔═╡ 138712ea-a7bd-4a08-bd44-f8b6ecf229bc
+animation != nothing ? gif(animation, "shield.gif", fps=1) : nothing
 call(() -> begin
 	initialize(grid)
 	shield, terminated_early = make_shield(grid, resolution, β1, β2, t, g, max_steps=steps)
@@ -1496,6 +1526,12 @@ version = "0.9.1+5"
 # ╠═b58f2d76-15a4-4067-8309-09f962b5f16c
 # ╠═9d9132b8-4df0-4f45-a9c9-58b99c280a9c
 # ╟─2461801c-9efd-44fc-8d94-aa2eac826c64
+# ╟─a39a4a22-8c39-497f-9b26-3d0ee5c53564
+# ╟─8b46e388-f6f9-42eb-be92-230742c59fcc
 # ╠═15494211-c698-486f-bee6-74fc34e584bb
+# ╟─138712ea-a7bd-4a08-bd44-f8b6ecf229bc
+# ╠═a07a9512-bef9-4317-9f26-e1d143b85657
+# ╠═bbd43aa2-7aae-474f-826f-869cc6d8651b
+# ╠═7e55b882-892d-4b7a-bdbd-a52055f45732
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
