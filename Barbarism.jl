@@ -417,7 +417,7 @@ end
 call(() -> begin
 	t = 0.32
 	grid = Grid(1, -10, 10, 0, 10)
-	square = box(grid, 1, 5)
+	square = box(grid, -4, 1)
 	set_value!(square, 1)
 	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
 	
@@ -477,9 +477,9 @@ end
 
 # ╔═╡ 04b99556-60d4-46a8-8714-e3f349df9e1a
 call(() -> begin
-	t = 0.32
+	t = 0.05
 	grid = Grid(1, -10, 10, 0, 10)
-	square = box(grid, 1, 5)
+	square = box(grid, -1, 5)
 	bad_square = box(grid, -2, 5)
 	set_value!(bad_square, 2)
 	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
@@ -585,11 +585,33 @@ end
 
 # ╔═╡ 138712ea-a7bd-4a08-bd44-f8b6ecf229bc
 animation != nothing ? gif(animation, "shield.gif", fps=1) : nothing
+
+# ╔═╡ a07a9512-bef9-4317-9f26-e1d143b85657
+function shield_action(shield:: Grid, v, p, action)
+	if v < grid.v_min || v > grid.v_max || p < grid.p_min || p > grid.p_max
+		return action
+	end
+	square = box(shield, v, p)
+	if get_value(square) == 1
+		return "hit"
+	else
+		return action
+	end
+end
+
+# ╔═╡ bbd43aa2-7aae-474f-826f-869cc6d8651b
+shielded_simulation = call(() -> begin
+	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded loafer agent
+	v0, p0 = 0, 19# rand(7:1:10)
+	vv, pp, tt = simulate_sequence(v0, p0, 0.01, g, policy, 1000)
+	vv, pp, tt
+end)
+
+# ╔═╡ 7e55b882-892d-4b7a-bdbd-a52055f45732
 call(() -> begin
-	initialize(grid)
-	shield, terminated_early = make_shield(grid, resolution, β1, β2, t, g, max_steps=steps)
+	vv, pp, tt = shielded_simulation
 	draw(shield, colors=[c1, c2, c3])
-	title!("max_steps reached: $(terminated_early)")
+	plot!(vv, pp, color=:black)
 end)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1529,6 +1551,9 @@ version = "0.9.1+5"
 # ╟─a39a4a22-8c39-497f-9b26-3d0ee5c53564
 # ╟─8b46e388-f6f9-42eb-be92-230742c59fcc
 # ╠═15494211-c698-486f-bee6-74fc34e584bb
+# ╠═a07a9512-bef9-4317-9f26-e1d143b85657
+# ╠═bbd43aa2-7aae-474f-826f-869cc6d8651b
+# ╠═7e55b882-892d-4b7a-bdbd-a52055f45732
 # ╟─138712ea-a7bd-4a08-bd44-f8b6ecf229bc
 # ╠═a07a9512-bef9-4317-9f26-e1d143b85657
 # ╠═bbd43aa2-7aae-474f-826f-869cc6d8651b

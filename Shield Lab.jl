@@ -241,13 +241,31 @@ end
 # ╔═╡ 31118d17-e6cb-45c3-8362-1668c6add72a
 shield_action(shield, 5.5, 4.4, "nohit")
 
+# ╔═╡ 5bc8a442-0628-463f-9de3-8ddc93b0ef88
+@bind button_restart_shielded_simulation Button("Throw ball again")
+
 # ╔═╡ 4da5c6da-92de-446a-9af7-4485d943a5a0
-call(() -> begin
+shielded_simulation = call(() -> begin
+	button_restart_shielded_simulation
 	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded loafer agent
 	v0, p0 = 0, rand(7:1:10)
 	vv, pp, tt = simulate_sequence(v0, p0, t, g, policy, 500)
+	vv, pp, tt
+end)
+
+# ╔═╡ 3170d6d4-40e6-45d5-a29b-d4e9b746813c
+call(() -> begin
+	vv, pp, tt = shielded_simulation
 	draw(shield, colors=[c1, c2, c3])
 	plot!(vv, pp, color=:black)
+end)
+
+# ╔═╡ 396b0315-7ce3-403f-9859-825de63800a0
+call(() -> begin
+	vv, pp, tt = shielded_simulation
+	plot(tt, pp,
+		color=:black
+	)
 end)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1197,6 +1215,9 @@ version = "0.9.1+5"
 # ╠═f767940c-7f07-46b8-a511-815a0ac890f0
 # ╠═b0e0e604-305f-405d-a647-147241b89a0e
 # ╠═31118d17-e6cb-45c3-8362-1668c6add72a
+# ╟─5bc8a442-0628-463f-9de3-8ddc93b0ef88
 # ╠═4da5c6da-92de-446a-9af7-4485d943a5a0
+# ╟─3170d6d4-40e6-45d5-a29b-d4e9b746813c
+# ╟─396b0315-7ce3-403f-9859-825de63800a0
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
