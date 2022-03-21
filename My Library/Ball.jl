@@ -29,16 +29,16 @@ function simulate_point(v, p, β1, β2, t, g, action)
 end
 
 
-function simulate_sequence(v0, p0, t, g, policy, duration; worst_case=false)
+function simulate_sequence(v0, p0, t, g, policy, duration; 
+							β1=:random, β2=:random)
+	randomize_β1 = β1 == :random
+	randomize_β2 = β2 == :random
     velocities::Array{Real}, positions::Array{Real}, times::Array{Real} = [v0], [p0], [0.0]
     v, p = v0, p0
     for i in 1:ceil(duration/t)
+		β1 = randomize_β1 ? rand(0.85:0.01:0.97) : β1
+		β2 = randomize_β2 ? rand(0.90:0.01:1.00) : β2
         action = policy(v, p)
-		if worst_case
-			β1, β2 = 0.85, 0.9
-		else
-			β1, β2 = rand(0.85:0.01:0.97), rand(0.9:0.01:1.0)
-		end
         v, p = simulate_point(v, p, β1, β2, t, -9.81, action)
         push!(velocities, v)
         push!(positions, p)

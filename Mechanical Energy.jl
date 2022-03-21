@@ -58,7 +58,7 @@ e_mek(g, 0, p)
 
 # ╔═╡ 90c40c0c-297d-4df1-934e-e26017ad7664
 call(() -> begin
-	vv, pp, tt = simulate_sequence(v, p, t, g, (_, _) -> "nohit", 15, worst_case=true)
+	vv, pp, tt = simulate_sequence(v, p, t, g, (_, _) -> "nohit", 15, β1=β1, β2=β2)
 	plot(tt, pp)
 end)
 
