@@ -1,4 +1,4 @@
-function simulate_point(v, p, β1, β2, t, g, action)
+function simulate_point(v, p, β1, β2, t, g, action; min_v_on_impact=1)
     v0, p0 = v, p
     
     if action=="hit" && p >= 4 # Hitting the ball changes the velocity
@@ -12,17 +12,19 @@ function simulate_point(v, p, β1, β2, t, g, action)
     new_v = g * t + v0
     new_p = 0.5 * g * t^2 + v0*t + p0
     
-    if new_p <= 0
+    if new_p <= 0 # It went through the floor, meaning that a bounce occurs
         t_impact = (-v0 - sqrt(v0^2 - 2*g*p0))/g 
         t_remaining = t - t_impact       # Time left this timestep after bounce occurs
-        new_v = g * t_impact + v0         # Gravity pull before bounce
-        new_v = -β1 * new_v          # Bounce
-        new_v = g * t_remaining + new_v   # Gravity pull after bounce
-        new_p = 0.5 * g * t_remaining^2 + new_v * t_remaining + 0  # Jump height after bounce
-        
-        if new_p <= 0           # If it hits the ground twice within the same timestep, 
-            new_v, new_p = 0, 0  # simply put the ball to a stop.
-        end
+        new_v = g * t_impact + v0        # Gravity pull before impact
+        new_v = -β1 * new_v              # Impact 
+		new_p = 0
+
+		if new_v >= min_v_on_impact
+	        new_v, new_p = simulate_point(new_v, new_p, β1, β2, t_remaining, g, action, 
+										  min_v_on_impact=min_v_on_impact)
+		else
+			new_v, new_p = 0, 0
+		end
     end
     
     new_v, new_p
