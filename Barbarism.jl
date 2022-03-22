@@ -322,24 +322,35 @@ md"""
 # ╔═╡ 21cbae28-9e2a-4a45-8157-d2ef2a0189e9
 md"""
 `resolution = ` $(@bind resolution html"<input type=number style='width:5em' step='1' value='3'>")
+
+`upto_t ` $(@bind upto_t html"<input type=checkbox>")
 """
 
 # ╔═╡ 2716a75b-db77-4de2-87fe-8460dfa4a8ad
 """Update current plot with an illustration of the barbaric way in which transitions are computed.
 
 A set of `resolution` × `resolution` evenly spaced points is drawn inside the given square, and the same points are drawn again after time `t` has elapsed."""
-function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, action)
+function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, action; upto_t=false)
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	step = square.grid.G/resolution
 	v_start, p_start = [], []
 	v_end, p_end = [], []
+	t_values = !upto_t ? [t] : (t/resolution:t/resolution:t)
+	# Start positions
 	for v in Ivl:step:(Ivu)
 		for p in Ipl:step:(Ipu)
-			w, q = simulate_point(v, p, β1, β2, t, g, action)
 			push!(v_start, v)
 			push!(p_start, p)
-			push!(v_end, w)
-			push!(p_end, q)
+		end
+	end
+	# End positions
+	for t′ in t_values
+		for v in Ivl:step:(Ivu)
+			for p in Ipl:step:(Ipu)
+				w, q = simulate_point(v, p, β1, β2, t′, g, action)
+				push!(v_end, w)
+				push!(p_end, q)
+			end
 		end
 	end
 	scatter!(v_start, p_start, label="start", markersize=1, markerstrokewidth=0, markercolor=c7)
@@ -351,22 +362,27 @@ end
 
 I could have used proper squares for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
 """
-function get_reachable_area(square::Square, resolution, β1, β2, t, g, action)
+function get_reachable_area(square::Square, resolution, β1, β2, t, g, action; 
+							upto_t=false)
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
-	step = square.grid.G/resolution
 	result = []
-	for v in Ivl:step:(Ivu)
-		for p in Ipl:step:(Ipu)
-			w, q = simulate_point(v, p, β1, β2, t, g, action)
-			
-			if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
-				continue
-			end
-			
-			square′ = box(square.grid, w, q)
-			iv_ip = (square′.iv, square′.ip)
-			if !in(result, iv_ip)
-				push!(result, iv_ip)
+	
+	step = square.grid.G/resolution # Distance between (v,p)-points
+	t_values = !upto_t ? [t] : (t/resolution:t/resolution:t)
+	for t′ in t_values
+		for v in Ivl:step:(Ivu)
+			for p in Ipl:step:(Ipu)
+				w, q = simulate_point(v, p, β1, β2, t′, g, action)
+				
+				if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
+					continue
+				end
+				
+				square′ = box(square.grid, w, q)
+				iv_ip = (square′.iv, square′.ip)
+				if !(iv_ip ∈ result)
+					push!(result, iv_ip)
+				end
 			end
 		end
 	end
@@ -376,22 +392,23 @@ end
 # ╔═╡ 7fff10bd-8d93-41fa-ba2b-73756a73ffeb
 """Update the value of every square reachable from the given `square`.
 """
-function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action, value)
-	Ivl, Ivu, Ipl, Ipu = bounds(square)
-	step = square.grid.G/resolution
-	for v in Ivl:step:(Ivu)
-		for p in Ipl:step:(Ipu)
-			w, q = simulate_point(v, p, β1, β2, t, g, action)
-			
-			if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
-				continue
-			end 
-			
-			square′ = box(square.grid, w, q)
-			set_value!(square′, value)
-		end
+function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action, value; upto_t=false)
+	reachable_area = get_reachable_area(square, resolution, β1, β2, t, g, action, upto_t=upto_t)
+	for (iv, ip) in reachable_area
+		square.grid.array[iv, ip] = value
 	end
 end
+
+# ╔═╡ a8d9178b-fb85-4daa-ad1f-58d6b9a734ef
+call(() -> begin
+	t=0.5
+	grid = Grid(0.5, -5, 5, 0, 5)
+	square = box(grid, 1, 2)
+	set_reachable_area!(square, resolution, β1, β2, t, g, "nohit", 2, upto_t=upto_t)
+	set_value!(square, 1)
+	draw(grid, colors=[:white, c4, c5])
+	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit", upto_t=upto_t)
+end)
 
 # ╔═╡ 869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 """Computes and returns the tuple `(hit, nohit)`.
@@ -400,15 +417,17 @@ end
 
 The same goes for `nohit` just with the "nohit" action. 
 """
-function get_transitions(grid, resolution, β1, β2, t4, g)
+function get_transitions(grid, resolution, β1, β2, t, g; upto_t=false)
 	hit = Array{Vector{Any}}(undef, (grid.v_count, grid.p_count))
 	nohit = Array{Vector{Any}}(undef, (grid.v_count, grid.p_count))
 	
 	for iv in 1:grid.v_count
 		for ip in 1:grid.p_count
 			square = Square(grid, iv, ip)
-			hit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t4, g, "hit")
-			nohit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t4, g, "nohit")
+			hit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, 
+											 "hit", upto_t=upto_t)
+			nohit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, 
+											   "nohit", upto_t=upto_t)
 		end
 	end
 	hit, nohit
@@ -416,7 +435,7 @@ end
 
 # ╔═╡ d2b82214-239b-4a5c-9654-49006caaa295
 begin
-	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
+	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g, upto_t=upto_t)
 	reachable_nohit[square.iv, square.ip]
 end
 
@@ -424,9 +443,9 @@ end
 call(() -> begin
 	t = 0.32
 	grid = Grid(1, -10, 10, 0, 10)
-	square = box(grid, -4, 1)
+	square = box(grid, 2, 5)
 	set_value!(square, 1)
-	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
+	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g, upto_t=upto_t)
 	
 	for (iv, ip) in reachable_hit[square.iv, square.ip]
 		square′ = Square(grid, iv, ip)
@@ -438,8 +457,8 @@ call(() -> begin
 	end
 	
 	draw(grid, colors=[:white, c5, c4], show_grid=true)
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "hit")
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit")
+	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "hit", upto_t=upto_t)
+	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit", upto_t=upto_t)
 end)
 
 # ╔═╡ 8ee09119-9eba-4dfd-ad25-5496e714892c
@@ -563,10 +582,10 @@ Given some initial grid, returns a tuple `(shield, terminated_early)`.
 `terminted_early` is a boolean value indicating if `max_steps` were exceeded before the fixed point could be reached.
 """
 function make_shield(grid::Grid, resolution, β1, β2, t, g;
-					 max_steps=1000, animate=false)
-	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
+					 max_steps=1000, animate=false, upto_t=false)
+	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g; upto_t=upto_t)
 	
-	return make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g; max_steps=max_steps, animate=animate)		
+	return make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g; max_steps=max_steps, animate=animate)
 end
 
 # ╔═╡ 2461801c-9efd-44fc-8d94-aa2eac826c64
@@ -583,7 +602,9 @@ animate: $(@bind animate html"<input type='checkbox'/>")
 begin
 	initialize!(grid)
 	shield, terminated_early, animation = make_shield(grid, resolution, β1, β2, t, g,
-										  max_steps=steps, animate=animate)
+										  max_steps=steps, 
+										  animate=animate, 
+										  upto_t=upto_t)
 	draw(shield, colors=[c1, c2, c3], show_grid=true)
 end
 
@@ -1546,6 +1567,7 @@ version = "0.9.1+5"
 # ╠═2716a75b-db77-4de2-87fe-8460dfa4a8ad
 # ╠═14fadc22-1218-43c1-8e7b-7b58256594d1
 # ╠═7fff10bd-8d93-41fa-ba2b-73756a73ffeb
+# ╠═a8d9178b-fb85-4daa-ad1f-58d6b9a734ef
 # ╠═869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 # ╠═d2b82214-239b-4a5c-9654-49006caaa295
 # ╠═02893fb2-58ce-46f9-b609-3b2cb13e67b0

@@ -1,19 +1,28 @@
-function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, action)
+function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, action; upto_t=false)
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	step = square.grid.G/resolution
 	v_start, p_start = [], []
 	v_end, p_end = [], []
+	t_values = !upto_t ? [t] : (t/resolution:t/resolution:t)
+	# Start positions
 	for v in Ivl:step:(Ivu)
 		for p in Ipl:step:(Ipu)
-			w, q = simulate_point(v, p, β1, β2, t, g, action)
 			push!(v_start, v)
 			push!(p_start, p)
-			push!(v_end, w)
-			push!(p_end, q)
 		end
 	end
-	scatter!(v_start, p_start, label="start", markersize=1, markerstrokewidth=0, markercolor="#888A85")
-	scatter!(v_end, p_end, label="end", markersize=1, markerstrokewidth=0, markercolor="#000000")
+	# End positions
+	for t′ in t_values
+		for v in Ivl:step:(Ivu)
+			for p in Ipl:step:(Ipu)
+				w, q = simulate_point(v, p, β1, β2, t′, g, action)
+				push!(v_end, w)
+				push!(p_end, q)
+			end
+		end
+	end
+	scatter!(v_start, p_start, label="start", markersize=1, markerstrokewidth=0, markercolor=c7)
+	scatter!(v_end, p_end, label="end", markersize=1, markerstrokewidth=0, markercolor=c8)
 end
 
 
@@ -21,22 +30,27 @@ end
 
 I could have used proper squares for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
 """
-function get_reachable_area(square::Square, resolution, β1, β2, t, g, action)
+function get_reachable_area(square::Square, resolution, β1, β2, t, g, action; 
+							upto_t=false)
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
-	step = square.grid.G/resolution
 	result = []
-	for v in Ivl:step:(Ivu)
-		for p in Ipl:step:(Ipu)
-			w, q = simulate_point(v, p, β1, β2, t, g, action)
-			
-			if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
-				continue
-			end
-			
-			square′ = box(square.grid, w, q)
-			iv_ip = (square′.iv, square′.ip)
-			if !in(result, iv_ip)
-				push!(result, iv_ip)
+	
+	step = square.grid.G/resolution # Distance between (v,p)-points
+	t_values = !upto_t ? [t] : (t/resolution:t/resolution:t)
+	for t′ in t_values
+		for v in Ivl:step:(Ivu)
+			for p in Ipl:step:(Ipu)
+				w, q = simulate_point(v, p, β1, β2, t′, g, action)
+				
+				if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
+					continue
+				end
+				
+				square′ = box(square.grid, w, q)
+				iv_ip = (square′.iv, square′.ip)
+				if !(iv_ip ∈ result)
+					push!(result, iv_ip)
+				end
 			end
 		end
 	end
@@ -44,20 +58,10 @@ function get_reachable_area(square::Square, resolution, β1, β2, t, g, action)
 end
 
 
-function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action, value)
-	Ivl, Ivu, Ipl, Ipu = bounds(square)
-	step = square.grid.G/resolution
-	for v in Ivl:step:(Ivu)
-		for p in Ipl:step:(Ipu)
-			w, q = simulate_point(v, p, β1, β2, t, g, action)
-			
-			if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
-				continue
-			end
-			
-			square′ = box(square.grid, w, q)
-			set_value!(square′, value)
-		end
+function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action, value; upto_t=false)
+	reachable_area = get_reachable_area(square, resolution, β1, β2, t, g, action, upto_t=upto_t)
+	for (iv, ip) in reachable_area
+		square.grid.array[iv, ip] = value
 	end
 end
 
@@ -68,19 +72,21 @@ end
 
 The same goes for `nohit` just with the "nohit" action. 
 """
-function get_transitions(grid, resolution, β1, β2, t, g)
+function get_transitions(grid, resolution, β1, β2, t, g; upto_t=false)
 	hit = Array{Vector{Any}}(undef, (grid.v_count, grid.p_count))
 	nohit = Array{Vector{Any}}(undef, (grid.v_count, grid.p_count))
 	
 	for iv in 1:grid.v_count
 		for ip in 1:grid.p_count
 			square = Square(grid, iv, ip)
-			hit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, "hit")
-			nohit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, "nohit")
+			hit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, 
+											 "hit", upto_t=upto_t)
+			nohit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, 
+											   "nohit", upto_t=upto_t)
 		end
 	end
 	hit, nohit
-end			
+end		
 
 
 
