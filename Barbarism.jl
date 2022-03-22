@@ -103,7 +103,7 @@ function simulate_sequence(v0, p0, t, g, policy, duration;
 		β1 = randomize_β1 ? rand(0.85:0.01:0.97) : β1
 		β2 = randomize_β2 ? rand(0.90:0.01:1.00) : β2
         action = policy(v, p)
-        v, p = simulate_point(v, p, β1, β2, t, -9.81, action)
+        v, p = simulate_point(v, p, β1, β2, t, g, action)
         push!(velocities, v)
         push!(positions, p)
         push!(times, i*t)
