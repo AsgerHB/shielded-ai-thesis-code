@@ -92,7 +92,7 @@ resolution = $(@bind resolution NumberField(1:100, default=10))
 """
 
 # ╔═╡ d9535c71-abe2-4c04-9c2a-efc9bb18a326
-anim = @animate for t′ in 0.01:0.01:1
+anim = @animate for t′ in 0.01:0.01:5
 	clear(grid)
 	set_value!(square, 1)
 	set_reachable_area!(square, resolution, β1, β2, t′, g, "nohit", 2)
@@ -106,7 +106,7 @@ fps = $(@bind fps NumberField(1:100, default=5))
 """
 
 # ╔═╡ 873ac0ca-5767-43c8-8315-d2ea461cb005
-gif(anim, fps=fps)
+gif(anim, fps=fps, "./transition_visualisation.gif")
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
