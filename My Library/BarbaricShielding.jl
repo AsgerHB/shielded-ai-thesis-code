@@ -3,8 +3,8 @@ function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, a
 	step = square.grid.G/resolution
 	v_start, p_start = [], []
 	v_end, p_end = [], []
-	for v in Ivl:step:(Ivu-step)
-		for p in Ipl:step:(Ipu-step)
+	for v in Ivl:step:(Ivu)
+		for p in Ipl:step:(Ipu)
 			w, q = simulate_point(v, p, β1, β2, t, g, action)
 			push!(v_start, v)
 			push!(p_start, p)
@@ -25,8 +25,8 @@ function get_reachable_area(square::Square, resolution, β1, β2, t, g, action)
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	step = square.grid.G/resolution
 	result = []
-	for v in Ivl:step:(Ivu-step)
-		for p in Ipl:step:(Ipu-step)
+	for v in Ivl:step:(Ivu)
+		for p in Ipl:step:(Ipu)
 			w, q = simulate_point(v, p, β1, β2, t, g, action)
 			
 			if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
@@ -47,8 +47,8 @@ end
 function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action, value)
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	step = square.grid.G/resolution
-	for v in Ivl:step:(Ivu-step)
-		for p in Ipl:step:(Ipu-step)
+	for v in Ivl:step:(Ivu)
+		for p in Ipl:step:(Ipu)
 			w, q = simulate_point(v, p, β1, β2, t, g, action)
 			
 			if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
