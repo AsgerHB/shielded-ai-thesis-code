@@ -179,7 +179,7 @@ begin
 	else
 		shield, terminated_early, animation = grid, true, nothing
 	end
-	draw(shield, colors=[c1, c2, c3])
+	draw(shield, colors=[c1, c2, c3], show_grid=true)
 end
 
 # ╔═╡ 1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
@@ -220,9 +220,10 @@ md"""
 
 # ╔═╡ f767940c-7f07-46b8-a511-815a0ac890f0
 begin
-	draw(shield, colors=[c1, c2, c3])
-	draw_barbaric_transition!(box(shield, v′, p′), resolution, β1, β2, t, g, "nohit")
-	draw_barbaric_transition!(box(shield, v′, p′), resolution, β1, β2, t, g, "hit")
+	square′ = box(shield, v′, p′)
+	draw(shield, colors=[c1, c2, c3], show_grid=true)
+	draw_barbaric_transition!(square′, resolution, β1, β2, t, g, "nohit")
+	draw_barbaric_transition!(square′, resolution, β1, β2, t, g, "hit")
 end
 
 # ╔═╡ 31118d17-e6cb-45c3-8362-1668c6add72a
@@ -236,14 +237,14 @@ shielded_simulation = call(() -> begin
 	button_restart_shielded_simulation
 	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded loafer agent
 	v0, p0 = 0, rand(7:1:10)
-	vv, pp, tt = simulate_sequence(v0, p0, t, g, policy, 500)
+	vv, pp, tt = simulate_sequence(v0, p0, t, g, policy, β1=β1, β2=β2, 1)
 	vv, pp, tt
 end)
 
 # ╔═╡ 3170d6d4-40e6-45d5-a29b-d4e9b746813c
 call(() -> begin
 	vv, pp, tt = shielded_simulation
-	draw(shield, colors=[c1, c2, c3])
+	draw(shield, colors=[c1, c2, c3], show_grid=true)
 	plot!(vv, pp, color=:black)
 end)
 
@@ -1176,7 +1177,7 @@ version = "0.9.1+5"
 # ╔═╡ Cell order:
 # ╠═ef673aea-a39c-11ec-1e49-a7ea73ad56c5
 # ╠═0253730c-3cb9-4489-af7c-dc907212f4fe
-# ╠═b32b5260-5e6e-4f10-8505-00d2b139e35d
+# ╟─b32b5260-5e6e-4f10-8505-00d2b139e35d
 # ╟─2e5664d6-cfbf-4961-b9ef-df977c2542b0
 # ╟─c4018e8a-bc73-4f37-bbc4-56fc1a1d7763
 # ╟─fab78e11-174b-431e-bb8f-901c24639972
@@ -1205,7 +1206,7 @@ version = "0.9.1+5"
 # ╠═31118d17-e6cb-45c3-8362-1668c6add72a
 # ╟─5bc8a442-0628-463f-9de3-8ddc93b0ef88
 # ╠═4da5c6da-92de-446a-9af7-4485d943a5a0
-# ╟─3170d6d4-40e6-45d5-a29b-d4e9b746813c
+# ╠═3170d6d4-40e6-45d5-a29b-d4e9b746813c
 # ╟─396b0315-7ce3-403f-9859-825de63800a0
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
