@@ -89,8 +89,8 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 	hm = heatmap(x_tics, y_tics, transpose(grid.array), c=colors)
 
 	if show_grid && length(grid.v_min:grid.G:grid.v_max) < 100
-		vline!(grid.v_min:grid.G:grid.v_max, color=c6, label=nothing)
-		hline!(grid.p_min:grid.G:grid.p_max, color=c6, label=nothing)
+		vline!(grid.v_min:grid.G:grid.v_max, color="#afafaf", label=nothing)
+		hline!(grid.p_min:grid.G:grid.p_max, color="#afafaf", label=nothing)
 	end
 
 	return hm
