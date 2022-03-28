@@ -137,11 +137,13 @@ Size of the grid: $(length(grid.array))
 # ╔═╡ 9227ef36-4df3-4ff1-be01-5289634e9ce3
 md"""
 `resolution = ` $(@bind resolution confirm(NumberField(1:100, default=3)))
+
+`upto_t = ` $(@bind upto_t CheckBox())
 """
 
 # ╔═╡ f411721a-8442-4b3d-9d33-5e7b831031fc
 begin
-	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
+	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g, upto_t=upto_t)
 	reachable_hit[square.iv, square.ip]
 end
 
@@ -237,7 +239,7 @@ shielded_simulation = call(() -> begin
 	button_restart_shielded_simulation
 	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded loafer agent
 	v0, p0 = 0, rand(7:1:10)
-	vv, pp, tt = simulate_sequence(v0, p0, t, g, policy, β1=β1, β2=β2, 1)
+	vv, pp, tt = simulate_sequence(v0, p0, t, g, policy, β1=β1, β2=β2, 500)
 	vv, pp, tt
 end)
 

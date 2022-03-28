@@ -92,12 +92,12 @@ resolution = $(@bind resolution NumberField(1:100, default=10))
 """
 
 # ╔═╡ d9535c71-abe2-4c04-9c2a-efc9bb18a326
-anim = @animate for t′ in 0.01:0.01:5
-	clear(grid)
+anim = @animate for t′ in 0.01:0.02:5
+	#clear(grid)
 	set_value!(square, 1)
-	set_reachable_area!(square, resolution, β1, β2, t′, g, "nohit", 2)
+	set_reachable_area!(square, resolution, β1, β2, t′, g, "hit", 2)
 	draw(grid, colors=[:white, c4, c5])
-	draw_barbaric_transition!(square, resolution, β1, β2, t′, g, "nohit")
+	draw_barbaric_transition!(square, resolution, β1, β2, t′, g, "hit")
 end
 
 # ╔═╡ 49e758ea-1a38-460a-83a4-2442cc6303fd
