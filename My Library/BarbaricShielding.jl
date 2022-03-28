@@ -21,8 +21,8 @@ function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, a
 			end
 		end
 	end
-	scatter!(v_start, p_start, label="start", markersize=1, markerstrokewidth=0, markercolor=c7)
-	scatter!(v_end, p_end, label="end", markersize=1, markerstrokewidth=0, markercolor=c8)
+	scatter!(v_start, p_start, label="start", markersize=1, markerstrokewidth=0, markercolor="#888A85")
+	scatter!(v_end, p_end, label="end", markersize=1, markerstrokewidth=0, markercolor="#000000")
 end
 
 
