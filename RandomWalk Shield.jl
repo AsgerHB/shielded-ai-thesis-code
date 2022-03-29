@@ -25,6 +25,9 @@ end
 # ╔═╡ 6fc2d7ee-ae97-11ec-1e57-a16e01431e37
 ingredients = include("My Library/Ingredients.jl")
 
+# ╔═╡ 3611edfd-a4cb-4632-9d94-2fe71e2195ae
+call(f) = f()
+
 # ╔═╡ 5229f8dd-ca19-4ed0-a9d2-da1691f79089
 md"""### Configure random walk game"""
 
@@ -37,9 +40,11 @@ md"""
 ϵ2 = $(Child("ϵ2", NumberField(0:0.01:10, default=0.08)))
 
 δ(:fast) = $(Child("δ_fast", NumberField(0:0.01:10, default=0.25)))
+
 τ(:fast) = $(Child("τ_fast", NumberField(0:0.01:10, default=0.09)))
 
 δ(:slow) = $(Child("δ_slow", NumberField(0:0.01:10, default=0.13)))
+
 τ(:slow) = $(Child("τ_slow", NumberField(0:0.01:10, default=0.18)))
 """
 	
@@ -66,6 +71,20 @@ cost\_fast = $(Child("cost_fast", NumberField(0:1:100, default=3)))
 	
 end
 
+# ╔═╡ be4a5a08-79b8-4ac9-8396-db5d62eb3f97
+md"""
+#### Example values for x and t
+
+`x = ` $(@bind x NumberField(0.01:0.01:4))
+`t = ` $(@bind t NumberField(0.01:0.01:4))
+"""
+
+# ╔═╡ a831bacb-9f95-4c94-b6ea-6e84351da678
+begin
+	plot()
+	draw_next_step!(borders..., mechanics..., x, t, :both)
+end
+
 # ╔═╡ 779f0f70-ce94-4a9e-af26-3b06406aa036
 md"""
 ### Configure grid
@@ -73,11 +92,11 @@ md"""
 
 `x ∈  [ ` $(@bind x_min NumberField(-100:0.1:100, default=0))
 	   `;`
-		$(@bind x_max NumberField(-100:0.1:100, default=1)) `]`
+		$(@bind x_max NumberField(-100:0.1:100, default=1.2)) `]`
 
 `y ∈  [` $(@bind y_min NumberField(-100:0.1:100, default=0))
 	   `;`
-		$(@bind y_max NumberField(-100:0.1:100, default=1)) `]`
+		$(@bind y_max NumberField(-100:0.1:100, default=1.2)) `]`
 """
 
 # ╔═╡ f8607cc8-30e5-454e-acec-6d0050a48904
@@ -106,6 +125,9 @@ end
 # ╔═╡ 1d555d13-9b81-48e7-a74c-8e2ee388bfc2
 grid = Grid(G, x_min, x_max, y_min, y_max)
 
+# ╔═╡ 4165c794-4c2f-4d37-8a85-d1c86a32fd6c
+"($(length(grid.array)) squares)"
+
 # ╔═╡ d14ff7c8-742b-4eb2-aa04-5b1e88213f71
 struct Square
     grid::Grid
@@ -113,8 +135,18 @@ struct Square
     iy::Int
 end
 
+# ╔═╡ d92581e2-3691-4bc8-9862-aff23a75fdcc
+md"""### Barbaric Transitions"""
+
+# ╔═╡ c0490360-9d91-431c-8997-583c3c06b609
+begin
+	NEUTRAL_SQUARE = 1	# Either action allowable
+	FAST_SQUARE = 2		# Must take the :fast action
+	BAD_SQUARE = 3		# Risk of safety violation
+end
+
 # ╔═╡ b06918de-37de-471f-8c6e-f5af3edcf024
-init_func(Ixl, Ixu, Itl, Itu) = Itu > 1 ? :bad : :any
+init_func(Ixl, Ixu, Itl, Itu) = Itu > 1 ? BAD_SQUARE : NEUTRAL_SQUARE
 
 # ╔═╡ 895b0abb-4ee6-4a70-b638-262583c5c8ab
 function box(grid::Grid, x, y)::Square
@@ -131,7 +163,7 @@ function box(grid::Grid, x, y)::Square
 end
 
 # ╔═╡ 3a9bff13-e75e-4400-aefb-6ac004ca9d2e
-box(grid, .1, .2)
+square = box(grid, x, t)
 
 # ╔═╡ d9867d36-908e-4e5e-b013-0cc0c9475982
 function bounds(square::Square)
@@ -186,82 +218,47 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 	hm = heatmap(x_tics, y_tics, permutedims(grid.array, (2, 1)), c=colors, colorbar=nothing, aspect_ratio=:equal)
 
 	if show_grid && length(grid.x_min:grid.G:grid.x_max) < 100
-		vline!(grid.x_min:grid.G:grid.v_max, color="#afafaf", label=nothing)
+		vline!(grid.x_min:grid.G:grid.y_max, color="#afafaf", label=nothing)
 		hline!(grid.y_min:grid.G:grid.y_max, color="#afafaf", label=nothing)
 	end
 
 	return hm
 end
 
-# ╔═╡ 0b2bcbb2-13b6-4a1a-8597-7e4e0e7a3901
-draw(grid, colors=[:white, :red])
-
 # ╔═╡ 18b843fd-2ab8-4380-a700-240115dd23da
 md"""
 `resolution = ` $(@bind resolution NumberField(1:1:100, default=1))
-
-`t = ` $(@bind t NumberField(0.01:0.01:4))
-
-`upto_t ` $(@bind upto_t html"<input type=checkbox>")
 
 `max_steps ` $(@bind max_steps NumberField(1:1:1000, default=3))
 
 `animate ` $(@bind animate html"<input type=checkbox>")
 """
 
-# ╔═╡ a224ba24-0b51-41c7-8442-2b59141af8ce
-function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, action; upto_t=false)
-	Ivl, Ivu, Ipl, Ipu = bounds(square)
-	step = square.grid.G/resolution
-	v_start, p_start = [], []
-	v_end, p_end = [], []
-	t_values = !upto_t ? [t] : (t/resolution:t/resolution:t)
-	# Start positions
-	for v in Ivl:step:(Ivu)
-		for p in Ipl:step:(Ipu)
-			push!(v_start, v)
-			push!(p_start, p)
-		end
-	end
-	# End positions
-	for t′ in t_values
-		for v in Ivl:step:(Ivu)
-			for p in Ipl:step:(Ipu)
-				w, q = simulate_point(v, p, β1, β2, t′, g, action)
-				push!(v_end, w)
-				push!(p_end, q)
-			end
-		end
-	end
-	scatter!(v_start, p_start, label="start", markersize=1, markerstrokewidth=0, markercolor="#888A85")
-	scatter!(v_end, p_end, label="end", markersize=1, markerstrokewidth=0, markercolor="#000000")
-end
-
-# ╔═╡ 7824c974-6f75-4487-9e62-4356fdaca527
+# ╔═╡ 886e8c1f-83d1-4aed-beb8-d0d73460348f
 """Get a list of grid indexes representing reachable squares. 
 
 I could have used proper squares for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
 """
-function get_reachable_area(square::Square, resolution, β1, β2, t, g, action; 
-							upto_t=false)
-	Ivl, Ivu, Ipl, Ipu = bounds(square)
+function get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action, resolution)
+	Ixl, Ixu, Itl, Itu = bounds(square)
 	result = []
-	
-	step = square.grid.G/resolution # Distance between (v,p)-points
-	t_values = !upto_t ? [t] : (t/resolution:t/resolution:t)
-	for t′ in t_values
-		for v in Ivl:step:(Ivu)
-			for p in Ipl:step:(Ipu)
-				w, q = simulate_point(v, p, β1, β2, t′, g, action)
-				
-				if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
-					continue
-				end
-				
-				square′ = box(square.grid, w, q)
-				iv_ip = (square′.iv, square′.ip)
-				if !(iv_ip ∈ result)
-					push!(result, iv_ip)
+	δ = action == :fast ? δ_fast : δ_slow 
+	τ = action == :fast ? τ_fast : τ_slow
+	stride = square.grid.G/resolution # Distance between (x,y)-points
+	# Initial values
+	for x in Ixl:stride:(Ixu)
+		for t in Itl:stride:(Itu)
+			for xʹ in (x + δ - ϵ1):stride:(x + δ + ϵ1 )
+				for tʹ in (t + τ - ϵ2):stride:(t + τ + ϵ2 )
+					if !(square.grid.x_min <= xʹ <= square.grid.x_max) || !(square.grid.y_min <= tʹ <= square.grid.y_max)
+						continue
+					end
+					
+					square′ = box(square.grid, xʹ, tʹ)
+					ix_iy = (square′.ix, square′.iy)
+					if ix_iy ∉ result
+						push!(result, ix_iy)
+					end
 				end
 			end
 		end
@@ -269,156 +266,224 @@ function get_reachable_area(square::Square, resolution, β1, β2, t, g, action;
 	result
 end
 
-# ╔═╡ 3fca8886-bfe5-454d-94d9-663a5228c3cc
-function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action, value; upto_t=false)
-	reachable_area = get_reachable_area(square, resolution, β1, β2, t, g, action, upto_t=upto_t)
-	for (iv, ip) in reachable_area
-		square.grid.array[iv, ip] = value
-	end
-end
-
-# ╔═╡ 26101232-a42b-4eac-883f-06ebc814d338
-"""Computes and returns the tuple `(hit, nohit)`.
-
-`hit` is a 2D-array of vectors of the same layout as the `array` of the given `grid`. If a square in `grid` has index `iv, ip`, then the vector at `hit[iv, ip]` will contain tuples `(ivʹ, ipʹ)` of square indexes that are reachable by hitting the ball from `iv, ip`. 
-
-The same goes for `nohit` just with the "nohit" action. 
-"""
-function get_transitions(grid, resolution, β1, β2, t, g; upto_t=false)
-	hit = Array{Vector{Any}}(undef, (grid.v_count, grid.p_count))
-	nohit = Array{Vector{Any}}(undef, (grid.v_count, grid.p_count))
-	
-	for iv in 1:grid.v_count
-		for ip in 1:grid.p_count
-			square = Square(grid, iv, ip)
-			hit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, 
-											 "hit", upto_t=upto_t)
-			nohit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, 
-											   "nohit", upto_t=upto_t)
+# ╔═╡ 9a0c0fbe-c450-4b42-a320-5868756a2f3d
+function draw_barbaric_transition!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action, resolution)
+	Ixl, Ixu, Itl, Itu = bounds(square)
+	δ = action == :fast ? δ_fast : δ_slow 
+	τ = action == :fast ? τ_fast : τ_slow
+	stride = square.grid.G/resolution
+	x_start, t_start = [], []
+	x_end, t_end = [], []
+	for x in Ixl:stride:(Ixu)
+		for t in Itl:stride:(Itu)
+			push!(x_start, x)
+			push!(t_start, t)
+			for xʹ in (x + δ - ϵ1):stride:(x + δ + ϵ1 )
+				for tʹ in (t + τ - ϵ2):stride:(t + τ + ϵ2 )
+					push!(x_end, xʹ)
+					push!(t_end, tʹ)
+				end
+			end
 		end
 	end
-	hit, nohit
+	scatter!(x_start, t_start, label="start", markersize=1, markerstrokewidth=0, markercolor="#888A85")
+	scatter!(x_end, t_end, label="end", markersize=1, markerstrokewidth=0, markercolor="#000000")
 end
 
-# ╔═╡ 18e91e9e-a3a0-4e6b-b2ac-28084e0a0cab
+# ╔═╡ e589125d-f044-4b12-acca-14deffa34076
+begin
+	draw(grid, colors=[:white, :red])
+	draw_barbaric_transition!(mechanics..., square, :slow, resolution)
+end
+
+# ╔═╡ a25d8cf1-1b47-4f8d-b4f7-f4e77af0ff20
+	function step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
+		x′, t′ =  x, t
+		if a == :fast
+			x′ = x + rand(δ_fast - ϵ1:0.005:δ_fast + ϵ1 )
+			t′ = t + rand(τ_fast - ϵ2:0.005:τ_fast + ϵ2 )
+		else
+			x′ = x + rand(δ_slow - ϵ1:0.005:δ_slow + ϵ1 )
+			t′ = t + rand(τ_slow - ϵ2:0.005:τ_slow + ϵ2 )
+		end
+		x′, t′
+	end
+
+# ╔═╡ 24d292a0-ac39-497e-b520-8fd3931369fc
+function set_reachable_area!(square, t, resolution, point_function, value; upto_t=false)
+	reachable_area = get_reachable_area(square, t, resolution, point_function, upto_t=upto_t)
+	for (ix, iy) in reachable_area
+		square.grid.array[ix, iy] = value
+	end
+end
+
+# ╔═╡ 3633ff5e-19a1-4272-8c7c-5c1a3f00cc72
+"""Computes and returns the tuple `(fast, slow)`.
+
+`fast` is a 2D-array of vectors of the same layout as the `array` of the gixen `grid`. If a square in `grid` has index `ix, iy`, then the vector at `fst[ix, iy]` will contain tuples `(ixʹ, iyʹ)` of square indexes that are reachable by performing a fast move from the given square.
+
+The same goes for `slow` just with the :slow action. 
+"""
+function get_transitions(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, grid, resolution)
+	fast = Matrix{Vector{Any}}(undef, grid.x_count, grid.y_count)
+	slow = Matrix{Vector{Any}}(undef, grid.x_count, grid.y_count)
+	
+	for ix in 1:grid.x_count
+		for iy in 1:grid.y_count
+			square = Square(grid, ix, iy)
+			fast[ix, iy] = get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square, :fast, resolution)
+			slow[ix, iy] = get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square, :slow, resolution)
+		end
+	end
+	fast, slow
+end
+
+# ╔═╡ 4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
+fast, slow = get_transitions(mechanics..., grid, resolution);
+
+# ╔═╡ ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
+call(() -> begin
+	reachable_test = slow[square.ix, square.iy]
+	grid = Grid(G, x_min, x_max, x_min, x_max)
+	initialize!(grid, init_func)
+	for (ix, it) in reachable_test
+		set_value!(Square(grid, ix, it), NEUTRAL_SQUARE)
+	end
+	draw(grid, colors=[:white, :wheat, :red], show_grid=true)
+	draw_next_step!(borders..., mechanics..., x, t, :slow)
+end)
+
+# ╔═╡ 795c5353-fdeb-41c6-8502-2aa70689dcc4
+# TODO: This assumes an ordering of actions where if one action does not lead to a bad state, neither does the ones after it
 """Compute the new value of a single square.
 
-NOTE: Requires pre-baked transition matrices `reachable_hit` and `reachable_nohit`. Get these by calling `get_transitions`. 
-
-Value can be either 0, if this square cannot reach any bad squares, 1 if the ball must be hit to avoid reaching bad squares, or 2 if reaching a bad square is inevitable.
+NOTE: Requires pre-baked transition matrices. Get these by calling `get_transitions`. 
 """
-function get_new_value( reachable_hit::Matrix{Vector{Any}}, 
-						reachable_nohit::Matrix{Vector{Any}}, 
-						square::Square,
-						grid:: Grid,
-						β1, β2, t, g)
+function get_new_value(fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, square)
 	value = get_value(square)
 
-	if value == 2 # Bad squares stay bad. 
-		return 2
+	if value == BAD_SQUARE # Bad squares stay bad. 
+		return BAD_SQUARE
 	end
-	
- 	# check if a bad square is reachable for nohit
-	nohit_bad = false
-	for (iv′, ip′) in reachable_nohit[square.iv, square.ip]
-		if get_value(Square(grid, iv′, ip′)) == 2
-			nohit_bad = true
+
+	# Check if a bad square is reachable while going slow.
+	slow_bad = false
+	for (ix, iy) in slow[square.ix, square.iy]
+		if get_value(Square(square.grid, ix, iy)) == BAD_SQUARE
+			slow_bad = true
 			break
 		end
 	end
 
-	# check if hit avoids reaching bad squares
-	if nohit_bad
-		for (iv′, ip′) in reachable_hit[square.iv, square.ip]
-			if get_value(Square(grid, iv′, ip′)) == 2
-				return 2
-			end
+	if !slow_bad
+		# Assuming fast is better than slow, this means both actions are allowable
+		return NEUTRAL_SQUARE 
+	end
+
+	# Check if bad squares can be avoided by going fast.
+	fast_bad = false
+	for (ix, iy) in fast[square.ix, square.iy]
+		if get_value(Square(square.grid, ix, iy)) == BAD_SQUARE
+			fast_bad = true
+			break
 		end
-		return 1
+	end
+
+	if !fast_bad
+		return FAST_SQUARE # Gotta go fast.
 	else
-		return 0
+		return BAD_SQUARE
 	end
 end
 
-# ╔═╡ 1eb23825-95f4-4dcd-93d0-48c8156b11b5
+# ╔═╡ c2add912-1322-4f34-b9d5-e2284f631b3c
+get_new_value(fast, slow, square)
+
+# ╔═╡ f9b7b12f-5193-48ec-b61c-ba22f4a1fb4c
 """Take a single step in the fixed point compuation.
 """
-function shield_step( reachable_hit::Matrix{Vector{Any}}, 
-					  reachable_nohit::Matrix{Vector{Any}}, 
-					  grid::Grid, 
-					  resolution, β1, β2, t, g)
-	grid′ = Grid(grid.G, grid.v_min, grid.v_max, grid.p_min, grid.p_max)
+function shield_step(fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, grid)
+	grid′ = Grid(grid.G, grid.x_min, grid.x_max, grid.y_min, grid.y_max)
 	
-	for iv in 1:grid.v_count
-		for ip in 1:grid.p_count
-			grid′.array[iv, ip] = get_new_value(reachable_hit, reachable_nohit, Square(grid, iv, ip), grid, β1, β2, t, g)
+	for ix in 1:grid.x_count
+		for iy in 1:grid.y_count
+			grid′.array[ix, iy] = get_new_value(fast, slow, Square(grid, ix, iy))
 		end
 	end
 	grid′
 end
 
-# ╔═╡ fa793c06-45b7-4359-816b-146f4fd56366
+# ╔═╡ e7c8c0fe-8008-4ae0-abc8-c2cb3eb711d9
 """Generate shield. 
 
-Given some initial grid, returns a tuple `(shield, terminated_early)`. 
+Gixen some initial grid, returns a tuple `(shield, terminated_early)`. 
 
-`shield` is a new grid containing the fixed point for the given values. 
+`shield` is a new grid containing the fixed point for the gixen values. 
 
 `terminted_early` is a boolean value indicating if `max_steps` were exceeded before the fixed point could be reached.
 """
-function make_shield( reachable_hit::Matrix{Vector{Any}}, 
-					  reachable_nohit::Matrix{Vector{Any}}, 
-					  grid::Grid, 
-					  resolution, β1, β2, t, g; 
-					  max_steps=1000,
-					  animate=false)
+function make_shield(	fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, grid; 
+					 	max_steps=1000,
+					  	animate=false,
+						colors=[:yellow, :blue, :red])
 	animation = nothing
 	if animate
 		animation = Animation()
-		draw(grid, colors=["#90ee90", "#ffffe0", "#ea786b"])
+		draw(grid, colors=colors)
 		frame(animation)
 	end
 	i = max_steps
 	grid′ = nothing
 	while i > 0
-		grid′ = shield_step(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g)
+		grid′ = shield_step(fast, slow, grid)
 		if grid′.array == grid.array
 			break
 		end
 		grid = grid′
 		i -= 1
 		if animate
-			draw(grid, colors=["#90ee90", "#ffffe0", "#ea786b"])
+			draw(grid, colors=colors)
 			frame(animation)
 		end
 	end
 	grid′, i==0, animation
 end
 
-# ╔═╡ 769197dc-d781-4e24-9f18-5a662bbf75cc
-"""Generate shield. 
-
-Given some initial grid, returns a tuple `(shield, terminated_early)`. 
-
-`shield` is a new grid containing the fixed point for the given values. 
-
-`terminted_early` is a boolean value indicating if `max_steps` were exceeded before the fixed point could be reached.
-"""
-function make_shield(grid::Grid, resolution, β1, β2, t, g;
-					 max_steps=1000, animate=false)
-	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
+# ╔═╡ 6c7b61f9-98d5-4f7b-b88d-8f74ca1bbcb3
+function make_shield(   ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, grid, resolution;
+					    max_steps=1000, 
+						animate=false)
+	transitions = get_transitions(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, grid, resolution)
 	
-	return make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g; max_steps=max_steps, animate=animate)		
+	return make_shield(transitions..., grid, max_steps=max_steps, animate=animate)
 end
 
-# ╔═╡ a7fffb62-7be1-4976-8b52-6c851899c0b3
-function shield_action(shield::Grid, v, p, action)
-	if v < shield.v_min || v > shield.v_max || p < shield.p_min || p > shield.p_max
+# ╔═╡ b00bbbb7-6587-4664-ae82-82c081f66f37
+begin
+	initialize!(grid, init_func)
+	shield, finished_early, animation = make_shield(mechanics..., grid, resolution, max_steps=max_steps, animate=animate)
+	"Stopped before completion: $finished_early"
+end
+
+# ╔═╡ cb460b6d-aa08-4472-bab9-737c89e2224f
+draw(shield, colors=[:yellow, :blue, :red])
+
+# ╔═╡ 932bb7f6-6dbb-4050-a58f-6e71fd859b39
+animate ? md"""
+`fps = ` $(@bind fps NumberField(1:100, default=2))
+""" : nothing
+
+# ╔═╡ 896993db-f8d4-492b-bff1-463658587a83
+animation != nothing ? gif(animation, "shield.gif", fps=fps) : nothing
+
+# ╔═╡ 397ca36e-bd4a-45da-9f26-573c10a938fa
+function shield_action(shield, x, t, action)
+	if x < shield.x_min || x > shield.x_max || y < shield.y_min || y > shield.y_max
 		return action
 	end
-	square = box(shield, v, p)
-	if get_value(square) == 1
-		return "hit"
+    square_value = get_value(box(shield, x, y))
+	if square_value == FAST_SQUARE
+		return :fast
 	else
 		return action
 	end
@@ -1345,18 +1410,23 @@ version = "0.9.1+5"
 # ╔═╡ Cell order:
 # ╠═6fc2d7ee-ae97-11ec-1e57-a16e01431e37
 # ╠═78969e37-9895-4077-bdae-ff4857174c6b
+# ╠═3611edfd-a4cb-4632-9d94-2fe71e2195ae
 # ╟─5229f8dd-ca19-4ed0-a9d2-da1691f79089
 # ╟─2c05e965-545f-43c1-b0b0-0a81e08c6293
 # ╟─0b868b64-6c93-4d30-a3e0-f0f0e79a6699
 # ╟─4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
-# ╠═779f0f70-ce94-4a9e-af26-3b06406aa036
+# ╟─be4a5a08-79b8-4ac9-8396-db5d62eb3f97
+# ╟─a831bacb-9f95-4c94-b6ea-6e84351da678
+# ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
 # ╠═1d555d13-9b81-48e7-a74c-8e2ee388bfc2
+# ╠═4165c794-4c2f-4d37-8a85-d1c86a32fd6c
 # ╠═f8607cc8-30e5-454e-acec-6d0050a48904
 # ╠═d14ff7c8-742b-4eb2-aa04-5b1e88213f71
 # ╠═3a9bff13-e75e-4400-aefb-6ac004ca9d2e
+# ╟─d92581e2-3691-4bc8-9862-aff23a75fdcc
+# ╠═c0490360-9d91-431c-8997-583c3c06b609
 # ╠═b06918de-37de-471f-8c6e-f5af3edcf024
 # ╠═2cc179a4-8848-4345-a634-bf9adca525be
-# ╠═0b2bcbb2-13b6-4a1a-8597-7e4e0e7a3901
 # ╟─895b0abb-4ee6-4a70-b638-262583c5c8ab
 # ╟─d9867d36-908e-4e5e-b013-0cc0c9475982
 # ╟─e1fd73cf-9651-4f94-85f9-882fd68a4ea0
@@ -1365,14 +1435,23 @@ version = "0.9.1+5"
 # ╟─fe6341e8-2a52-4142-8532-52c118358c5e
 # ╠═d4e0a0aa-b34e-4801-9819-ea51f5b9df2a
 # ╟─18b843fd-2ab8-4380-a700-240115dd23da
-# ╠═a224ba24-0b51-41c7-8442-2b59141af8ce
-# ╠═7824c974-6f75-4487-9e62-4356fdaca527
-# ╠═3fca8886-bfe5-454d-94d9-663a5228c3cc
-# ╠═26101232-a42b-4eac-883f-06ebc814d338
-# ╠═18e91e9e-a3a0-4e6b-b2ac-28084e0a0cab
-# ╠═1eb23825-95f4-4dcd-93d0-48c8156b11b5
-# ╠═fa793c06-45b7-4359-816b-146f4fd56366
-# ╠═769197dc-d781-4e24-9f18-5a662bbf75cc
-# ╠═a7fffb62-7be1-4976-8b52-6c851899c0b3
+# ╠═886e8c1f-83d1-4aed-beb8-d0d73460348f
+# ╠═9a0c0fbe-c450-4b42-a320-5868756a2f3d
+# ╠═e589125d-f044-4b12-acca-14deffa34076
+# ╠═a25d8cf1-1b47-4f8d-b4f7-f4e77af0ff20
+# ╠═24d292a0-ac39-497e-b520-8fd3931369fc
+# ╠═3633ff5e-19a1-4272-8c7c-5c1a3f00cc72
+# ╠═4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
+# ╠═ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
+# ╠═795c5353-fdeb-41c6-8502-2aa70689dcc4
+# ╠═c2add912-1322-4f34-b9d5-e2284f631b3c
+# ╠═f9b7b12f-5193-48ec-b61c-ba22f4a1fb4c
+# ╠═e7c8c0fe-8008-4ae0-abc8-c2cb3eb711d9
+# ╠═6c7b61f9-98d5-4f7b-b88d-8f74ca1bbcb3
+# ╟─b00bbbb7-6587-4664-ae82-82c081f66f37
+# ╠═cb460b6d-aa08-4472-bab9-737c89e2224f
+# ╟─932bb7f6-6dbb-4050-a58f-6e71fd859b39
+# ╟─896993db-f8d4-492b-bff1-463658587a83
+# ╠═397ca36e-bd4a-45da-9f26-573c10a938fa
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
