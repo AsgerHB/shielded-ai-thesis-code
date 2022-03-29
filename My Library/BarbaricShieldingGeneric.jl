@@ -1,10 +1,3 @@
-module BarbaricShielding
-#draw_barbaric_transition!, get_reachable_area, set_reachable_area!, get_transitions, get_new_value, shield_step, make_shield, make_shield, shield_action = BS.draw_barbaric_transition!, BS.get_reachable_area, BS.set_reachable_area!, BS.get_transitions, BS.get_new_value, BS.shield_step, BS.make_shield, BS.make_shield, BS.shield_action
-export draw_barbaric_transition!, get_reachable_area, set_reachable_area!, get_transitions, get_new_value, shield_step, make_shield, make_shield, shield_action
-
-S = include("SquaresXY.jl")
-box, bounds, set_value!, get_value, clear, initialize!, draw = S.box, S.bounds, S.set_value!, S.get_value, S.clear, S.initialize!, S.draw, 
-
 function draw_barbaric_transition!(square, resolution, point_function::Function; upto_t=false)
 	Ixl, Ixu, Iyl, Iyu = bounds(square)
 	step = square.grid.G/resolution
@@ -227,5 +220,3 @@ function shield_action(shield, actions, x, y, action)
 		return action
 	end
 end
-
-end#module

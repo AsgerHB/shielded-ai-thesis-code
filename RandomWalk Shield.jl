@@ -19,28 +19,13 @@ begin
 	using PlutoUI
 	using Random
 	using Plots
+	include("My Library/RandomWalk.jl")
+	include("My Library/SquaresXY.jl")
+	include("My Library/BarbaricShieldingGeneric.jl");
 end
 
 # ╔═╡ 6fc2d7ee-ae97-11ec-1e57-a16e01431e37
 ingredients = include("My Library/Ingredients.jl")
-
-# ╔═╡ 51dbe7b7-de7d-4c14-b55a-6457d7ae8d08
-begin
-	RW = ingredients("My Library/RandomWalk.jl").RandomWalk
-	step, draw_next_step!, draw_walk! = RW.step, RW.draw_next_step!, RW.draw_walk!
-end
-
-# ╔═╡ dbb438db-3c5c-4ede-a8c8-dc9d7d180d94
-begin
-	S = ingredients("My Library/SquaresXY.jl").Squares
-	box, bounds, set_value!, get_value, clear, initialize!, draw, Grid, Square = S.box, S.bounds, S.set_value!, S.get_value, S.clear, S.initialize!, S.draw, S.Grid, S.Square
-end
-
-# ╔═╡ 5d2e8e3c-812c-4529-af59-424b11e29d1c
-begin
-	BS = ingredients("My Library/BarbaricShieldingGeneric.jl").BarbaricShielding
-	draw_barbaric_transition!, get_reachable_area, set_reachable_area!, get_transitions, get_new_value, shield_step, make_shield, make_shield, shield_action = BS.draw_barbaric_transition!, BS.get_reachable_area, BS.set_reachable_area!, BS.get_transitions, BS.get_new_value, BS.shield_step, BS.make_shield, BS.make_shield, BS.shield_action
-end
 
 # ╔═╡ 5229f8dd-ca19-4ed0-a9d2-da1691f79089
 md"""### Configure random walk game"""
@@ -1044,16 +1029,13 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
-# ╠═78969e37-9895-4077-bdae-ff4857174c6b
 # ╠═6fc2d7ee-ae97-11ec-1e57-a16e01431e37
-# ╠═51dbe7b7-de7d-4c14-b55a-6457d7ae8d08
-# ╠═dbb438db-3c5c-4ede-a8c8-dc9d7d180d94
-# ╠═5d2e8e3c-812c-4529-af59-424b11e29d1c
+# ╠═78969e37-9895-4077-bdae-ff4857174c6b
 # ╟─5229f8dd-ca19-4ed0-a9d2-da1691f79089
 # ╟─2c05e965-545f-43c1-b0b0-0a81e08c6293
 # ╟─0b868b64-6c93-4d30-a3e0-f0f0e79a6699
 # ╟─4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
-# ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
+# ╠═779f0f70-ce94-4a9e-af26-3b06406aa036
 # ╠═1d555d13-9b81-48e7-a74c-8e2ee388bfc2
 # ╟─18b843fd-2ab8-4380-a700-240115dd23da
 # ╠═d320b9e9-b9b7-4cbf-ae21-6955c47b2484

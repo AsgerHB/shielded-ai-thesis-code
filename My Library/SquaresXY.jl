@@ -1,7 +1,3 @@
-module Squares
-#box, bounds, set_value!, get_value, clear, initialize!, draw, Grid, Square = S.box, S.bounds, S.set_value!, S.get_value, S.clear, S.initialize!, S.draw, S.Grid, S.Square
-export box, bounds, set_value!, get_value, clear, initialize!, draw, Grid, Square
-
 
 struct Grid
     G::Real
@@ -100,5 +96,3 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 
 	return hm
 end
-
-end#module
