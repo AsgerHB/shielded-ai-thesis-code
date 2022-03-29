@@ -25,85 +25,108 @@ end
 call(f) = f()
 
 # ╔═╡ 06ba8aa1-7664-47d9-b0c3-432cb3f29c05
+
+@bind mechanics PlutoUI.combine() do Child
+
 md"""
-ϵ1 = $(@bind ϵ1 NumberField(0:0.01:10, default=0.08))
+ϵ1 = $(Child("ϵ1", NumberField(0:0.01:10, default=0.08)))
 
-ϵ2 = $(@bind ϵ2 NumberField(0:0.01:10, default=0.08))
+ϵ2 = $(Child("ϵ2", NumberField(0:0.01:10, default=0.08)))
 
-δ(:fast) = $(@bind δ_fast NumberField(0:0.01:10, default=0.25))
-τ(:fast) = $(@bind τ_fast NumberField(0:0.01:10, default=0.09))
+δ(:fast) = $(Child("δ_fast", NumberField(0:0.01:10, default=0.25)))
+τ(:fast) = $(Child("τ_fast", NumberField(0:0.01:10, default=0.09)))
 
-δ(:slow) = $(@bind δ_slow NumberField(0:0.01:10, default=0.13))
-τ(:slow) = $(@bind τ_slow NumberField(0:0.01:10, default=0.18))
-
-x\_max = $(@bind x_max NumberField(0:0.01:10, default=1))
-t\_max = $(@bind t_max NumberField(0:0.01:10, default=1))
-
+δ(:slow) = $(Child("δ_slow", NumberField(0:0.01:10, default=0.13)))
+τ(:slow) = $(Child("τ_slow", NumberField(0:0.01:10, default=0.18)))
 """
+	
+end
+
+# ╔═╡ d333c8c3-175f-473d-b5c4-0b38735ce1c6
+@bind bounds PlutoUI.combine() do Child
+
+md"""
+x\_max = $(Child("x_max", NumberField(0:0.01:10, default=1)))
+t\_max = $(Child("t_max", NumberField(0:0.01:10, default=1)))
+"""
+	
+end
+
+# ╔═╡ 58d066e2-45df-44e0-8473-9ce30a121016
+
+@bind costs PlutoUI.combine() do Child
+
+md"""
+cost\_slow = $(Child("cost_slow", NumberField(0:1:100, default=1)))
+cost\_fast = $(Child("cost_fast", NumberField(0:1:100, default=3)))
+"""
+	
+end
 
 # ╔═╡ f4389c7a-4220-4612-a27d-095da4bacfaf
-begin
-	function step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
-		x′, t′ =  x, t
-		if a == :fast
-			x′ = x + rand(δ_fast - ϵ1:0.005:δ_fast + ϵ1 )
-			t′ = t + rand(τ_fast - ϵ2:0.005:τ_fast + ϵ2 )
-		else
-			x′ = x + rand(δ_slow - ϵ1:0.005:δ_slow + ϵ1 )
-			t′ = t + rand(τ_slow - ϵ2:0.005:τ_slow + ϵ2 )
-		end
-		x′, t′
+function step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
+	x′, t′ =  x, t
+	if a == :fast
+		x′ = x + rand(δ_fast - ϵ1:0.005:δ_fast + ϵ1 )
+		t′ = t + rand(τ_fast - ϵ2:0.005:τ_fast + ϵ2 )
+	else
+		x′ = x + rand(δ_slow - ϵ1:0.005:δ_slow + ϵ1 )
+		t′ = t + rand(τ_slow - ϵ2:0.005:τ_slow + ϵ2 )
 	end
-	
-	function step(x, t, a) 
-		step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
-	end
+	x′, t′
 end
 
 # ╔═╡ ac704811-f1b1-455c-991d-4ede5671c39e
-step(0.5, 0.5, :slow)
+step(mechanics..., 0.5, 0.5, :slow)
 
 # ╔═╡ c1db0440-9bc8-4a05-9cb2-2702da002917
-begin
-	function draw_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
-		color = a == :fast ? :blue : :yellow
-		scatter!([x], [t], 
-			xlimit=[0, x_max], 
-			ylimit=[0, t_max], 
-			markersize=2, 
-			color=:black, 
-			aspect_ratio=:equal)
-		δ, τ = a == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
-		δ, τ = δ + x, τ + t
-		plot!(Shape([δ - ϵ1, δ - ϵ1, δ + ϵ1, δ + ϵ1], 
-					[τ - ϵ2, τ + ϵ2, τ + ϵ2, τ - ϵ2]), 
-				color=color,
-				opacity=0.8,
-				linewidth=0,
-				legend=nothing)
-		plot!([x, δ], [t, τ], linestyle=:dash, linecolor=:blue)
+function draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
+	if a == :both
+		draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :fast)
+		return draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow)
 	end
+	color = a == :fast ? :blue : :yellow
+	scatter!([x], [t], 
+		xlimit=[0, x_max], 
+		ylimit=[0, t_max], 
+		markersize=2, 
+		color=:black, 
+		aspect_ratio=:equal)
+	δ, τ = a == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
+	δ, τ = δ + x, τ + t
+	plot!(Shape([δ - ϵ1, δ - ϵ1, δ + ϵ1, δ + ϵ1], 
+				[τ - ϵ2, τ + ϵ2, τ + ϵ2, τ - ϵ2]), 
+			color=color,
+			opacity=0.8,
+			linewidth=0,
+			legend=nothing)
+	plot!([x, δ], [t, τ], linestyle=:dash, linecolor=:blue)
+end
 
-	function draw_step!(x, t, a)
-		draw_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
-	end
+# ╔═╡ b9668aa9-fcc7-4ca4-8603-33ec8aeafe93
+function draw_walk!(xs, ts, actions)
+	linecolors = [a == :fast ? :blue : :yellow for a in actions]
+	plot!(xs, ts,
+		xlimit=[0, bounds.x_max],
+		ylimit=[0, bounds.t_max],
+		markershape=:circle,
+		markersize=2,
+		markercolor=:black,
+		aspect_ratio=:equal,
+		linecolor=linecolors,
+		xlabel="x",
+		ylabel="t",
+		legend=nothing)
 end
 
 # ╔═╡ 94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
 begin
 	plot()
-	draw_step!(0.1, 0.23, :fast)
-	draw_step!(0.1, 0.23, :slow)
+	draw_next_step!(bounds..., mechanics..., 0.1, 0.23, :both)
 end
 
 # ╔═╡ 50b97718-9f0d-49e0-b930-e519405955f1
 @bind reset Button("Reset")
-
-# ╔═╡ 42990e88-4926-48f4-bf08-9b1142c47ff7
-begin
-	reset
-	xs, ts = [0.], [0.]
-end
 
 # ╔═╡ 2a7ffe34-3c60-47f4-9be2-8638303d68eb
 md"""
@@ -111,57 +134,145 @@ $(@bind fast Button("Fast"))
 $(@bind slow Button("Slow"))
 """
 
+# ╔═╡ 42990e88-4926-48f4-bf08-9b1142c47ff7
+begin
+	xs, ts, actions, cs = [0.], [0.], [:slow], [0]
+	reset
+end
+
 # ╔═╡ 4889cba6-9bac-4fca-bd98-8c4ef26c9b61
 begin
-	fast
 	if length(xs) <= 2
 		push!(xs, 0)
 		push!(ts, 0)
+		push!(actions, :slow)
 	else
-		x_fast, t_fast = step(last(xs), last(ts), :fast)
+		x_fast, t_fast = step(mechanics..., last(xs), last(ts), :fast)
 		push!(xs, x_fast)
 		push!(ts, t_fast)
+		push!(actions, :fast)
+		push!(cs, costs.cost_fast)
 		nothing
 	end
+	fast
 end
 
 # ╔═╡ e1811cbc-a8c4-46f7-a362-fdbf8ab89cc2
 begin
-	slow
 	if length(xs) <= 2
 		push!(xs, 0)
 		push!(ts, 0)
+		push!(actions, :slow)
 	else
-		x_slow, t_slow = step(last(xs), last(ts), :slow)
+		x_slow, t_slow = step(mechanics..., last(xs), last(ts), :slow)
 		push!(xs, x_slow)
 		push!(ts, t_slow)
+		push!(actions, :slow)
+		push!(cs, costs.cost_slow)
 		nothing
 	end
+	slow
 end
 
 # ╔═╡ 3250b0a5-606a-4aab-bc23-2ee69c1593bf
 begin
 	fast, slow
-	plot(xs, ts,
-		xlimit=[0, x_max],
-		ylimit=[0, t_max],
-		markershape=:circle,
-		markersize=2,
-		markercolor=:black,
-		aspect_ratio=:equal,
-		xlabel="x",
-		ylabel="t")
+	plot()
+	draw_walk!(xs, ts, [actions[2:end]..., :slow])
+	draw_next_step!(bounds..., mechanics..., last(xs), last(ts), :both)
 end
 
 # ╔═╡ cb14c520-ef2b-4f77-ae02-029415bbc049
 begin
 	fast, slow
-	if last(ts) >= t_max
-		md"""## You lose"""
-	elseif last(xs) >= x_max
-		md"""## Winner!"""
+	if last(ts) >= bounds.t_max
+md"""
+## You lose		
+cost: $(sum(cs))
+"""
+	elseif last(xs) >= bounds.x_max
+md"""
+## Winner!
+cost: $(sum(cs))
+"""
 	end
 end
+
+# ╔═╡ 87856447-dfd7-4569-93b3-eb1a1da10987
+function take_walk(cost_slow, cost_fast, 
+					x_max, t_max, 
+					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
+					policy::Function)
+	xs, ts, actions = [0.], [0.], [policy(0, 0)]
+	total_cost = 0
+
+	while last(xs) < x_max && last(ts) < t_max
+		a = policy(last(xs), last(ts))
+		x, t = step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, last(xs), last(ts), a)
+		push!(xs, x)
+		push!(ts, t)
+		push!(actions, a)
+		total_cost += a == :fast ? cost_fast : cost_slow
+	end
+
+	xs, ts, actions, total_cost, last(ts) < t_max
+end
+
+# ╔═╡ 098905f0-781a-49f2-89d5-a447841da77a
+function policy(x, t)
+	if x < .30 || t > .50
+		:fast
+	else
+		:slow
+	end
+end
+
+# ╔═╡ d2d20a03-6740-4b55-b971-0240156b6aa2
+begin
+	xs′, ts′, actions′, total_cost′, winner′ = take_walk(costs..., bounds..., mechanics..., policy)
+	plot()
+	draw_walk!(xs′, ts′, actions′)
+end
+
+# ╔═╡ 58eaad4b-68e9-438d-beea-5c416a9fd2ae
+begin
+	if winner′
+md"""## Winner!
+cost: $(total_cost′)
+"""
+	else
+md"""
+## You lose
+cost: $(total_cost′)
+"""
+	end
+end
+
+# ╔═╡ 92f18efe-cacc-4a4c-98f6-0965db071e36
+function evaluate(cost_slow, cost_fast, 
+					x_max, t_max, 
+					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
+					policy::Function; iterations=1000)
+	losses = 0
+	costs = []
+	for i in 1:iterations
+		_, _, _, cost, winner = take_walk(cost_slow, cost_fast, 
+					x_max, t_max, 
+					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
+					policy)
+		if !winner
+			losses += 1
+		end
+		push!(costs, cost)
+	end
+	perfect = losses == 0
+	average_wins = (iterations - losses) / iterations
+	average_cost = sum(costs)/length(costs)
+	perfect, average_wins, average_cost
+end
+
+# ╔═╡ 2d4d0a0c-be8a-4d65-96c9-f702d562865b
+evaluate(costs..., bounds..., mechanics..., policy, iterations=10000)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1085,16 +1196,25 @@ version = "0.9.1+5"
 # ╠═31af0db2-ab6b-11ec-3677-6d36ee7e97df
 # ╠═53f82db0-b7eb-4af3-8b43-eb5c087bb409
 # ╟─06ba8aa1-7664-47d9-b0c3-432cb3f29c05
+# ╟─d333c8c3-175f-473d-b5c4-0b38735ce1c6
+# ╟─58d066e2-45df-44e0-8473-9ce30a121016
 # ╠═f4389c7a-4220-4612-a27d-095da4bacfaf
 # ╠═ac704811-f1b1-455c-991d-4ede5671c39e
 # ╠═c1db0440-9bc8-4a05-9cb2-2702da002917
+# ╠═b9668aa9-fcc7-4ca4-8603-33ec8aeafe93
 # ╠═94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
 # ╟─50b97718-9f0d-49e0-b930-e519405955f1
-# ╟─42990e88-4926-48f4-bf08-9b1142c47ff7
 # ╟─2a7ffe34-3c60-47f4-9be2-8638303d68eb
+# ╟─42990e88-4926-48f4-bf08-9b1142c47ff7
 # ╟─4889cba6-9bac-4fca-bd98-8c4ef26c9b61
 # ╟─e1811cbc-a8c4-46f7-a362-fdbf8ab89cc2
 # ╟─3250b0a5-606a-4aab-bc23-2ee69c1593bf
 # ╟─cb14c520-ef2b-4f77-ae02-029415bbc049
+# ╠═87856447-dfd7-4569-93b3-eb1a1da10987
+# ╠═098905f0-781a-49f2-89d5-a447841da77a
+# ╠═d2d20a03-6740-4b55-b971-0240156b6aa2
+# ╟─58eaad4b-68e9-438d-beea-5c416a9fd2ae
+# ╠═92f18efe-cacc-4a4c-98f6-0965db071e36
+# ╠═2d4d0a0c-be8a-4d65-96c9-f702d562865b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
