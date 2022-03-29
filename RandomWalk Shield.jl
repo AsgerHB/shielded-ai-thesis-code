@@ -32,7 +32,7 @@ call(f) = f()
 md"""### Configure random walk game"""
 
 # ╔═╡ 2c05e965-545f-43c1-b0b0-0a81e08c6293
-@bind mechanics PlutoUI.combine() do Child
+@bind _mechanics PlutoUI.combine() do Child
 
 md"""
 ϵ1 = $(Child("ϵ1", NumberField(0:0.01:10, default=0.08)))
@@ -50,19 +50,12 @@ md"""
 	
 end
 
-# ╔═╡ 0b868b64-6c93-4d30-a3e0-f0f0e79a6699
-@bind borders PlutoUI.combine() do Child
-
-md"""
-x\_max = $(Child("x_max", NumberField(0:0.01:10, default=1)))
-t\_max = $(Child("t_max", NumberField(0:0.01:10, default=1)))
-"""
-	
-end
+# ╔═╡ 6ad63c50-77eb-4fd7-8669-085adebc0ddc
+mechanics = _mechanics.ϵ1, _mechanics.ϵ2, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow;
 
 # ╔═╡ 4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
 
-@bind costs PlutoUI.combine() do Child
+@bind _costs PlutoUI.combine() do Child
 
 md"""
 cost\_slow = $(Child("cost_slow", NumberField(0:1:100, default=1)))
@@ -70,6 +63,9 @@ cost\_fast = $(Child("cost_fast", NumberField(0:1:100, default=3)))
 """
 	
 end
+
+# ╔═╡ 85863a3c-599a-43a5-a58c-4625b1059151
+cost_slow, cost_fast = _costs.cost_slow, _costs.cost_fast;
 
 # ╔═╡ be4a5a08-79b8-4ac9-8396-db5d62eb3f97
 md"""
@@ -82,7 +78,7 @@ md"""
 # ╔═╡ a831bacb-9f95-4c94-b6ea-6e84351da678
 begin
 	plot()
-	draw_next_step!(borders..., mechanics..., x, t, :both)
+	draw_next_step!(1, 1, mechanics..., x, t, :both)
 end
 
 # ╔═╡ 779f0f70-ce94-4a9e-af26-3b06406aa036
@@ -278,12 +274,14 @@ function draw_barbaric_transition!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow,
 		for t in Itl:stride:(Itu)
 			push!(x_start, x)
 			push!(t_start, t)
-			for xʹ in (x + δ - ϵ1):stride:(x + δ + ϵ1 )
-				for tʹ in (t + τ - ϵ2):stride:(t + τ + ϵ2 )
-					push!(x_end, xʹ)
-					push!(t_end, tʹ)
-				end
-			end
+		end
+	end
+
+	
+	for xʹ in (Ixl + δ - ϵ1):ϵ1/resolution:(Ixu + δ + ϵ1 )
+		for tʹ in (Itl + τ - ϵ2):ϵ2/resolution:(Itu + τ + ϵ2 )
+			push!(x_end, xʹ)
+			push!(t_end, tʹ)
 		end
 	end
 	scatter!(x_start, t_start, label="start", markersize=1, markerstrokewidth=0, markercolor="#888A85")
@@ -350,7 +348,7 @@ call(() -> begin
 		set_value!(Square(grid, ix, it), NEUTRAL_SQUARE)
 	end
 	draw(grid, colors=[:white, :wheat, :red], show_grid=true)
-	draw_next_step!(borders..., mechanics..., x, t, :slow)
+	draw_next_step!(1, 1, mechanics..., x, t, :slow)
 end)
 
 # ╔═╡ 795c5353-fdeb-41c6-8502-2aa70689dcc4
@@ -461,7 +459,8 @@ end
 # ╔═╡ b00bbbb7-6587-4664-ae82-82c081f66f37
 begin
 	initialize!(grid, init_func)
-	shield, finished_early, animation = make_shield(mechanics..., grid, resolution, max_steps=max_steps, animate=animate)
+	shield, finished_early, animation = 
+		make_shield(slow, fast, grid, max_steps=max_steps, animate=animate)
 	"Stopped before completion: $finished_early"
 end
 
@@ -1413,8 +1412,9 @@ version = "0.9.1+5"
 # ╠═3611edfd-a4cb-4632-9d94-2fe71e2195ae
 # ╟─5229f8dd-ca19-4ed0-a9d2-da1691f79089
 # ╟─2c05e965-545f-43c1-b0b0-0a81e08c6293
-# ╟─0b868b64-6c93-4d30-a3e0-f0f0e79a6699
+# ╟─6ad63c50-77eb-4fd7-8669-085adebc0ddc
 # ╟─4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
+# ╟─85863a3c-599a-43a5-a58c-4625b1059151
 # ╟─be4a5a08-79b8-4ac9-8396-db5d62eb3f97
 # ╟─a831bacb-9f95-4c94-b6ea-6e84351da678
 # ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
@@ -1442,7 +1442,7 @@ version = "0.9.1+5"
 # ╠═24d292a0-ac39-497e-b520-8fd3931369fc
 # ╠═3633ff5e-19a1-4272-8c7c-5c1a3f00cc72
 # ╠═4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
-# ╠═ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
+# ╟─ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
 # ╠═795c5353-fdeb-41c6-8502-2aa70689dcc4
 # ╠═c2add912-1322-4f34-b9d5-e2284f631b3c
 # ╠═f9b7b12f-5193-48ec-b61c-ba22f4a1fb4c
