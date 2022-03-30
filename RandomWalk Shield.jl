@@ -478,10 +478,10 @@ animation != nothing ? gif(animation, "shield.gif", fps=fps) : nothing
 
 # ╔═╡ 397ca36e-bd4a-45da-9f26-573c10a938fa
 function shield_action(shield, x, t, action)
-	if x < shield.x_min || x > shield.x_max || y < shield.y_min || y > shield.y_max
+	if x < shield.x_min || x > shield.x_max || t < shield.y_min || t > shield.y_max
 		return action
 	end
-    square_value = get_value(box(shield, x, y))
+    square_value = get_value(box(shield, x, t))
 	if square_value == FAST_SQUARE
 		return :fast
 	else
