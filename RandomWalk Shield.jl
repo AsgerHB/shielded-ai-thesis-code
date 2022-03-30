@@ -240,11 +240,12 @@ function get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square
 	δ = action == :fast ? δ_fast : δ_slow 
 	τ = action == :fast ? τ_fast : τ_slow
 	stride = square.grid.G/resolution # Distance between (x,y)-points
-	# Initial values
 	for x in Ixl:stride:(Ixu)
 		for t in Itl:stride:(Itu)
-			for xʹ in (x + δ - ϵ1):stride:(x + δ + ϵ1 )
-				for tʹ in (t + τ - ϵ2):stride:(t + τ + ϵ2 )
+			for offset_x in (δ - ϵ1):(ϵ1/resolution):(δ + ϵ1)
+				for offset_t in (τ - ϵ2):(ϵ2/resolution):(τ + ϵ2)
+					xʹ = x + offset_x
+					tʹ = t + offset_t
 					if !(square.grid.x_min <= xʹ <= square.grid.x_max) || !(square.grid.y_min <= tʹ <= square.grid.y_max)
 						continue
 					end
@@ -269,18 +270,19 @@ function draw_barbaric_transition!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow,
 	stride = square.grid.G/resolution
 	x_start, t_start = [], []
 	x_end, t_end = [], []
+
 	for x in Ixl:stride:(Ixu)
 		for t in Itl:stride:(Itu)
 			push!(x_start, x)
 			push!(t_start, t)
-		end
-	end
-
-	
-	for xʹ in (Ixl + δ - ϵ1):ϵ1/resolution:(Ixu + δ + ϵ1 )
-		for tʹ in (Itl + τ - ϵ2):ϵ2/resolution:(Itu + τ + ϵ2 )
-			push!(x_end, xʹ)
-			push!(t_end, tʹ)
+			for offset_x in (δ - ϵ1):(ϵ1/resolution):(δ + ϵ1)
+				for offset_t in (τ - ϵ2):(ϵ2/resolution):(τ + ϵ2)
+					xʹ = x + offset_x
+					tʹ = t + offset_t
+					push!(x_end, xʹ)
+					push!(t_end, tʹ)
+				end
+			end
 		end
 	end
 	scatter!(x_start, t_start, label="start", markersize=1, markerstrokewidth=0, markercolor="#888A85")
