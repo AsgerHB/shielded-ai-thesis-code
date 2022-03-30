@@ -29,15 +29,15 @@ call(f) = f()
 @bind _mechanics PlutoUI.combine() do Child
 
 md"""
-ϵ1 = $(Child("ϵ1", NumberField(0:0.01:10, default=0.08)))
+ϵ1 = $(Child("ϵ1", NumberField(0:0.01:10, default=0.05)))
 
-ϵ2 = $(Child("ϵ2", NumberField(0:0.01:10, default=0.08)))
+ϵ2 = $(Child("ϵ2", NumberField(0:0.01:10, default=0.05)))
 
-δ(:fast) = $(Child("δ_fast", NumberField(0:0.01:10, default=0.25)))
-τ(:fast) = $(Child("τ_fast", NumberField(0:0.01:10, default=0.09)))
+δ(:fast) = $(Child("δ_fast", NumberField(0:0.01:10, default=0.21)))
+τ(:fast) = $(Child("τ_fast", NumberField(0:0.01:10, default=0.06)))
 
 δ(:slow) = $(Child("δ_slow", NumberField(0:0.01:10, default=0.13)))
-τ(:slow) = $(Child("τ_slow", NumberField(0:0.01:10, default=0.18)))
+τ(:slow) = $(Child("τ_slow", NumberField(0:0.01:10, default=0.12)))
 """
 	
 end
@@ -1231,7 +1231,7 @@ version = "0.9.1+5"
 # ╔═╡ Cell order:
 # ╠═31af0db2-ab6b-11ec-3677-6d36ee7e97df
 # ╠═53f82db0-b7eb-4af3-8b43-eb5c087bb409
-# ╟─06ba8aa1-7664-47d9-b0c3-432cb3f29c05
+# ╠═06ba8aa1-7664-47d9-b0c3-432cb3f29c05
 # ╟─53da05d1-f776-4994-8aac-b252fdec89aa
 # ╟─d333c8c3-175f-473d-b5c4-0b38735ce1c6
 # ╟─b694c1ba-1eb0-41c1-8122-7b8552c3e645

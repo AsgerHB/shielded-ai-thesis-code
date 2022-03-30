@@ -32,26 +32,25 @@ call(f) = f()
 md"""### Configure random walk game"""
 
 # ╔═╡ 2c05e965-545f-43c1-b0b0-0a81e08c6293
+
 @bind _mechanics PlutoUI.combine() do Child
 
 md"""
-ϵ1 = $(Child("ϵ1", NumberField(0:0.01:10, default=0.08)))
+ϵ1 = $(Child("ϵ1", NumberField(0:0.01:10, default=0.05)))
 
-ϵ2 = $(Child("ϵ2", NumberField(0:0.01:10, default=0.08)))
+ϵ2 = $(Child("ϵ2", NumberField(0:0.01:10, default=0.05)))
 
-δ(:fast) = $(Child("δ_fast", NumberField(0:0.01:10, default=0.25)))
-
-τ(:fast) = $(Child("τ_fast", NumberField(0:0.01:10, default=0.09)))
+δ(:fast) = $(Child("δ_fast", NumberField(0:0.01:10, default=0.21)))
+τ(:fast) = $(Child("τ_fast", NumberField(0:0.01:10, default=0.06)))
 
 δ(:slow) = $(Child("δ_slow", NumberField(0:0.01:10, default=0.13)))
-
-τ(:slow) = $(Child("τ_slow", NumberField(0:0.01:10, default=0.18)))
+τ(:slow) = $(Child("τ_slow", NumberField(0:0.01:10, default=0.12)))
 """
 	
 end
 
 # ╔═╡ 6ad63c50-77eb-4fd7-8669-085adebc0ddc
-mechanics = _mechanics.ϵ1, _mechanics.ϵ2, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow;
+mechanics = (;_mechanics.ϵ1, _mechanics.ϵ2, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
 
 # ╔═╡ 4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
 
