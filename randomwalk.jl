@@ -304,11 +304,11 @@ function evaluate(cost_slow, cost_fast,
 	perfect = losses == 0
 	average_wins = (iterations - losses) / iterations
 	average_cost = sum(costs)/length(costs)
-	perfect, average_wins, average_cost
+	(;perfect, average_wins, average_cost)
 end
 
 # ╔═╡ 2d4d0a0c-be8a-4d65-96c9-f702d562865b
-evaluate(costs..., bounds..., mechanics..., policy, iterations=10000)
+a, b, c = evaluate(cost_slow, cost_fast, x_max, t_max, mechanics..., policy, iterations=10000)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
