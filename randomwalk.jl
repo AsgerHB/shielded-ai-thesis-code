@@ -26,7 +26,7 @@ call(f) = f()
 
 # ╔═╡ 06ba8aa1-7664-47d9-b0c3-432cb3f29c05
 
-@bind mechanics PlutoUI.combine() do Child
+@bind _mechanics PlutoUI.combine() do Child
 
 md"""
 ϵ1 = $(Child("ϵ1", NumberField(0:0.01:10, default=0.08)))
@@ -42,8 +42,11 @@ md"""
 	
 end
 
+# ╔═╡ 53da05d1-f776-4994-8aac-b252fdec89aa
+mechanics = _mechanics.ϵ1, _mechanics.ϵ2, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow;
+
 # ╔═╡ d333c8c3-175f-473d-b5c4-0b38735ce1c6
-@bind bounds PlutoUI.combine() do Child
+@bind _borders PlutoUI.combine() do Child
 
 md"""
 x\_max = $(Child("x_max", NumberField(0:0.01:10, default=1)))
@@ -52,9 +55,12 @@ t\_max = $(Child("t_max", NumberField(0:0.01:10, default=1)))
 	
 end
 
+# ╔═╡ b694c1ba-1eb0-41c1-8122-7b8552c3e645
+x_max, t_max = _borders.x_max, _borders.t_max;
+
 # ╔═╡ 58d066e2-45df-44e0-8473-9ce30a121016
 
-@bind costs PlutoUI.combine() do Child
+@bind _costs PlutoUI.combine() do Child
 
 md"""
 cost\_slow = $(Child("cost_slow", NumberField(0:1:100, default=1)))
@@ -63,16 +69,35 @@ cost\_fast = $(Child("cost_fast", NumberField(0:1:100, default=3)))
 	
 end
 
+# ╔═╡ 13659fc1-60f5-43ac-a927-9ed1b7bbc566
+cost_slow, cost_fast = _costs.cost_slow, _costs.cost_fast;
+
+# ╔═╡ c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
+md"""
+unlucky $(@bind unlucky CheckBox())
+"""
+
 # ╔═╡ f4389c7a-4220-4612-a27d-095da4bacfaf
-function step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
+function step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a; unlucky=false)
 	x′, t′ =  x, t
-	if a == :fast
-		x′ = x + rand(δ_fast - ϵ1:0.005:δ_fast + ϵ1 )
-		t′ = t + rand(τ_fast - ϵ2:0.005:τ_fast + ϵ2 )
+	if unlucky
+		if a == :fast
+			x′ = x + δ_fast - ϵ1
+			t′ = t + τ_fast + ϵ2
+		else
+			x′ = x + δ_slow - ϵ1
+			t′ = t + τ_slow + ϵ2
+		end
 	else
-		x′ = x + rand(δ_slow - ϵ1:0.005:δ_slow + ϵ1 )
-		t′ = t + rand(τ_slow - ϵ2:0.005:τ_slow + ϵ2 )
-	end
+		if a == :fast
+			x′ = x + rand(δ_fast - ϵ1:0.005:δ_fast + ϵ1 )
+			t′ = t + rand(τ_fast - ϵ2:0.005:τ_fast + ϵ2 )
+		else
+			x′ = x + rand(δ_slow - ϵ1:0.005:δ_slow + ϵ1 )
+			t′ = t + rand(τ_slow - ϵ2:0.005:τ_slow + ϵ2 )
+		end
+	end	
+	
 	x′, t′
 end
 
@@ -104,11 +129,12 @@ function draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_s
 end
 
 # ╔═╡ b9668aa9-fcc7-4ca4-8603-33ec8aeafe93
-function draw_walk!(xs, ts, actions)
+function draw_walk!(x_max, t_max, xs, ts, actions)
 	linecolors = [a == :fast ? :blue : :yellow for a in actions]
+	push!(linecolors, :red)
 	plot!(xs, ts,
-		xlimit=[0, bounds.x_max],
-		ylimit=[0, bounds.t_max],
+		xlimit=[0, x_max],
+		ylimit=[0, t_max],
 		markershape=:circle,
 		markersize=2,
 		markercolor=:black,
@@ -122,7 +148,7 @@ end
 # ╔═╡ 94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
 begin
 	plot()
-	draw_next_step!(bounds..., mechanics..., 0.1, 0.23, :both)
+	draw_next_step!(x_max, t_max, mechanics..., 0.1, 0.23, :both)
 end
 
 # ╔═╡ 50b97718-9f0d-49e0-b930-e519405955f1
@@ -137,6 +163,7 @@ $(@bind slow Button("Slow"))
 # ╔═╡ 42990e88-4926-48f4-bf08-9b1142c47ff7
 begin
 	xs, ts, actions, cs = [0.], [0.], [:slow], [0]
+ 	unlucky
 	reset
 end
 
@@ -147,11 +174,12 @@ begin
 		push!(ts, 0)
 		push!(actions, :slow)
 	else
-		x_fast, t_fast = step(mechanics..., last(xs), last(ts), :fast)
+		x_fast, t_fast = step(	mechanics..., last(xs), last(ts), :fast, 
+								unlucky=unlucky)
 		push!(xs, x_fast)
 		push!(ts, t_fast)
 		push!(actions, :fast)
-		push!(cs, costs.cost_fast)
+		push!(cs, cost_fast)
 		nothing
 	end
 	fast
@@ -164,11 +192,12 @@ begin
 		push!(ts, 0)
 		push!(actions, :slow)
 	else
-		x_slow, t_slow = step(mechanics..., last(xs), last(ts), :slow)
+		x_slow, t_slow = step(	mechanics..., last(xs), last(ts), :slow, 
+								unlucky=unlucky)
 		push!(xs, x_slow)
 		push!(ts, t_slow)
 		push!(actions, :slow)
-		push!(cs, costs.cost_slow)
+		push!(cs, cost_slow)
 		nothing
 	end
 	slow
@@ -178,44 +207,24 @@ end
 begin
 	fast, slow
 	plot()
-	draw_walk!(xs, ts, [actions[2:end]..., :slow])
-	draw_next_step!(bounds..., mechanics..., last(xs), last(ts), :both)
+	draw_walk!(x_max, t_max, xs, ts, actions[2:end])
+	draw_next_step!(x_max, t_max, mechanics..., last(xs), last(ts), :both)
 end
 
 # ╔═╡ cb14c520-ef2b-4f77-ae02-029415bbc049
 begin
 	fast, slow
-	if last(ts) >= bounds.t_max
+	if last(ts) >= t_max
 md"""
 ## You lose		
 cost: $(sum(cs))
 """
-	elseif last(xs) >= bounds.x_max
+	elseif last(xs) >= x_max
 md"""
 ## Winner!
 cost: $(sum(cs))
 """
 	end
-end
-
-# ╔═╡ 87856447-dfd7-4569-93b3-eb1a1da10987
-function take_walk(cost_slow, cost_fast, 
-					x_max, t_max, 
-					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
-					policy::Function)
-	xs, ts, actions = [0.], [0.], [policy(0, 0)]
-	total_cost = 0
-
-	while last(xs) < x_max && last(ts) < t_max
-		a = policy(last(xs), last(ts))
-		x, t = step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, last(xs), last(ts), a)
-		push!(xs, x)
-		push!(ts, t)
-		push!(actions, a)
-		total_cost += a == :fast ? cost_fast : cost_slow
-	end
-
-	xs, ts, actions, total_cost, last(ts) < t_max
 end
 
 # ╔═╡ 098905f0-781a-49f2-89d5-a447841da77a
@@ -227,11 +236,38 @@ function policy(x, t)
 	end
 end
 
+# ╔═╡ b47ba5a9-00e8-41ee-a156-c8642e537224
+@bind walk_again Button("Walk again")
+
+# ╔═╡ 87856447-dfd7-4569-93b3-eb1a1da10987
+function take_walk(	cost_slow, cost_fast, 
+					x_max, t_max, 
+					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
+					policy::Function;
+					unlucky=false)
+	xs, ts, actions = [0.], [0.], []
+	total_cost = 0
+
+	while last(xs) < x_max && last(ts) < t_max
+		a = policy(last(xs), last(ts))
+		x, t = step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
+					last(xs), last(ts), a, unlucky=unlucky)
+		push!(xs, x)
+		push!(ts, t)
+		push!(actions, a)
+		total_cost += a == :fast ? cost_fast : cost_slow
+	end
+
+	xs, ts, actions, total_cost, last(ts) < t_max
+end
+
 # ╔═╡ d2d20a03-6740-4b55-b971-0240156b6aa2
 begin
-	xs′, ts′, actions′, total_cost′, winner′ = take_walk(costs..., bounds..., mechanics..., policy)
+	walk_again
+	xs′, ts′, actions′, total_cost′, winner′ = 
+		take_walk(cost_fast, cost_slow, x_max, t_max, mechanics..., policy, unlucky=unlucky)
 	plot()
-	draw_walk!(xs′, ts′, actions′)
+	draw_walk!(x_max, t_max, xs′, ts′, actions′)
 end
 
 # ╔═╡ 58eaad4b-68e9-438d-beea-5c416a9fd2ae
@@ -1196,12 +1232,16 @@ version = "0.9.1+5"
 # ╠═31af0db2-ab6b-11ec-3677-6d36ee7e97df
 # ╠═53f82db0-b7eb-4af3-8b43-eb5c087bb409
 # ╟─06ba8aa1-7664-47d9-b0c3-432cb3f29c05
+# ╟─53da05d1-f776-4994-8aac-b252fdec89aa
 # ╟─d333c8c3-175f-473d-b5c4-0b38735ce1c6
+# ╟─b694c1ba-1eb0-41c1-8122-7b8552c3e645
 # ╟─58d066e2-45df-44e0-8473-9ce30a121016
-# ╠═f4389c7a-4220-4612-a27d-095da4bacfaf
+# ╟─13659fc1-60f5-43ac-a927-9ed1b7bbc566
+# ╟─c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
+# ╟─f4389c7a-4220-4612-a27d-095da4bacfaf
 # ╠═ac704811-f1b1-455c-991d-4ede5671c39e
-# ╠═c1db0440-9bc8-4a05-9cb2-2702da002917
-# ╠═b9668aa9-fcc7-4ca4-8603-33ec8aeafe93
+# ╟─c1db0440-9bc8-4a05-9cb2-2702da002917
+# ╟─b9668aa9-fcc7-4ca4-8603-33ec8aeafe93
 # ╠═94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
 # ╟─50b97718-9f0d-49e0-b930-e519405955f1
 # ╟─2a7ffe34-3c60-47f4-9be2-8638303d68eb
@@ -1210,9 +1250,10 @@ version = "0.9.1+5"
 # ╟─e1811cbc-a8c4-46f7-a362-fdbf8ab89cc2
 # ╟─3250b0a5-606a-4aab-bc23-2ee69c1593bf
 # ╟─cb14c520-ef2b-4f77-ae02-029415bbc049
-# ╠═87856447-dfd7-4569-93b3-eb1a1da10987
 # ╠═098905f0-781a-49f2-89d5-a447841da77a
-# ╠═d2d20a03-6740-4b55-b971-0240156b6aa2
+# ╟─b47ba5a9-00e8-41ee-a156-c8642e537224
+# ╟─87856447-dfd7-4569-93b3-eb1a1da10987
+# ╟─d2d20a03-6740-4b55-b971-0240156b6aa2
 # ╟─58eaad4b-68e9-438d-beea-5c416a9fd2ae
 # ╠═92f18efe-cacc-4a4c-98f6-0965db071e36
 # ╠═2d4d0a0c-be8a-4d65-96c9-f702d562865b
