@@ -104,19 +104,32 @@ end
 # ╔═╡ ac704811-f1b1-455c-991d-4ede5671c39e
 step(mechanics..., 0.5, 0.5, :slow)
 
+# ╔═╡ 1854dc96-144a-4465-914e-5316263d8240
+plot_with_size(x_max, t_max) = 
+	plot(	xlim=[0, x_max],
+			ylim=[0, t_max], 
+			aspectratio=:equal, 
+			xlabel="x",
+			ylabel="t")
+
+# ╔═╡ 9177fb93-4785-496d-99ea-0c273fc3b3f1
+plot_with_size!(x_max, t_max) = 
+	plot!(	xlim=[0, x_max],
+			ylim=[0, t_max], 
+			aspectratio=:equal, 
+			xlabel="x",
+			ylabel="t")
+
 # ╔═╡ c1db0440-9bc8-4a05-9cb2-2702da002917
-function draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
+function draw_next_step!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
 	if a == :both
-		draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :fast)
-		return draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow)
+		draw_next_step!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :fast)
+		return draw_next_step!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow)
 	end
 	color = a == :fast ? :blue : :yellow
 	scatter!([x], [t], 
-		xlimit=[0, x_max], 
-		ylimit=[0, t_max], 
 		markersize=2, 
-		color=:black, 
-		aspect_ratio=:equal)
+		color=:black)
 	δ, τ = a == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
 	δ, τ = δ + x, τ + t
 	plot!(Shape([δ - ϵ1, δ - ϵ1, δ + ϵ1, δ + ϵ1], 
@@ -129,26 +142,21 @@ function draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_s
 end
 
 # ╔═╡ b9668aa9-fcc7-4ca4-8603-33ec8aeafe93
-function draw_walk!(x_max, t_max, xs, ts, actions)
+function draw_walk!(xs, ts, actions)
 	linecolors = [a == :fast ? :blue : :yellow for a in actions]
 	push!(linecolors, :red)
 	plot!(xs, ts,
-		xlimit=[0, x_max],
-		ylimit=[0, t_max],
 		markershape=:circle,
 		markersize=2,
 		markercolor=:black,
-		aspect_ratio=:equal,
 		linecolor=linecolors,
-		xlabel="x",
-		ylabel="t",
 		legend=nothing)
 end
 
 # ╔═╡ 94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
 begin
-	plot()
-	draw_next_step!(x_max, t_max, mechanics..., 0.1, 0.23, :both)
+	plot_with_size(x_max, t_max)
+	draw_next_step!(mechanics..., 0.1, 0.23, :both)
 end
 
 # ╔═╡ 50b97718-9f0d-49e0-b930-e519405955f1
@@ -206,9 +214,9 @@ end
 # ╔═╡ 3250b0a5-606a-4aab-bc23-2ee69c1593bf
 begin
 	fast, slow
-	plot()
-	draw_walk!(x_max, t_max, xs, ts, actions[2:end])
-	draw_next_step!(x_max, t_max, mechanics..., last(xs), last(ts), :both)
+	plot_with_size(x_max, t_max)
+	draw_walk!(xs, ts, actions[2:end])
+	draw_next_step!(mechanics..., last(xs), last(ts), :both)
 end
 
 # ╔═╡ cb14c520-ef2b-4f77-ae02-029415bbc049
@@ -266,8 +274,8 @@ begin
 	walk_again
 	xs′, ts′, actions′, total_cost′, winner′ = 
 		take_walk(cost_fast, cost_slow, x_max, t_max, mechanics..., policy, unlucky=unlucky)
-	plot()
-	draw_walk!(x_max, t_max, xs′, ts′, actions′)
+	plot_with_size(x_max, t_max)
+	draw_walk!(xs′, ts′, actions′)
 end
 
 # ╔═╡ 58eaad4b-68e9-438d-beea-5c416a9fd2ae
@@ -1231,7 +1239,7 @@ version = "0.9.1+5"
 # ╔═╡ Cell order:
 # ╠═31af0db2-ab6b-11ec-3677-6d36ee7e97df
 # ╠═53f82db0-b7eb-4af3-8b43-eb5c087bb409
-# ╠═06ba8aa1-7664-47d9-b0c3-432cb3f29c05
+# ╟─06ba8aa1-7664-47d9-b0c3-432cb3f29c05
 # ╟─53da05d1-f776-4994-8aac-b252fdec89aa
 # ╟─d333c8c3-175f-473d-b5c4-0b38735ce1c6
 # ╟─b694c1ba-1eb0-41c1-8122-7b8552c3e645
@@ -1240,9 +1248,11 @@ version = "0.9.1+5"
 # ╟─c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
 # ╟─f4389c7a-4220-4612-a27d-095da4bacfaf
 # ╠═ac704811-f1b1-455c-991d-4ede5671c39e
+# ╟─1854dc96-144a-4465-914e-5316263d8240
+# ╟─9177fb93-4785-496d-99ea-0c273fc3b3f1
 # ╟─c1db0440-9bc8-4a05-9cb2-2702da002917
 # ╟─b9668aa9-fcc7-4ca4-8603-33ec8aeafe93
-# ╠═94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
+# ╟─94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
 # ╟─50b97718-9f0d-49e0-b930-e519405955f1
 # ╟─2a7ffe34-3c60-47f4-9be2-8638303d68eb
 # ╟─42990e88-4926-48f4-bf08-9b1142c47ff7

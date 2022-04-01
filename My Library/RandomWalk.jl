@@ -22,18 +22,31 @@ function step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a; unlucky=fal
 end
 
 
-function draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
+plot_with_size(x_max, t_max) = 
+	plot(	xlim=[0, x_max],
+			ylim=[0, t_max], 
+			aspectratio=:equal, 
+			xlabel="x",
+			ylabel="t")
+
+
+plot_with_size!(x_max, t_max) = 
+	plot!(	xlim=[0, x_max],
+			ylim=[0, t_max], 
+			aspectratio=:equal, 
+			xlabel="x",
+			ylabel="t")
+
+
+function draw_next_step!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
 	if a == :both
-		draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :fast)
-		return draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow)
+		draw_next_step!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :fast)
+		return draw_next_step!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow)
 	end
 	color = a == :fast ? :blue : :yellow
 	scatter!([x], [t], 
-		xlimit=[0, x_max], 
-		ylimit=[0, t_max], 
 		markersize=2, 
-		color=:black, 
-		aspect_ratio=:equal)
+		color=:black)
 	δ, τ = a == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
 	δ, τ = δ + x, τ + t
 	plot!(Shape([δ - ϵ1, δ - ϵ1, δ + ϵ1, δ + ϵ1], 
@@ -46,19 +59,14 @@ function draw_next_step!(x_max, t_max, ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_s
 end
 
 
-function draw_walk!(x_max, t_max, xs, ts, actions)
+function draw_walk!(xs, ts, actions)
 	linecolors = [a == :fast ? :blue : :yellow for a in actions]
 	push!(linecolors, :red)
 	plot!(xs, ts,
-		xlimit=[0, x_max],
-		ylimit=[0, t_max],
 		markershape=:circle,
 		markersize=2,
 		markercolor=:black,
-		aspect_ratio=:equal,
 		linecolor=linecolors,
-		xlabel="x",
-		ylabel="t",
 		legend=nothing)
 end
 
@@ -81,29 +89,28 @@ function take_walk(	cost_slow, cost_fast,
 		total_cost += a == :fast ? cost_fast : cost_slow
 	end
 
-	(xs, ts, actions, total_cost, winner=last(ts) < t_max)
+	xs, ts, actions, total_cost, last(ts) < t_max
 end
 
 
-
 function evaluate(cost_slow, cost_fast, 
-					x_max, t_max, 
-					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
-					policy::Function; iterations=1000)
-	losses = 0
-	costs = []
-	for i in 1:iterations
-		_, _, _, cost, winner = take_walk(cost_slow, cost_fast, 
-					x_max, t_max, 
-					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
-					policy)
-		if !winner
-			losses += 1
-		end
-		push!(costs, cost)
-	end
-	perfect = losses == 0
-	average_wins = (iterations - losses) / iterations
-	average_cost = sum(costs)/length(costs)
-	(;perfect, average_wins, average_cost)
+	x_max, t_max, 
+	ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
+	policy::Function; iterations=1000)
+losses = 0
+costs = []
+for i in 1:iterations
+_, _, _, cost, winner = take_walk(cost_slow, cost_fast, 
+	x_max, t_max, 
+	ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
+	policy)
+if !winner
+losses += 1
+end
+push!(costs, cost)
+end
+perfect = losses == 0
+average_wins = (iterations - losses) / iterations
+average_cost = sum(costs)/length(costs)
+(;perfect, average_wins, average_cost)
 end

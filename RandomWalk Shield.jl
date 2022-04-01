@@ -469,8 +469,8 @@ md"""
 
 # ╔═╡ a831bacb-9f95-4c94-b6ea-6e84351da678
 begin
-	plot()
-	draw_next_step!(1, 1, mechanics..., x, t, :both)
+	plot_with_size(x_max, y_max)
+	draw_next_step!(mechanics..., x, t, :both)
 end
 
 # ╔═╡ 3a9bff13-e75e-4400-aefb-6ac004ca9d2e
@@ -510,8 +510,9 @@ call(() -> begin
 		set_value!(Square(grid, ix, it), 2)
 	end
 	draw(grid, colors=[:white, :wheat, :red], show_grid=true)
+	#plot_with_size!(x_max, t_max)
 	draw_barbaric_transition!(mechanics..., square, :slow, resolution)
-	draw_next_step!(1, 1, mechanics..., x, t, :slow)
+	draw_next_step!(mechanics..., x, t, :slow)
 end)
 
 # ╔═╡ fc2dafd2-aea5-49c9-92d3-f7b478be3be0
@@ -522,9 +523,9 @@ show step: $(@bind show_step CheckBox(default=true))
 # ╔═╡ cb460b6d-aa08-4472-bab9-737c89e2224f
 begin
 	shieldplot = draw(shield, colors=colors, show_grid=true)
-	plot!(limit=(0, 1))
+	plot_with_size!(x_max, y_max)
 	if show_step
-		draw_next_step!(1.2, 1.2, mechanics..., x, t, :both)
+		draw_next_step!(mechanics..., x, t, :both)
 	end
 	shieldplot
 end
@@ -555,7 +556,8 @@ xs, ts, actions, total_cost, winner =
 # ╔═╡ 7c911e4c-e132-473e-a579-c47c0b348e6c
 begin
 	draw(shield, colors=colors)
-	draw_walk!(1, 1, xs, ts, actions)
+	draw_walk!(xs, ts, actions)
+	plot_with_size!(x_max, y_max)
 	plot!(title="Worst-case walk under shield")
 end
 
@@ -568,10 +570,11 @@ begin
 		@animate for i in 1:10
 			call(() -> begin 
 				draw(shield, colors=colors)
+				plot_with_size!(x_max, y_max)
 				xs, ts, actions, total_cost, winner =  take_walk(	
 					cost_slow, cost_fast, 1, 1, mechanics..., 
 					shielded_layabout, unlucky=false)
-				draw_walk!(1, 1, xs, ts, actions)
+				draw_walk!(xs, ts, actions)
 			end)
 		end
 	gif(shielded_walks_animation, "shielded_walks.gif", fps=fps)
@@ -1504,7 +1507,7 @@ version = "0.9.1+5"
 # ╟─6ad63c50-77eb-4fd7-8669-085adebc0ddc
 # ╟─4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
 # ╟─85863a3c-599a-43a5-a58c-4625b1059151
-# ╟─a831bacb-9f95-4c94-b6ea-6e84351da678
+# ╠═a831bacb-9f95-4c94-b6ea-6e84351da678
 # ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
 # ╟─1d555d13-9b81-48e7-a74c-8e2ee388bfc2
 # ╟─4165c794-4c2f-4d37-8a85-d1c86a32fd6c
@@ -1542,13 +1545,13 @@ version = "0.9.1+5"
 # ╠═b00bbbb7-6587-4664-ae82-82c081f66f37
 # ╟─be4a5a08-79b8-4ac9-8396-db5d62eb3f97
 # ╟─fc2dafd2-aea5-49c9-92d3-f7b478be3be0
-# ╠═cb460b6d-aa08-4472-bab9-737c89e2224f
+# ╟─cb460b6d-aa08-4472-bab9-737c89e2224f
 # ╟─896993db-f8d4-492b-bff1-463658587a83
 # ╠═397ca36e-bd4a-45da-9f26-573c10a938fa
 # ╠═97962767-65eb-4b22-80bb-e352ec60e3e8
 # ╠═6387760b-9c16-4ab0-8229-07f084d2b050
-# ╠═7c911e4c-e132-473e-a579-c47c0b348e6c
+# ╟─7c911e4c-e132-473e-a579-c47c0b348e6c
 # ╠═4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
-# ╠═45aabb2b-6a8f-462c-b082-7d7675676d64
+# ╟─45aabb2b-6a8f-462c-b082-7d7675676d64
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
