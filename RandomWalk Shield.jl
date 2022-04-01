@@ -319,6 +319,12 @@ function get_new_value(fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, squ
 		return BAD_SQUARE
 	end
 
+	Ixl, Ixu, Itl, Itu = bounds(square)
+
+	if Ixl >= 1 && Itu <= 1 
+		return NEUTRAL_SQUARE
+	end
+
 	# Check if a bad square is reachable while going slow.
 	slow_bad = false
 	for (ix, iy) in slow[square.ix, square.iy]
@@ -518,7 +524,7 @@ begin
 	shieldplot = draw(shield, colors=colors, show_grid=true)
 	plot!(limit=(0, 1))
 	if show_step
-		draw_next_step!(1, 1, mechanics..., x, t, :both)
+		draw_next_step!(1.2, 1.2, mechanics..., x, t, :both)
 	end
 	shieldplot
 end
@@ -1523,7 +1529,7 @@ version = "0.9.1+5"
 # ╟─3633ff5e-19a1-4272-8c7c-5c1a3f00cc72
 # ╠═4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
 # ╟─ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
-# ╟─795c5353-fdeb-41c6-8502-2aa70689dcc4
+# ╠═795c5353-fdeb-41c6-8502-2aa70689dcc4
 # ╟─340dcc48-3787-4894-85aa-0d13873d19db
 # ╠═c2add912-1322-4f34-b9d5-e2284f631b3c
 # ╠═c96bd5bc-6f4a-43db-a3d0-892b0f960cc4
