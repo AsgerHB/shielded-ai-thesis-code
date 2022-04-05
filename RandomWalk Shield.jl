@@ -539,7 +539,7 @@ function shield_action(shield, x, t, action)
 		return action
 	end
     square_value = get_value(box(shield, x, t))
-	if square_value == FAST_SQUARE
+	if square_value == FAST_SQUARE || square_value == BAD_SQUARE
 		return :fast
 	else
 		return action
