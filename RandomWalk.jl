@@ -65,12 +65,14 @@ x_max, t_max = _borders.x_max, _borders.t_max;
 md"""
 cost\_slow = $(Child("cost_slow", NumberField(0:1:100, default=1)))
 cost\_fast = $(Child("cost_fast", NumberField(0:1:100, default=3)))
+
+cost\_loss = $(Child("cost_loss", NumberField(0:1:100, default=15)))
 """
 	
 end
 
 # ╔═╡ 13659fc1-60f5-43ac-a927-9ed1b7bbc566
-cost_slow, cost_fast = _costs.cost_slow, _costs.cost_fast;
+cost_slow, cost_fast, cost_loss = _costs.cost_slow, _costs.cost_fast, _costs.cost_loss;
 
 # ╔═╡ c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
 md"""
@@ -248,7 +250,7 @@ end
 @bind walk_again Button("Walk again")
 
 # ╔═╡ 87856447-dfd7-4569-93b3-eb1a1da10987
-function take_walk(	cost_slow, cost_fast, 
+function take_walk(	cost_slow, cost_fast, cost_loss,
 					x_max, t_max, 
 					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
 					policy::Function;
@@ -266,14 +268,20 @@ function take_walk(	cost_slow, cost_fast,
 		total_cost += a == :fast ? cost_fast : cost_slow
 	end
 
-	xs, ts, actions, total_cost, last(ts) < t_max
+	winner = last(ts) < t_max
+
+	if !winner
+		total_cost += cost_loss
+	end
+
+	(;xs, ts, actions, total_cost, winner)
 end
 
 # ╔═╡ d2d20a03-6740-4b55-b971-0240156b6aa2
 begin
 	walk_again
 	xs′, ts′, actions′, total_cost′, winner′ = 
-		take_walk(cost_fast, cost_slow, x_max, t_max, mechanics..., policy, unlucky=unlucky)
+		take_walk(cost_fast, cost_slow, cost_loss, x_max, t_max, mechanics..., policy, unlucky=unlucky)
 	plot_with_size(x_max, t_max)
 	draw_walk!(xs′, ts′, actions′)
 end
@@ -293,14 +301,14 @@ cost: $(total_cost′)
 end
 
 # ╔═╡ 92f18efe-cacc-4a4c-98f6-0965db071e36
-function evaluate(cost_slow, cost_fast, 
+function evaluate(	cost_slow, cost_fast, cost_loss, 
 					x_max, t_max, 
 					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
 					policy::Function; iterations=1000)
 	losses = 0
 	costs = []
 	for i in 1:iterations
-		_, _, _, cost, winner = take_walk(cost_slow, cost_fast, 
+		_, _, _, cost, winner = take_walk(cost_slow, cost_fast, cost_loss,
 					x_max, t_max, 
 					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
 					policy)
@@ -316,7 +324,7 @@ function evaluate(cost_slow, cost_fast,
 end
 
 # ╔═╡ 2d4d0a0c-be8a-4d65-96c9-f702d562865b
-a, b, c = evaluate(cost_slow, cost_fast, x_max, t_max, mechanics..., policy, iterations=10000)
+a, b, c = evaluate(cost_slow, cost_fast, cost_loss, x_max, t_max, mechanics..., policy, iterations=10000)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1244,8 +1252,8 @@ version = "0.9.1+5"
 # ╟─d333c8c3-175f-473d-b5c4-0b38735ce1c6
 # ╟─b694c1ba-1eb0-41c1-8122-7b8552c3e645
 # ╟─58d066e2-45df-44e0-8473-9ce30a121016
-# ╟─13659fc1-60f5-43ac-a927-9ed1b7bbc566
-# ╟─c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
+# ╠═13659fc1-60f5-43ac-a927-9ed1b7bbc566
+# ╠═c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
 # ╟─f4389c7a-4220-4612-a27d-095da4bacfaf
 # ╠═ac704811-f1b1-455c-991d-4ede5671c39e
 # ╟─1854dc96-144a-4465-914e-5316263d8240

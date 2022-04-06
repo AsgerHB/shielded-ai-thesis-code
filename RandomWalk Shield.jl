@@ -59,12 +59,14 @@ mechanics = (;_mechanics.ϵ1, _mechanics.ϵ2, _mechanics.δ_fast, _mechanics.δ_
 md"""
 cost\_slow = $(Child("cost_slow", NumberField(0:1:100, default=1)))
 cost\_fast = $(Child("cost_fast", NumberField(0:1:100, default=3)))
+
+cost\_loss = $(Child("cost_loss", NumberField(0:1:100, default=15)))
 """
 	
 end
 
 # ╔═╡ 85863a3c-599a-43a5-a58c-4625b1059151
-cost_slow, cost_fast = _costs.cost_slow, _costs.cost_fast;
+cost_slow, cost_fast, cost_loss = _costs.cost_slow, _costs.cost_fast, _costs.cost_loss;
 
 # ╔═╡ 779f0f70-ce94-4a9e-af26-3b06406aa036
 md"""
@@ -551,7 +553,7 @@ shielded_layabout = (x, t) -> shield_action(shield, x, t, :slow);
 
 # ╔═╡ 6387760b-9c16-4ab0-8229-07f084d2b050
 xs, ts, actions, total_cost, winner = 
-	take_walk(cost_slow, cost_fast, 1, 1, mechanics..., shielded_layabout, unlucky=true)
+	take_walk(cost_slow, cost_fast, cost_loss, 1, 1, mechanics..., shielded_layabout, unlucky=true)
 
 # ╔═╡ 7c911e4c-e132-473e-a579-c47c0b348e6c
 begin
@@ -562,17 +564,17 @@ begin
 end
 
 # ╔═╡ 4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
-evaluate(cost_slow, cost_fast, 1, 1, mechanics..., shielded_layabout)
+evaluate(cost_slow, cost_fast, cost_loss, 1, 1, mechanics..., shielded_layabout, iterations=100000)
 
 # ╔═╡ 45aabb2b-6a8f-462c-b082-7d7675676d64
 begin
 	shielded_walks_animation = 
-		@animate for i in 1:10
+		@animate for i in 1:50
 			call(() -> begin 
 				draw(shield, colors=colors)
 				plot_with_size!(x_max, y_max)
 				xs, ts, actions, total_cost, winner =  take_walk(	
-					cost_slow, cost_fast, 1, 1, mechanics..., 
+					cost_slow, cost_fast, cost_loss, 1, 1, mechanics..., 
 					shielded_layabout, unlucky=false)
 				draw_walk!(xs, ts, actions)
 			end)
@@ -1525,7 +1527,7 @@ version = "0.9.1+5"
 # ╟─d85de62a-c308-4c46-9a49-5ceb37a586ba
 # ╟─fe6341e8-2a52-4142-8532-52c118358c5e
 # ╟─d4e0a0aa-b34e-4801-9819-ea51f5b9df2a
-# ╟─886e8c1f-83d1-4aed-beb8-d0d73460348f
+# ╠═886e8c1f-83d1-4aed-beb8-d0d73460348f
 # ╟─9a0c0fbe-c450-4b42-a320-5868756a2f3d
 # ╟─a25d8cf1-1b47-4f8d-b4f7-f4e77af0ff20
 # ╟─24d292a0-ac39-497e-b520-8fd3931369fc

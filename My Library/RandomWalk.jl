@@ -71,7 +71,7 @@ function draw_walk!(xs, ts, actions)
 end
 
 
-function take_walk(	cost_slow, cost_fast, 
+function take_walk(	cost_slow, cost_fast, cost_loss,
 					x_max, t_max, 
 					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
 					policy::Function;
@@ -89,18 +89,24 @@ function take_walk(	cost_slow, cost_fast,
 		total_cost += a == :fast ? cost_fast : cost_slow
 	end
 
-	xs, ts, actions, total_cost, last(ts) < t_max
+	winner = last(ts) < t_max
+
+	if !winner
+		total_cost += cost_loss
+	end
+
+	(;xs, ts, actions, total_cost, winner)
 end
 
 
-function evaluate(cost_slow, cost_fast, 
+function evaluate(	cost_slow, cost_fast, cost_loss, 
 	x_max, t_max, 
 	ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
 	policy::Function; iterations=1000)
 losses = 0
 costs = []
 for i in 1:iterations
-_, _, _, cost, winner = take_walk(cost_slow, cost_fast, 
+_, _, _, cost, winner = take_walk(cost_slow, cost_fast, cost_loss,
 	x_max, t_max, 
 	ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
 	policy)
