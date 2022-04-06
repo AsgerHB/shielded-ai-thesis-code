@@ -49,6 +49,20 @@ md"""
 	
 end
 
+# ╔═╡ 779f0f70-ce94-4a9e-af26-3b06406aa036
+md"""
+### Configure grid
+`G = ` $(@bind G NumberField(0.01:0.01:2, default=0.2))
+
+`x ∈  [ ` $(@bind x_min NumberField(-100:0.1:100, default=0))
+	   `;`
+		$(@bind x_max NumberField(-100:0.1:100, default=1.2)) `]`
+
+`y ∈  [` $(@bind y_min NumberField(-100:0.1:100, default=0))
+	   `;`
+		$(@bind y_max NumberField(-100:0.1:100, default=1.2)) `]`
+"""
+
 # ╔═╡ 6ad63c50-77eb-4fd7-8669-085adebc0ddc
 mechanics = (;_mechanics.ϵ1, _mechanics.ϵ2, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
 
@@ -67,20 +81,6 @@ end
 
 # ╔═╡ 85863a3c-599a-43a5-a58c-4625b1059151
 cost_slow, cost_fast, cost_loss = _costs.cost_slow, _costs.cost_fast, _costs.cost_loss;
-
-# ╔═╡ 779f0f70-ce94-4a9e-af26-3b06406aa036
-md"""
-### Configure grid
-`G = ` $(@bind G NumberField(0.01:0.01:2, default=0.2))
-
-`x ∈  [ ` $(@bind x_min NumberField(-100:0.1:100, default=0))
-	   `;`
-		$(@bind x_max NumberField(-100:0.1:100, default=1.2)) `]`
-
-`y ∈  [` $(@bind y_min NumberField(-100:0.1:100, default=0))
-	   `;`
-		$(@bind y_max NumberField(-100:0.1:100, default=1.2)) `]`
-"""
 
 # ╔═╡ f8607cc8-30e5-454e-acec-6d0050a48904
 begin
@@ -206,37 +206,40 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 	return hm
 end
 
+# ╔═╡ a2e85767-6f31-4c1a-a174-3bc60faf0d1b
+function cover(grid, x_lower, x_upper, y_lower, y_upper)
+	ix_lower = floor((x_lower - grid.x_min)/grid.G) + 1 # Julia indexes start at 1
+	ix_upper = floor((x_upper - grid.x_min)/grid.G) + 1
+	
+	iy_lower = floor((y_lower - grid.y_min)/grid.G) + 1
+	iy_upper = floor((y_upper - grid.y_min)/grid.G) + 1
+	
+	# Discard squares outside the grid dimensions
+	ix_lower = max(ix_lower, 1)
+	ix_upper = min(ix_upper, grid.x_count)
+	
+	iy_lower = max(iy_lower, 1)
+	iy_upper = min(iy_upper, grid.y_count)
+	
+	[ (ix, iy)
+		for ix in ix_lower:ix_upper
+		for iy in iy_lower:iy_upper
+	]
+end
+
 # ╔═╡ 886e8c1f-83d1-4aed-beb8-d0d73460348f
 """Get a list of grid indexes representing reachable squares. 
 
-I could have used proper squares for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
+I could have used the square datatype for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
 """
-function get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action, resolution)
+function get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action)
 	Ixl, Ixu, Itl, Itu = bounds(square)
-	result = []
-	δ = action == :fast ? δ_fast : δ_slow 
-	τ = action == :fast ? τ_fast : τ_slow
-	stride = square.grid.G/resolution # Distance between (x,y)-points
-	for x in Ixl:stride:(Ixu)
-		for t in Itl:stride:(Itu)
-			for offset_x in (δ - ϵ1):(ϵ1/resolution):(δ + ϵ1)
-				for offset_t in (τ - ϵ2):(ϵ2/resolution):(τ + ϵ2)
-					xʹ = x + offset_x
-					tʹ = t + offset_t
-					if !(square.grid.x_min <= xʹ <= square.grid.x_max) || !(square.grid.y_min <= tʹ <= square.grid.y_max)
-						continue
-					end
-					
-					square′ = box(square.grid, xʹ, tʹ)
-					ix_iy = (square′.ix, square′.iy)
-					if ix_iy ∉ result
-						push!(result, ix_iy)
-					end
-				end
-			end
-		end
-	end
-	result
+	δ, τ = action == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
+	cover(	grid, 
+			Ixl + δ - ϵ1, 
+			Ixu + δ + ϵ1, 
+			Itl + τ - ϵ1, 
+			Itu + τ + ϵ1)
 end
 
 # ╔═╡ 9a0c0fbe-c450-4b42-a320-5868756a2f3d
@@ -294,19 +297,22 @@ end
 
 The same goes for `slow` just with the :slow action. 
 """
-function get_transitions(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, grid, resolution)
+function get_transitions(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, grid)
 	fast = Matrix{Vector{Any}}(undef, grid.x_count, grid.y_count)
 	slow = Matrix{Vector{Any}}(undef, grid.x_count, grid.y_count)
 	
 	for ix in 1:grid.x_count
 		for iy in 1:grid.y_count
 			square = Square(grid, ix, iy)
-			fast[ix, iy] = get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square, :fast, resolution)
-			slow[ix, iy] = get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square, :slow, resolution)
+			fast[ix, iy] = get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square, :fast)
+			slow[ix, iy] = get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square, :slow)
 		end
 	end
 	fast, slow
 end
+
+# ╔═╡ 4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
+fast, slow = get_transitions(mechanics..., grid);
 
 # ╔═╡ 795c5353-fdeb-41c6-8502-2aa70689dcc4
 # TODO: This assumes an ordering of actions where if one action does not lead to a bad state, neither does the ones after it
@@ -422,17 +428,12 @@ end
 # ╔═╡ 18b843fd-2ab8-4380-a700-240115dd23da
 md"""
 #### Shield config
-`resolution = ` $(@bind resolution NumberField(1:1:100, default=1))
-
 `max_steps =` $(@bind max_steps NumberField(0:1:1000, default=100))
 
 `animate ` $(@bind animate html"<input type=checkbox>")
 
 `fps =` $(@bind fps NumberField(0:1:1000, default=3))
 """
-
-# ╔═╡ 4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
-fast, slow = get_transitions(mechanics..., grid, resolution);
 
 # ╔═╡ 629cc812-4972-4011-a9c7-83e1cdff3d07
 
@@ -461,6 +462,11 @@ begin
 	"Stopped before completion: $finished_early"
 end
 
+# ╔═╡ fc2dafd2-aea5-49c9-92d3-f7b478be3be0
+md"""
+show step: $(@bind show_step CheckBox(default=true))
+"""
+
 # ╔═╡ be4a5a08-79b8-4ac9-8396-db5d62eb3f97
 md"""
 #### Example values for x and t
@@ -477,6 +483,26 @@ end
 
 # ╔═╡ 3a9bff13-e75e-4400-aefb-6ac004ca9d2e
 square = box(grid, x, t)
+
+# ╔═╡ ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
+call(() -> begin
+	action = :fast
+	transitions = action == :fast ? fast : slow
+	reachable_test = transitions[square.ix, square.iy]
+	grid = Grid(G, x_min, x_max, x_min, x_max)
+	initialize!(grid, init_func)
+	for (ix, it) in reachable_test
+		set_value!(Square(grid, ix, it), 2)
+	end
+	draw(grid, colors=[:white, :wheat, :red], show_grid=true)
+	#plot_with_size!(x_max, t_max)
+	Ixl, Ixu, Itl, Itu = bounds(square)
+	result = nothing
+	for (x, t) in [(x, t) for x in (Ixl, Ixu) for t in (Itl, Itu)]
+		result = draw_next_step!(mechanics..., x, t, action)
+	end
+	result
+end)
 
 # ╔═╡ c2add912-1322-4f34-b9d5-e2284f631b3c
 get_new_value(fast, slow, square)
@@ -502,25 +528,6 @@ begin
 	end
 	(;slow_bad, fast_bad)
 end
-
-# ╔═╡ ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
-call(() -> begin
-	reachable_test = slow[square.ix, square.iy]
-	grid = Grid(G, x_min, x_max, x_min, x_max)
-	initialize!(grid, init_func)
-	for (ix, it) in reachable_test
-		set_value!(Square(grid, ix, it), 2)
-	end
-	draw(grid, colors=[:white, :wheat, :red], show_grid=true)
-	#plot_with_size!(x_max, t_max)
-	draw_barbaric_transition!(mechanics..., square, :slow, resolution)
-	draw_next_step!(mechanics..., x, t, :slow)
-end)
-
-# ╔═╡ fc2dafd2-aea5-49c9-92d3-f7b478be3be0
-md"""
-show step: $(@bind show_step CheckBox(default=true))
-"""
 
 # ╔═╡ cb460b6d-aa08-4472-bab9-737c89e2224f
 begin
@@ -1506,14 +1513,14 @@ version = "0.9.1+5"
 # ╠═3611edfd-a4cb-4632-9d94-2fe71e2195ae
 # ╟─5229f8dd-ca19-4ed0-a9d2-da1691f79089
 # ╟─2c05e965-545f-43c1-b0b0-0a81e08c6293
+# ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
 # ╟─6ad63c50-77eb-4fd7-8669-085adebc0ddc
 # ╟─4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
 # ╟─85863a3c-599a-43a5-a58c-4625b1059151
-# ╠═a831bacb-9f95-4c94-b6ea-6e84351da678
-# ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
+# ╟─a831bacb-9f95-4c94-b6ea-6e84351da678
 # ╟─1d555d13-9b81-48e7-a74c-8e2ee388bfc2
 # ╟─4165c794-4c2f-4d37-8a85-d1c86a32fd6c
-# ╟─f8607cc8-30e5-454e-acec-6d0050a48904
+# ╠═f8607cc8-30e5-454e-acec-6d0050a48904
 # ╟─d14ff7c8-742b-4eb2-aa04-5b1e88213f71
 # ╠═3a9bff13-e75e-4400-aefb-6ac004ca9d2e
 # ╟─d92581e2-3691-4bc8-9862-aff23a75fdcc
@@ -1527,14 +1534,15 @@ version = "0.9.1+5"
 # ╟─d85de62a-c308-4c46-9a49-5ceb37a586ba
 # ╟─fe6341e8-2a52-4142-8532-52c118358c5e
 # ╟─d4e0a0aa-b34e-4801-9819-ea51f5b9df2a
-# ╠═886e8c1f-83d1-4aed-beb8-d0d73460348f
+# ╟─886e8c1f-83d1-4aed-beb8-d0d73460348f
+# ╟─a2e85767-6f31-4c1a-a174-3bc60faf0d1b
 # ╟─9a0c0fbe-c450-4b42-a320-5868756a2f3d
 # ╟─a25d8cf1-1b47-4f8d-b4f7-f4e77af0ff20
 # ╟─24d292a0-ac39-497e-b520-8fd3931369fc
 # ╟─3633ff5e-19a1-4272-8c7c-5c1a3f00cc72
 # ╠═4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
-# ╟─ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
-# ╠═795c5353-fdeb-41c6-8502-2aa70689dcc4
+# ╠═ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
+# ╟─795c5353-fdeb-41c6-8502-2aa70689dcc4
 # ╟─340dcc48-3787-4894-85aa-0d13873d19db
 # ╠═c2add912-1322-4f34-b9d5-e2284f631b3c
 # ╠═c96bd5bc-6f4a-43db-a3d0-892b0f960cc4
@@ -1545,8 +1553,8 @@ version = "0.9.1+5"
 # ╟─629cc812-4972-4011-a9c7-83e1cdff3d07
 # ╟─3c95eb29-4f26-4677-bccc-8dc98774a894
 # ╠═b00bbbb7-6587-4664-ae82-82c081f66f37
-# ╟─be4a5a08-79b8-4ac9-8396-db5d62eb3f97
 # ╟─fc2dafd2-aea5-49c9-92d3-f7b478be3be0
+# ╟─be4a5a08-79b8-4ac9-8396-db5d62eb3f97
 # ╟─cb460b6d-aa08-4472-bab9-737c89e2224f
 # ╟─896993db-f8d4-492b-bff1-463658587a83
 # ╠═397ca36e-bd4a-45da-9f26-573c10a938fa
