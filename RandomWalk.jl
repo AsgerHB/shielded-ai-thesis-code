@@ -44,17 +44,15 @@ end
 mechanics = (;_mechanics.ϵ, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
 
 # ╔═╡ d333c8c3-175f-473d-b5c4-0b38735ce1c6
-@bind _borders PlutoUI.combine() do Child
-
 md"""
-x\_max = $(Child("x_max", NumberField(0:0.01:10, default=1)))
-t\_max = $(Child("t_max", NumberField(0:0.01:10, default=1)))
+t\_lim = $(@bind t_lim NumberField(0:0.1:10000, default=1))
+x\_lim = $(@bind x_lim NumberField(0:0.1:10000, default=1))
 """
-	
-end
 
-# ╔═╡ b694c1ba-1eb0-41c1-8122-7b8552c3e645
-x_max, t_max = _borders.x_max, _borders.t_max;
+# ╔═╡ 57478173-1f1c-43f3-a727-c776b2e6135e
+md"""
+cost\_loss = $(@bind cost_loss NumberField(0:1:100, default=15))
+"""
 
 # ╔═╡ 58d066e2-45df-44e0-8473-9ce30a121016
 
@@ -66,11 +64,6 @@ cost\_fast = $(Child("cost_fast", NumberField(0:1:100, default=3)))
 """
 	
 end
-
-# ╔═╡ 57478173-1f1c-43f3-a727-c776b2e6135e
-md"""
-cost\_loss = $(@bind cost_loss NumberField(0:1:100, default=15))
-"""
 
 # ╔═╡ 35be6f4d-2397-4012-8034-5582aba63648
 function fixed_cost(x, t, action)
@@ -164,7 +157,7 @@ end
 
 # ╔═╡ 94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
 begin
-	plot_with_size(x_max, t_max)
+	plot_with_size(x_lim, t_lim)
 	draw_next_step!(mechanics..., 0.1, 0.23, :both)
 end
 
@@ -223,7 +216,7 @@ end
 # ╔═╡ 3250b0a5-606a-4aab-bc23-2ee69c1593bf
 begin
 	fast, slow
-	plot_with_size(x_max, t_max)
+	plot_with_size(x_lim, t_lim)
 	draw_walk!(xs, ts, actions[2:end])
 	draw_next_step!(mechanics..., last(xs), last(ts), :both)
 end
@@ -231,12 +224,12 @@ end
 # ╔═╡ cb14c520-ef2b-4f77-ae02-029415bbc049
 begin
 	fast, slow
-	if last(ts) >= t_max
+	if last(ts) >= t_lim
 md"""
 ## You lose		
 cost: $(sum(cs))
 """
-	elseif last(xs) >= x_max
+	elseif last(xs) >= x_lim
 md"""
 ## Winner!
 cost: $(sum(cs))
@@ -288,7 +281,7 @@ end
 begin
 	walk_again
 	xs′, ts′, actions′, total_cost′, winner′ = 
-		take_walk(fixed_cost, cost_loss, x_max, t_max, mechanics..., policy, unlucky=unlucky)
+		take_walk(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., policy, unlucky=unlucky)
 	plot_with_size(x_max, t_max)
 	draw_walk!(xs′, ts′, actions′)
 end
@@ -331,7 +324,7 @@ function evaluate(	cost_function, cost_of_losing,
 end
 
 # ╔═╡ 2d4d0a0c-be8a-4d65-96c9-f702d562865b
-a, b, c = evaluate(fixed_cost, cost_loss, x_max, t_max, mechanics..., policy, iterations=10000)
+a, b, c = evaluate(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., policy, iterations=10000)
 
 # ╔═╡ e2d9b2a5-b6da-455f-9935-aac197646c9b
 function draw(policy::Function, x_max, t_max, G)
@@ -1270,7 +1263,6 @@ version = "0.9.1+5"
 # ╟─06ba8aa1-7664-47d9-b0c3-432cb3f29c05
 # ╟─53da05d1-f776-4994-8aac-b252fdec89aa
 # ╟─d333c8c3-175f-473d-b5c4-0b38735ce1c6
-# ╟─b694c1ba-1eb0-41c1-8122-7b8552c3e645
 # ╟─57478173-1f1c-43f3-a727-c776b2e6135e
 # ╟─58d066e2-45df-44e0-8473-9ce30a121016
 # ╠═35be6f4d-2397-4012-8034-5582aba63648
@@ -1295,7 +1287,7 @@ version = "0.9.1+5"
 # ╠═d2d20a03-6740-4b55-b971-0240156b6aa2
 # ╟─58eaad4b-68e9-438d-beea-5c416a9fd2ae
 # ╠═92f18efe-cacc-4a4c-98f6-0965db071e36
-# ╠═2d4d0a0c-be8a-4d65-96c9-f702d562865b
+# ╟─2d4d0a0c-be8a-4d65-96c9-f702d562865b
 # ╟─e2d9b2a5-b6da-455f-9935-aac197646c9b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
