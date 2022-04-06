@@ -71,14 +71,23 @@ mechanics = (;_mechanics.ϵ, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.
 md"""
 cost\_slow = $(Child("cost_slow", NumberField(0:1:100, default=1)))
 cost\_fast = $(Child("cost_fast", NumberField(0:1:100, default=3)))
-
-cost\_loss = $(Child("cost_loss", NumberField(0:1:100, default=15)))
 """
 	
 end
 
-# ╔═╡ 85863a3c-599a-43a5-a58c-4625b1059151
-cost_slow, cost_fast, cost_loss = _costs.cost_slow, _costs.cost_fast, _costs.cost_loss;
+# ╔═╡ fdedc5a6-6993-4d33-93b8-ef30e1bc6ee5
+md"""
+cost\_loss = $(@bind cost_loss NumberField(0:1:100, default=15))
+"""
+
+# ╔═╡ e27afbfe-a90d-4c60-b82a-9bfc007c39fb
+function fixed_cost(x, t, action)
+	if action == :fast
+		_costs.cost_fast
+	else
+		_costs.cost_slow
+	end
+end
 
 # ╔═╡ f8607cc8-30e5-454e-acec-6d0050a48904
 begin
@@ -558,7 +567,7 @@ shielded_layabout = (x, t) -> shield_action(shield, x, t, :slow);
 
 # ╔═╡ 6387760b-9c16-4ab0-8229-07f084d2b050
 xs, ts, actions, total_cost, winner = 
-	take_walk(cost_slow, cost_fast, cost_loss, 1, 1, mechanics..., shielded_layabout, unlucky=true)
+	take_walk(fixed_cost, cost_loss, 1, 1, mechanics..., shielded_layabout, unlucky=true)
 
 # ╔═╡ 7c911e4c-e132-473e-a579-c47c0b348e6c
 begin
@@ -569,7 +578,7 @@ begin
 end
 
 # ╔═╡ 4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
-evaluate(cost_slow, cost_fast, cost_loss, 1, 1, mechanics..., shielded_layabout, iterations=100000)
+evaluate(fixed_cost, cost_loss, 1, 1, mechanics..., shielded_layabout, iterations=100000)
 
 # ╔═╡ 45aabb2b-6a8f-462c-b082-7d7675676d64
 begin
@@ -579,7 +588,7 @@ begin
 				draw(shield, colors=colors)
 				plot_with_size!(x_max, y_max)
 				xs, ts, actions, total_cost, winner =  take_walk(	
-					cost_slow, cost_fast, cost_loss, 1, 1, mechanics..., 
+					fixed_cost, cost_loss, 1, 1, mechanics..., 
 					shielded_layabout, unlucky=false)
 				draw_walk!(xs, ts, actions)
 			end)
@@ -1514,7 +1523,8 @@ version = "0.9.1+5"
 # ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
 # ╟─6ad63c50-77eb-4fd7-8669-085adebc0ddc
 # ╟─4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
-# ╟─85863a3c-599a-43a5-a58c-4625b1059151
+# ╟─fdedc5a6-6993-4d33-93b8-ef30e1bc6ee5
+# ╠═e27afbfe-a90d-4c60-b82a-9bfc007c39fb
 # ╟─a831bacb-9f95-4c94-b6ea-6e84351da678
 # ╟─1d555d13-9b81-48e7-a74c-8e2ee388bfc2
 # ╟─4165c794-4c2f-4d37-8a85-d1c86a32fd6c
@@ -1560,6 +1570,6 @@ version = "0.9.1+5"
 # ╠═6387760b-9c16-4ab0-8229-07f084d2b050
 # ╟─7c911e4c-e132-473e-a579-c47c0b348e6c
 # ╠═4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
-# ╟─45aabb2b-6a8f-462c-b082-7d7675676d64
+# ╠═45aabb2b-6a8f-462c-b082-7d7675676d64
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

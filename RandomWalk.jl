@@ -63,14 +63,23 @@ x_max, t_max = _borders.x_max, _borders.t_max;
 md"""
 cost\_slow = $(Child("cost_slow", NumberField(0:1:100, default=1)))
 cost\_fast = $(Child("cost_fast", NumberField(0:1:100, default=3)))
-
-cost\_loss = $(Child("cost_loss", NumberField(0:1:100, default=15)))
 """
 	
 end
 
-# ╔═╡ 13659fc1-60f5-43ac-a927-9ed1b7bbc566
-cost_slow, cost_fast, cost_loss = _costs.cost_slow, _costs.cost_fast, _costs.cost_loss;
+# ╔═╡ 57478173-1f1c-43f3-a727-c776b2e6135e
+md"""
+cost\_loss = $(@bind cost_loss NumberField(0:1:100, default=15))
+"""
+
+# ╔═╡ 35be6f4d-2397-4012-8034-5582aba63648
+function fixed_cost(x, t, action)
+	if action == :fast
+		_costs.cost_fast
+	else
+		_costs.cost_slow
+	end
+end
 
 # ╔═╡ c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
 md"""
@@ -184,10 +193,10 @@ begin
 	else
 		x_fast, t_fast = step(	mechanics..., last(xs), last(ts), :fast, 
 								unlucky=unlucky)
+		push!(cs, fixed_cost(last(xs), last(ts), :fast))
 		push!(xs, x_fast)
 		push!(ts, t_fast)
 		push!(actions, :fast)
-		push!(cs, cost_fast)
 		nothing
 	end
 	fast
@@ -202,10 +211,10 @@ begin
 	else
 		x_slow, t_slow = step(	mechanics..., last(xs), last(ts), :slow, 
 								unlucky=unlucky)
+		push!(cs, fixed_cost(last(xs), last(ts), :slow))
 		push!(xs, x_slow)
 		push!(ts, t_slow)
 		push!(actions, :slow)
-		push!(cs, cost_slow)
 		nothing
 	end
 	slow
@@ -248,7 +257,7 @@ end
 @bind walk_again Button("Walk again")
 
 # ╔═╡ 87856447-dfd7-4569-93b3-eb1a1da10987
-function take_walk(	cost_slow, cost_fast, cost_loss,
+function take_walk(	cost_function, cost_of_losing,
 					x_max, t_max, 
 					ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
 					policy::Function;
@@ -260,16 +269,16 @@ function take_walk(	cost_slow, cost_fast, cost_loss,
 		a = policy(last(xs), last(ts))
 		x, t = step(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
 					last(xs), last(ts), a, unlucky=unlucky)
+		total_cost += cost_function(last(xs), last(ts), a)
 		push!(xs, x)
 		push!(ts, t)
 		push!(actions, a)
-		total_cost += a == :fast ? cost_fast : cost_slow
 	end
 
 	winner = last(ts) < t_max
 
 	if !winner
-		total_cost += cost_loss
+		total_cost += cost_of_losing
 	end
 
 	(;xs, ts, actions, total_cost, winner)
@@ -279,7 +288,7 @@ end
 begin
 	walk_again
 	xs′, ts′, actions′, total_cost′, winner′ = 
-		take_walk(cost_fast, cost_slow, cost_loss, x_max, t_max, mechanics..., policy, unlucky=unlucky)
+		take_walk(fixed_cost, cost_loss, x_max, t_max, mechanics..., policy, unlucky=unlucky)
 	plot_with_size(x_max, t_max)
 	draw_walk!(xs′, ts′, actions′)
 end
@@ -299,17 +308,17 @@ cost: $(total_cost′)
 end
 
 # ╔═╡ 92f18efe-cacc-4a4c-98f6-0965db071e36
-function evaluate(	cost_slow, cost_fast, cost_loss, 
+function evaluate(	cost_function, cost_of_losing, 
 					x_max, t_max, 
 					ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
 					policy::Function; iterations=1000)
 	losses = 0
 	costs = []
 	for i in 1:iterations
-		_, _, _, cost, winner = take_walk(cost_slow, cost_fast, cost_loss,
-					x_max, t_max, 
-					ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
-					policy)
+		_, _, _, cost, winner = take_walk(	cost_function, cost_of_losing,
+											x_max, t_max, 
+											ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
+											policy)
 		if !winner
 			losses += 1
 		end
@@ -322,7 +331,8 @@ function evaluate(	cost_slow, cost_fast, cost_loss,
 end
 
 # ╔═╡ 2d4d0a0c-be8a-4d65-96c9-f702d562865b
-a, b, c = evaluate(cost_slow, cost_fast, cost_loss, x_max, t_max, mechanics..., policy, iterations=10000)
+a, b, c = evaluate(fixed_cost, cost_loss, x_max, t_max, mechanics..., policy, iterations=10000)
+
 # ╔═╡ e2d9b2a5-b6da-455f-9935-aac197646c9b
 function draw(policy::Function, x_max, t_max, G)
 	size_x, size_t = Int(x_max/G), Int(t_max/G)
@@ -1261,8 +1271,9 @@ version = "0.9.1+5"
 # ╟─53da05d1-f776-4994-8aac-b252fdec89aa
 # ╟─d333c8c3-175f-473d-b5c4-0b38735ce1c6
 # ╟─b694c1ba-1eb0-41c1-8122-7b8552c3e645
+# ╟─57478173-1f1c-43f3-a727-c776b2e6135e
 # ╟─58d066e2-45df-44e0-8473-9ce30a121016
-# ╟─13659fc1-60f5-43ac-a927-9ed1b7bbc566
+# ╠═35be6f4d-2397-4012-8034-5582aba63648
 # ╠═c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
 # ╟─f4389c7a-4220-4612-a27d-095da4bacfaf
 # ╠═ac704811-f1b1-455c-991d-4ede5671c39e
@@ -1281,7 +1292,7 @@ version = "0.9.1+5"
 # ╠═098905f0-781a-49f2-89d5-a447841da77a
 # ╟─b47ba5a9-00e8-41ee-a156-c8642e537224
 # ╟─87856447-dfd7-4569-93b3-eb1a1da10987
-# ╟─d2d20a03-6740-4b55-b971-0240156b6aa2
+# ╠═d2d20a03-6740-4b55-b971-0240156b6aa2
 # ╟─58eaad4b-68e9-438d-beea-5c416a9fd2ae
 # ╠═92f18efe-cacc-4a4c-98f6-0965db071e36
 # ╠═2d4d0a0c-be8a-4d65-96c9-f702d562865b

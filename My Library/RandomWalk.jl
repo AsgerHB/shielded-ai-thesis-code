@@ -71,7 +71,7 @@ function draw_walk!(xs, ts, actions)
 end
 
 
-function take_walk(	cost_slow, cost_fast, cost_loss,
+function take_walk(	cost_function, cost_of_losing,
 					x_max, t_max, 
 					ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
 					policy::Function;
@@ -83,40 +83,52 @@ function take_walk(	cost_slow, cost_fast, cost_loss,
 		a = policy(last(xs), last(ts))
 		x, t = step(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
 					last(xs), last(ts), a, unlucky=unlucky)
+		total_cost += cost_function(last(xs), last(ts), a)
 		push!(xs, x)
 		push!(ts, t)
 		push!(actions, a)
-		total_cost += a == :fast ? cost_fast : cost_slow
 	end
 
 	winner = last(ts) < t_max
 
 	if !winner
-		total_cost += cost_loss
+		total_cost += cost_of_losing
 	end
 
 	(;xs, ts, actions, total_cost, winner)
 end
 
 
-function evaluate(	cost_slow, cost_fast, cost_loss, 
-	x_max, t_max, 
-	ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
-	policy::Function; iterations=1000)
-losses = 0
-costs = []
-for i in 1:iterations
-_, _, _, cost, winner = take_walk(cost_slow, cost_fast, cost_loss,
-	x_max, t_max, 
-	ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
-	policy)
-if !winner
-losses += 1
+function evaluate(	cost_function, cost_of_losing, 
+					x_max, t_max, 
+					ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
+					policy::Function; iterations=1000)
+	losses = 0
+	costs = []
+	for i in 1:iterations
+		_, _, _, cost, winner = take_walk(	cost_function, cost_of_losing,
+											x_max, t_max, 
+											ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
+											policy)
+		if !winner
+			losses += 1
+		end
+		push!(costs, cost)
+	end
+	perfect = losses == 0
+	average_wins = (iterations - losses) / iterations
+	average_cost = sum(costs)/length(costs)
+	(;perfect, average_wins, average_cost)
 end
-push!(costs, cost)
-end
-perfect = losses == 0
-average_wins = (iterations - losses) / iterations
-average_cost = sum(costs)/length(costs)
-(;perfect, average_wins, average_cost)
+
+function draw(policy::Function, x_max, t_max, G)
+	size_x, size_t = Int(x_max/G), Int(t_max/G)
+	matrix = Matrix(undef, size_x, size_t)
+	for i in 1:size_x
+		for j in 1:size_t
+			x, t = i*G, j*G
+			matrix[i, j] = policy(x, t) == :fast ? 1 : 2
+		end
+	end
+	heatmap(matrix, c=[:blue, :yellow])
 end
