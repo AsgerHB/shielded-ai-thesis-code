@@ -323,6 +323,18 @@ end
 
 # ╔═╡ 2d4d0a0c-be8a-4d65-96c9-f702d562865b
 a, b, c = evaluate(cost_slow, cost_fast, cost_loss, x_max, t_max, mechanics..., policy, iterations=10000)
+# ╔═╡ e2d9b2a5-b6da-455f-9935-aac197646c9b
+function draw(policy::Function, x_max, t_max, G)
+	size_x, size_t = Int(x_max/G), Int(t_max/G)
+	matrix = Matrix(undef, size_x, size_t)
+	for i in 1:size_x
+		for j in 1:size_t
+			x, t = i*G, j*G
+			matrix[i, j] = policy(x, t) == :fast ? 1 : 2
+		end
+	end
+	heatmap(matrix, c=[:blue, :yellow])
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1273,5 +1285,6 @@ version = "0.9.1+5"
 # ╟─58eaad4b-68e9-438d-beea-5c416a9fd2ae
 # ╠═92f18efe-cacc-4a4c-98f6-0965db071e36
 # ╠═2d4d0a0c-be8a-4d65-96c9-f702d562865b
+# ╟─e2d9b2a5-b6da-455f-9935-aac197646c9b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

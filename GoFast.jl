@@ -184,6 +184,9 @@ Wins: $(length(filter(x -> x, winners))) out of $(length(winners))
 # ╔═╡ 25c591e2-3c17-4345-acac-956435c61338
 evaluate(cost_slow, cost_fast, cost_loss, x_max, t_max, mechanics..., policy, iterations=10000)
 
+# ╔═╡ 2725e93f-c3c6-4d5c-9150-1c55e60c13a7
+draw(policy, x_max, t_max, 0.01)
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -1129,5 +1132,6 @@ version = "0.9.1+5"
 # ╟─f84b9ea0-e470-45da-9b19-9fd150a4ad07
 # ╟─a4ddd3cc-c3f7-47bc-95e8-dbaa7b1d9698
 # ╠═25c591e2-3c17-4345-acac-956435c61338
+# ╠═2725e93f-c3c6-4d5c-9150-1c55e60c13a7
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
