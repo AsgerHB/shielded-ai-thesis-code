@@ -28,9 +28,7 @@ end
 @bind _mechanics PlutoUI.combine() do Child
 
 md"""
-ϵ1 = $(Child("ϵ1", NumberField(0:0.01:10, default=0.1)))
-
-ϵ2 = $(Child("ϵ2", NumberField(0:0.01:10, default=0.1)))
+ϵ = $(Child("ϵ", NumberField(0:0.01:10, default=0.1)))
 
 δ(:fast) = $(Child("δ_fast", NumberField(0:0.01:10, default=0.3)))
 τ(:fast) = $(Child("τ_fast", NumberField(0:0.01:10, default=0.1)))
@@ -42,7 +40,7 @@ md"""
 end
 
 # ╔═╡ 30885d40-53fb-4b16-ae38-52364a431aba
-mechanics = _mechanics.ϵ1, _mechanics.ϵ2, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow;
+mechanics = _mechanics.ϵ, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow;
 
 # ╔═╡ 5bb8654a-990e-4fd9-bf7b-c48e45620fa6
 md"""

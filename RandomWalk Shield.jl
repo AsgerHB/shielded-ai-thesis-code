@@ -36,9 +36,7 @@ md"""### Configure random walk game"""
 @bind _mechanics PlutoUI.combine() do Child
 
 md"""
-ϵ1 = $(Child("ϵ1", NumberField(0:0.01:10, default=0.1)))
-
-ϵ2 = $(Child("ϵ2", NumberField(0:0.01:10, default=0.1)))
+ϵ = $(Child("ϵ", NumberField(0:0.01:10, default=0.1)))
 
 δ(:fast) = $(Child("δ_fast", NumberField(0:0.01:10, default=0.3)))
 τ(:fast) = $(Child("τ_fast", NumberField(0:0.01:10, default=0.1)))
@@ -64,7 +62,7 @@ md"""
 """
 
 # ╔═╡ 6ad63c50-77eb-4fd7-8669-085adebc0ddc
-mechanics = (;_mechanics.ϵ1, _mechanics.ϵ2, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
+mechanics = (;_mechanics.ϵ, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
 
 # ╔═╡ 4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
 
@@ -232,18 +230,18 @@ end
 
 I could have used the square datatype for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
 """
-function get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action)
+function get_reachable_area(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action)
 	Ixl, Ixu, Itl, Itu = bounds(square)
 	δ, τ = action == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
 	cover(	grid, 
-			Ixl + δ - ϵ1, 
-			Ixu + δ + ϵ1, 
-			Itl + τ - ϵ1, 
-			Itu + τ + ϵ1)
+			Ixl + δ - ϵ, 
+			Ixu + δ + ϵ, 
+			Itl + τ - ϵ, 
+			Itu + τ + ϵ)
 end
 
 # ╔═╡ 9a0c0fbe-c450-4b42-a320-5868756a2f3d
-function draw_barbaric_transition!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action, resolution)
+function draw_barbaric_transition!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action, resolution)
 	Ixl, Ixu, Itl, Itu = bounds(square)
 	δ = action == :fast ? δ_fast : δ_slow 
 	τ = action == :fast ? τ_fast : τ_slow
@@ -255,8 +253,8 @@ function draw_barbaric_transition!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow,
 		for t in Itl:stride:(Itu)
 			push!(x_start, x)
 			push!(t_start, t)
-			for offset_x in (δ - ϵ1):(ϵ1/resolution):(δ + ϵ1)
-				for offset_t in (τ - ϵ2):(ϵ2/resolution):(τ + ϵ2)
+			for offset_x in (δ - ϵ):(ϵ/resolution):(δ + ϵ)
+				for offset_t in (τ - ϵ):(ϵ/resolution):(τ + ϵ)
 					xʹ = x + offset_x
 					tʹ = t + offset_t
 					push!(x_end, xʹ)
@@ -270,14 +268,14 @@ function draw_barbaric_transition!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow,
 end
 
 # ╔═╡ a25d8cf1-1b47-4f8d-b4f7-f4e77af0ff20
-	function step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
+	function step(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
 		x′, t′ =  x, t
 		if a == :fast
-			x′ = x + rand(δ_fast - ϵ1:0.005:δ_fast + ϵ1 )
-			t′ = t + rand(τ_fast - ϵ2:0.005:τ_fast + ϵ2 )
+			x′ = x + rand(δ_fast - ϵ:0.005:δ_fast + ϵ )
+			t′ = t + rand(τ_fast - ϵ:0.005:τ_fast + ϵ )
 		else
-			x′ = x + rand(δ_slow - ϵ1:0.005:δ_slow + ϵ1 )
-			t′ = t + rand(τ_slow - ϵ2:0.005:τ_slow + ϵ2 )
+			x′ = x + rand(δ_slow - ϵ:0.005:δ_slow + ϵ )
+			t′ = t + rand(τ_slow - ϵ:0.005:τ_slow + ϵ )
 		end
 		x′, t′
 	end
@@ -297,15 +295,15 @@ end
 
 The same goes for `slow` just with the :slow action. 
 """
-function get_transitions(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, grid)
+function get_transitions(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid)
 	fast = Matrix{Vector{Any}}(undef, grid.x_count, grid.y_count)
 	slow = Matrix{Vector{Any}}(undef, grid.x_count, grid.y_count)
 	
 	for ix in 1:grid.x_count
 		for iy in 1:grid.y_count
 			square = Square(grid, ix, iy)
-			fast[ix, iy] = get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square, :fast)
-			slow[ix, iy] = get_reachable_area(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, square, :slow)
+			fast[ix, iy] = get_reachable_area(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square, :fast)
+			slow[ix, iy] = get_reachable_area(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square, :slow)
 		end
 	end
 	fast, slow
@@ -417,10 +415,10 @@ function make_shield(	fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, grid
 end
 
 # ╔═╡ 6c7b61f9-98d5-4f7b-b88d-8f74ca1bbcb3
-function make_shield(   ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, grid, resolution;
+function make_shield(   ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid, resolution;
 					    max_steps=1000, 
 						animate=false)
-	transitions = get_transitions(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, grid, resolution)
+	transitions = get_transitions(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid, resolution)
 	
 	return make_shield(transitions..., grid, max_steps=max_steps, animate=animate)
 end

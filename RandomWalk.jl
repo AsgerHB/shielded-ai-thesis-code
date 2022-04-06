@@ -29,9 +29,7 @@ call(f) = f()
 @bind _mechanics PlutoUI.combine() do Child
 
 md"""
-ϵ1 = $(Child("ϵ1", NumberField(0:0.01:10, default=0.1)))
-
-ϵ2 = $(Child("ϵ2", NumberField(0:0.01:10, default=0.1)))
+ϵ = $(Child("ϵ", NumberField(0:0.01:10, default=0.1)))
 
 δ(:fast) = $(Child("δ_fast", NumberField(0:0.01:10, default=0.3)))
 τ(:fast) = $(Child("τ_fast", NumberField(0:0.01:10, default=0.1)))
@@ -43,7 +41,7 @@ md"""
 end
 
 # ╔═╡ 53da05d1-f776-4994-8aac-b252fdec89aa
-mechanics = _mechanics.ϵ1, _mechanics.ϵ2, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow;
+mechanics = (;_mechanics.ϵ, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
 
 # ╔═╡ d333c8c3-175f-473d-b5c4-0b38735ce1c6
 @bind _borders PlutoUI.combine() do Child
@@ -80,23 +78,23 @@ unlucky $(@bind unlucky CheckBox())
 """
 
 # ╔═╡ f4389c7a-4220-4612-a27d-095da4bacfaf
-function step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a; unlucky=false)
+function step(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a; unlucky=false)
 	x′, t′ =  x, t
 	if unlucky
 		if a == :fast
-			x′ = x + δ_fast - ϵ1
-			t′ = t + τ_fast + ϵ2
+			x′ = x + δ_fast - ϵ
+			t′ = t + τ_fast + ϵ
 		else
-			x′ = x + δ_slow - ϵ1
-			t′ = t + τ_slow + ϵ2
+			x′ = x + δ_slow - ϵ
+			t′ = t + τ_slow + ϵ
 		end
 	else
 		if a == :fast
-			x′ = x + rand(δ_fast - ϵ1:0.005:δ_fast + ϵ1 )
-			t′ = t + rand(τ_fast - ϵ2:0.005:τ_fast + ϵ2 )
+			x′ = x + rand(δ_fast - ϵ:0.005:δ_fast + ϵ )
+			t′ = t + rand(τ_fast - ϵ:0.005:τ_fast + ϵ )
 		else
-			x′ = x + rand(δ_slow - ϵ1:0.005:δ_slow + ϵ1 )
-			t′ = t + rand(τ_slow - ϵ2:0.005:τ_slow + ϵ2 )
+			x′ = x + rand(δ_slow - ϵ:0.005:δ_slow + ϵ )
+			t′ = t + rand(τ_slow - ϵ:0.005:τ_slow + ϵ )
 		end
 	end	
 	
@@ -123,10 +121,10 @@ plot_with_size!(x_max, t_max) =
 			ylabel="t")
 
 # ╔═╡ c1db0440-9bc8-4a05-9cb2-2702da002917
-function draw_next_step!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
+function draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
 	if a == :both
-		draw_next_step!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :fast)
-		return draw_next_step!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow)
+		draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :fast)
+		return draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow)
 	end
 	color = a == :fast ? :blue : :yellow
 	scatter!([x], [t], 
@@ -134,8 +132,8 @@ function draw_next_step!(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
 		color=:black)
 	δ, τ = a == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
 	δ, τ = δ + x, τ + t
-	plot!(Shape([δ - ϵ1, δ - ϵ1, δ + ϵ1, δ + ϵ1], 
-				[τ - ϵ2, τ + ϵ2, τ + ϵ2, τ - ϵ2]), 
+	plot!(Shape([δ - ϵ, δ - ϵ, δ + ϵ, δ + ϵ], 
+				[τ - ϵ, τ + ϵ, τ + ϵ, τ - ϵ]), 
 			color=color,
 			opacity=0.8,
 			linewidth=0,
@@ -252,7 +250,7 @@ end
 # ╔═╡ 87856447-dfd7-4569-93b3-eb1a1da10987
 function take_walk(	cost_slow, cost_fast, cost_loss,
 					x_max, t_max, 
-					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
+					ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
 					policy::Function;
 					unlucky=false)
 	xs, ts, actions = [0.], [0.], []
@@ -260,7 +258,7 @@ function take_walk(	cost_slow, cost_fast, cost_loss,
 
 	while last(xs) < x_max && last(ts) < t_max
 		a = policy(last(xs), last(ts))
-		x, t = step(ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
+		x, t = step(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
 					last(xs), last(ts), a, unlucky=unlucky)
 		push!(xs, x)
 		push!(ts, t)
@@ -303,14 +301,14 @@ end
 # ╔═╡ 92f18efe-cacc-4a4c-98f6-0965db071e36
 function evaluate(	cost_slow, cost_fast, cost_loss, 
 					x_max, t_max, 
-					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
+					ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
 					policy::Function; iterations=1000)
 	losses = 0
 	costs = []
 	for i in 1:iterations
 		_, _, _, cost, winner = take_walk(cost_slow, cost_fast, cost_loss,
 					x_max, t_max, 
-					ϵ1, ϵ2, δ_fast, δ_slow, τ_fast, τ_slow, 
+					ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
 					policy)
 		if !winner
 			losses += 1
@@ -1252,7 +1250,7 @@ version = "0.9.1+5"
 # ╟─d333c8c3-175f-473d-b5c4-0b38735ce1c6
 # ╟─b694c1ba-1eb0-41c1-8122-7b8552c3e645
 # ╟─58d066e2-45df-44e0-8473-9ce30a121016
-# ╠═13659fc1-60f5-43ac-a927-9ed1b7bbc566
+# ╟─13659fc1-60f5-43ac-a927-9ed1b7bbc566
 # ╠═c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
 # ╟─f4389c7a-4220-4612-a27d-095da4bacfaf
 # ╠═ac704811-f1b1-455c-991d-4ede5671c39e
