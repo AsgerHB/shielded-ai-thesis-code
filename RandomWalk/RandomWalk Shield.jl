@@ -47,6 +47,9 @@ md"""
 	
 end
 
+# ╔═╡ 6ad63c50-77eb-4fd7-8669-085adebc0ddc
+mechanics = (;_mechanics.ϵ, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
+
 # ╔═╡ 779f0f70-ce94-4a9e-af26-3b06406aa036
 md"""
 ### Configure grid
@@ -60,9 +63,6 @@ md"""
 	   `;`
 		$(@bind y_max NumberField(-100:0.1:100, default=1.2)) `]`
 """
-
-# ╔═╡ 6ad63c50-77eb-4fd7-8669-085adebc0ddc
-mechanics = (;_mechanics.ϵ, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
 
 # ╔═╡ 4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
 md"""
@@ -233,7 +233,7 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 	x_tics = grid.x_min:grid.G:grid.x_max
 	y_tics = grid.y_min:grid.G:grid.y_max
 	
-	hm = heatmap(x_tics, y_tics, permutedims(grid.array, (2, 1)), c=colors, colorbar=nothing, aspect_ratio=:equal)
+	hm = heatmap(x_tics, y_tics, permutedims(grid.array, (2, 1)), c=colors, colorbar=nothing, aspect_ratio=:equal, clim=(1, length(colors)))
 
 	if show_grid && length(grid.x_min:grid.G:grid.x_max) < 100
 		vline!(grid.x_min:grid.G:grid.y_max, color="#afafaf", label=nothing)
@@ -272,7 +272,7 @@ I could have used the square datatype for this, but I want to save that extra bi
 function get_reachable_area(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action)
 	Ixl, Ixu, Itl, Itu = bounds(square)
 	δ, τ = action == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
-	cover(	grid, 
+	cover(	square.grid, 
 			Ixl + δ - ϵ, 
 			Ixu + δ + ϵ, 
 			Itl + τ - ϵ, 
@@ -450,14 +450,14 @@ function make_shield(	fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, grid
 			frame(animation)
 		end
 	end
-	grid′, i==0, animation
+	(grid=grid′, terminated_early=i==0, animation)
 end
 
 # ╔═╡ 6c7b61f9-98d5-4f7b-b88d-8f74ca1bbcb3
-function make_shield(   ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid, resolution;
+function make_shield(   ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid;
 					    max_steps=1000, 
 						animate=false)
-	transitions = get_transitions(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid, resolution)
+	transitions = get_transitions(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid)
 	
 	return make_shield(transitions..., grid, max_steps=max_steps, animate=animate)
 end
@@ -480,6 +480,7 @@ md"""
 `colors: ` 	$(Child("c1", ColorPicker(default=colorant"#FFFFFF")))
 			$(Child("c2", ColorPicker(default=colorant"#7A95FF")))
 			$(Child("c3", ColorPicker(default=colorant"#FD5353")))
+			$(Child("c4", ColorPicker(default=colorant"#ECF15C")))
 """
 	
 end
@@ -1550,8 +1551,8 @@ version = "0.9.1+5"
 # ╠═3611edfd-a4cb-4632-9d94-2fe71e2195ae
 # ╟─5229f8dd-ca19-4ed0-a9d2-da1691f79089
 # ╟─2c05e965-545f-43c1-b0b0-0a81e08c6293
-# ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
 # ╟─6ad63c50-77eb-4fd7-8669-085adebc0ddc
+# ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
 # ╟─4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
 # ╟─715d0acd-a271-438c-a3ed-8712b024603f
 # ╟─fdedc5a6-6993-4d33-93b8-ef30e1bc6ee5
@@ -1574,7 +1575,7 @@ version = "0.9.1+5"
 # ╟─cc2f97bb-57d5-4b30-bdde-fa5e2b372c12
 # ╟─d85de62a-c308-4c46-9a49-5ceb37a586ba
 # ╟─fe6341e8-2a52-4142-8532-52c118358c5e
-# ╟─d4e0a0aa-b34e-4801-9819-ea51f5b9df2a
+# ╠═d4e0a0aa-b34e-4801-9819-ea51f5b9df2a
 # ╟─886e8c1f-83d1-4aed-beb8-d0d73460348f
 # ╟─a2e85767-6f31-4c1a-a174-3bc60faf0d1b
 # ╟─9a0c0fbe-c450-4b42-a320-5868756a2f3d
@@ -1588,8 +1589,8 @@ version = "0.9.1+5"
 # ╠═c2add912-1322-4f34-b9d5-e2284f631b3c
 # ╠═c96bd5bc-6f4a-43db-a3d0-892b0f960cc4
 # ╟─f9b7b12f-5193-48ec-b61c-ba22f4a1fb4c
-# ╟─e7c8c0fe-8008-4ae0-abc8-c2cb3eb711d9
-# ╟─6c7b61f9-98d5-4f7b-b88d-8f74ca1bbcb3
+# ╠═e7c8c0fe-8008-4ae0-abc8-c2cb3eb711d9
+# ╠═6c7b61f9-98d5-4f7b-b88d-8f74ca1bbcb3
 # ╟─18b843fd-2ab8-4380-a700-240115dd23da
 # ╟─629cc812-4972-4011-a9c7-83e1cdff3d07
 # ╟─3c95eb29-4f26-4677-bccc-8dc98774a894

@@ -121,7 +121,7 @@ function evaluate(	cost_function, cost_of_losing,
 	(;perfect, average_wins, average_cost)
 end
 
-function draw(policy::Function, x_max, t_max, G)
+function draw(policy::Function, x_max, t_max, G; colors=[:blue, :yellow])
 	size_x, size_t = Int(x_max/G), Int(t_max/G)
 	matrix = Matrix(undef, size_x, size_t)
 	for i in 1:size_x
@@ -130,5 +130,13 @@ function draw(policy::Function, x_max, t_max, G)
 			matrix[i, j] = policy(x, t) == :fast ? 1 : 2
 		end
 	end
-	heatmap(matrix, c=[:blue, :yellow])
+
+	x_tics = 0:G:x_max
+	y_tics = 0:G:t_max
+	
+	heatmap(x_tics, y_tics, matrix, 
+			c=colors, 
+			colorbar=nothing, 
+			aspect_ratio=:equal, 
+			clim=(1, length(colors)))
 end

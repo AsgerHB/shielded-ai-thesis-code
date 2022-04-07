@@ -21,6 +21,8 @@ begin
 	using Random
 	using Plots
 	include("My Library/RandomWalk.jl");
+	include("My Library/Squares.jl");
+	include("My Library/CoverShielding.jl");
 end
 
 # ╔═╡ ae485791-1a6c-4ae5-ab2d-9116af24b53d
@@ -48,42 +50,42 @@ unlucky $(@bind unlucky CheckBox())
 """
 
 # ╔═╡ 79015375-8e12-4c56-bbb0-01479be1948a
-@bind _borders PlutoUI.combine() do Child
-
 md"""
-x\_max = $(Child("x_max", NumberField(0:0.01:10, default=1)))
-t\_max = $(Child("t_max", NumberField(0:0.01:10, default=1)))
+x\_lim = $(@bind x_lim NumberField(0:0.01:10, default=1))
+t\_lim = $(@bind t_lim NumberField(0:0.01:10, default=1))
 """
-	
-end
-
-# ╔═╡ 695b0ba0-0dbb-4984-b26d-16af0e5843b4
-x_max, t_max = _borders.x_max, _borders.t_max;
 
 # ╔═╡ 115b213b-2de4-463e-b772-97485e79b317
+md"""
+cost\_slow = $(@bind cost_slow NumberField(0:1:100, default=1))
+cost\_fast = $(@bind cost_fast NumberField(0:1:100, default=3))
 
-@bind _costs PlutoUI.combine() do Child
+cost\_loss = $(@bind cost_loss NumberField(0:1:100, default=15))
+"""
+
+# ╔═╡ 83be809e-7c73-4e86-aa09-03fc46561048
+function fixed_cost(x, t, action)
+	if action == :fast
+		return cost_fast
+	else
+		return cost_slow
+	end
+end
+
+# ╔═╡ 51745c47-b688-4734-b8a0-a7773f35198b
+@bind _colors PlutoUI.combine() do Child
 
 md"""
-cost\_slow = $(Child("cost_slow", NumberField(0:1:100, default=1)))
-cost\_fast = $(Child("cost_fast", NumberField(0:1:100, default=3)))
-
-cost\_loss = $(Child("cost_loss", NumberField(0:1:100, default=15)))
+`colors: ` 	$(Child("c1", ColorPicker(default=colorant"#FFFFFF")))
+			$(Child("c2", ColorPicker(default=colorant"#7A95FF")))
+			$(Child("c3", ColorPicker(default=colorant"#FD5353")))
+			$(Child("c4", ColorPicker(default=colorant"#ECF15C")))
 """
 	
 end
 
-# ╔═╡ 83be809e-7c73-4e86-aa09-03fc46561048
-cost_slow, cost_fast, cost_loss = _costs.cost_slow, _costs.cost_fast, _costs.cost_loss;
-
-# ╔═╡ 8313ba2a-5b2a-4ae2-9d48-264592662b9e
-function fixed_cost(x, t, action)
-	if action == :fast
-		cost_fast
-	else
-		cost_slow
-	end
-end
+# ╔═╡ c439dfe9-5d71-4459-8dea-1eb908a26106
+colors = [_colors...];
 
 # ╔═╡ 56a2a1d4-84f1-4e8f-a311-b006ed947d93
 md"""
@@ -161,9 +163,52 @@ end
 # ╔═╡ ab03777c-e0d0-438f-b448-9bdf65a7575f
 policy = get_policy(selected_file["data"])
 
-# ╔═╡ 54e162c7-cb94-4dc5-9e3a-9582bdddf5e7
+# ╔═╡ 28b8ea35-3079-4465-9787-1ebd77f5811c
+function draw(policy::Function, x_max, t_max, G; colors=[:blue, :yellow])
+	size_x, size_t = Int(x_max/G), Int(t_max/G)
+	matrix = Matrix(undef, size_x, size_t)
+	for i in 1:size_x
+		for j in 1:size_t
+			x, t = i*G - G, j*G - G
+			matrix[j, i] = policy(x, t) == :fast ? 1 : 2
+		end
+	end
+
+	x_tics = 0:G:x_max
+	y_tics = 0:G:t_max
+	
+	heatmap(x_tics, y_tics, matrix, 
+			c=colors, 
+			colorbar=nothing, 
+			aspect_ratio=:equal, 
+			clim=(1, length(colors)))
+end
+
+# ╔═╡ 25c591e2-3c17-4345-acac-956435c61338
+evaluate(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., policy, iterations=10000)
+
+# ╔═╡ 610682c0-ba50-4731-8658-30fea39cf7a8
 md"""
-fps = $(@bind fps NumberField(1:100, default = 2))
+### Configure grid
+`G = ` $(@bind G NumberField(0.01:0.01:2, default=0.2))
+
+`x ∈  [ ` $(@bind x_min NumberField(-100:0.1:100, default=0))
+	   `;`
+		$(@bind x_max NumberField(-100:0.1:100, default=1.2)) `]`
+
+`y ∈  [` $(@bind y_min NumberField(-100:0.1:100, default=0))
+	   `;`
+		$(@bind y_max NumberField(-100:0.1:100, default=1.2)) `]`
+"""
+
+# ╔═╡ 1cd46606-1faf-47c7-95c1-0ac27d0d8cbf
+md"""
+#### Shield config
+`max_steps =` $(@bind max_steps NumberField(0:1:1000, default=100))
+
+`animate ` $(@bind animate html"<input type=checkbox>")
+
+`fps =` $(@bind fps NumberField(0:1:1000, default=3))
 """
 
 # ╔═╡ f84b9ea0-e470-45da-9b19-9fd150a4ad07
@@ -173,27 +218,67 @@ begin
 	policy_animation = 
 	@animate for i in 1:10	
 		xs, ts, actions, total_cost, winner = 
-			take_walk(fixed_cost, cost_loss, x_max, t_max, mechanics..., policy, unlucky=unlucky)
+			take_walk(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., policy, unlucky=unlucky)
 		push!(costs, total_cost)
 		push!(winners, winner)
-		plot_with_size(x_max, t_max)
+		draw(policy, x_lim, t_lim, 0.005, colors=[_colors.c2, _colors.c4])
+		plot_with_size!(x_lim, t_lim)
 		draw_walk!(xs, ts, actions)
+		title!("Policy")
 	end
 	gif(policy_animation, "uppal_policy_walks.gif", fps=fps)
 end
 
-# ╔═╡ a4ddd3cc-c3f7-47bc-95e8-dbaa7b1d9698
-md"""
-Average cost: $(sum(costs)/length(costs))
+# ╔═╡ 18016dff-d061-43b1-b673-442d549630e5
+begin
+	NEUTRAL_SQUARE = 1	# Either action allowable
+	FAST_SQUARE = 2		# Must take the :fast action
+	BAD_SQUARE = 3		# Risk of safety violation
+	nothing
+end
 
-Wins: $(length(filter(x -> x, winners))) out of $(length(winners))
-"""
+# ╔═╡ da8f59d0-7522-47b6-b90e-8c628fef7e4e
+init_func(Ixl, Ixu, Itl, Itu) = Itu > 1 ? BAD_SQUARE : NEUTRAL_SQUARE
 
-# ╔═╡ 25c591e2-3c17-4345-acac-956435c61338
-evaluate(fixed_cost, cost_loss, x_max, t_max, mechanics..., policy, iterations=10000)
+# ╔═╡ 771d5250-ca04-4cb6-b230-0d9475502a04
+begin
+	grid = Grid(G, x_min, x_max, y_min, y_max)
+	initialize!(grid, init_func)
+end
 
-# ╔═╡ 2725e93f-c3c6-4d5c-9150-1c55e60c13a7
-draw(policy, x_max, t_max, 0.01)
+# ╔═╡ 043ef15f-ef21-4c10-b110-44896ba161ae
+shield, terminated_early, animation = 
+	make_shield(mechanics..., grid, max_steps=max_steps, animate=animate)
+
+# ╔═╡ bc025d48-a457-4782-9894-3b48f6b5e2f4
+begin 
+	draw(shield, colors=colors, show_grid=false)
+	title!("Shield")
+end
+
+# ╔═╡ 08e29116-a085-4d26-a65c-42f0aa19a227
+shielded_layabout(x, t) = shield_action(shield, x, t, :slow)
+
+# ╔═╡ 843f542d-95a4-4b60-8c34-bff9fd72ce7b
+begin
+	draw(shielded_layabout, x_lim, t_lim, G, colors=[_colors.c2, _colors.c4])
+	title!("Shielded Layabout")
+end
+
+# ╔═╡ a3b8a726-2472-40a0-9f51-23ce6b3764ef
+shielded_policy(x, t) = shield_action(shield, x, t, policy(x, t))
+
+# ╔═╡ f88ca7e5-efac-429e-92c8-3988c7f01c9d
+begin
+	draw(shielded_policy, x_lim, t_lim, G, colors=[_colors.c2, _colors.c4])
+	title!("Policy masked by shield")
+end
+
+# ╔═╡ e5262cdf-71ea-44b0-8e26-cc50002b1f64
+evaluate(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., shielded_policy, iterations=10000)
+
+# ╔═╡ 07a43e19-c9c9-47f9-9319-6293587c29fb
+evaluate(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., shielded_layabout, iterations=10000)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1121,10 +1206,10 @@ version = "0.9.1+5"
 # ╟─30885d40-53fb-4b16-ae38-52364a431aba
 # ╟─5bb8654a-990e-4fd9-bf7b-c48e45620fa6
 # ╟─79015375-8e12-4c56-bbb0-01479be1948a
-# ╟─695b0ba0-0dbb-4984-b26d-16af0e5843b4
-# ╟─115b213b-2de4-463e-b772-97485e79b317
-# ╟─83be809e-7c73-4e86-aa09-03fc46561048
-# ╠═8313ba2a-5b2a-4ae2-9d48-264592662b9e
+# ╠═115b213b-2de4-463e-b772-97485e79b317
+# ╠═83be809e-7c73-4e86-aa09-03fc46561048
+# ╟─51745c47-b688-4734-b8a0-a7773f35198b
+# ╟─c439dfe9-5d71-4459-8dea-1eb908a26106
 # ╟─cdd4a3d2-b4b5-4b26-8a48-78661d5d5cba
 # ╟─56a2a1d4-84f1-4e8f-a311-b006ed947d93
 # ╠═6b64cde1-b050-49d6-97a0-ef1777a4bf12
@@ -1135,10 +1220,21 @@ version = "0.9.1+5"
 # ╟─f4681c7f-6d06-491d-bab7-3acc4e82ed8b
 # ╠═9bc1f319-c6b5-4221-b541-c717f38dbd3c
 # ╟─29301b84-00b6-47e9-9474-3a7abdc67db7
-# ╟─54e162c7-cb94-4dc5-9e3a-9582bdddf5e7
+# ╟─28b8ea35-3079-4465-9787-1ebd77f5811c
 # ╟─f84b9ea0-e470-45da-9b19-9fd150a4ad07
-# ╟─a4ddd3cc-c3f7-47bc-95e8-dbaa7b1d9698
 # ╠═25c591e2-3c17-4345-acac-956435c61338
-# ╠═2725e93f-c3c6-4d5c-9150-1c55e60c13a7
+# ╟─610682c0-ba50-4731-8658-30fea39cf7a8
+# ╟─1cd46606-1faf-47c7-95c1-0ac27d0d8cbf
+# ╠═18016dff-d061-43b1-b673-442d549630e5
+# ╠═771d5250-ca04-4cb6-b230-0d9475502a04
+# ╠═da8f59d0-7522-47b6-b90e-8c628fef7e4e
+# ╠═043ef15f-ef21-4c10-b110-44896ba161ae
+# ╟─bc025d48-a457-4782-9894-3b48f6b5e2f4
+# ╠═08e29116-a085-4d26-a65c-42f0aa19a227
+# ╟─843f542d-95a4-4b60-8c34-bff9fd72ce7b
+# ╠═a3b8a726-2472-40a0-9f51-23ce6b3764ef
+# ╟─f88ca7e5-efac-429e-92c8-3988c7f01c9d
+# ╠═e5262cdf-71ea-44b0-8e26-cc50002b1f64
+# ╠═07a43e19-c9c9-47f9-9319-6293587c29fb
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
