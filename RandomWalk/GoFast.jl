@@ -76,6 +76,15 @@ end
 # ╔═╡ 83be809e-7c73-4e86-aa09-03fc46561048
 cost_slow, cost_fast, cost_loss = _costs.cost_slow, _costs.cost_fast, _costs.cost_loss;
 
+# ╔═╡ 8313ba2a-5b2a-4ae2-9d48-264592662b9e
+function fixed_cost(x, t, action)
+	if action == :fast
+		cost_fast
+	else
+		cost_slow
+	end
+end
+
 # ╔═╡ 56a2a1d4-84f1-4e8f-a311-b006ed947d93
 md"""
 **Exported UPPAAL STRATEGO strategy:** 
@@ -88,14 +97,8 @@ if selected_file == nothing
 	md"# Please select file"
 end
 
-# ╔═╡ 5d34a812-8ed1-411b-bb4e-6776802d55b0
-jsondict = selected_file["data"] |> IOBuffer |> JSON.parse
-
-# ╔═╡ 80ca1649-0ce7-4d6d-94f4-979853b63eeb
-fast_tree = jsondict["regressors"]["(1)"]["regressor"]["1"]
-
-# ╔═╡ 9b255fd4-46b7-4216-89b2-add035e55285
-slow_tree = jsondict["regressors"]["(1)"]["regressor"]["0"]
+# ╔═╡ 6b64cde1-b050-49d6-97a0-ef1777a4bf12
+jsondict =selected_file["data"] |> IOBuffer |> JSON.parse
 
 # ╔═╡ 30709054-fb1a-4358-bc41-6764a4bf40c0
 if jsondict["actions"]["1"] != "Process._id0->Process._id0 { 1, fast!, updateFast(), counterFast++ }"
@@ -134,7 +137,7 @@ function get_predicted_outcome(vars, tree)
 end
 
 # ╔═╡ 9bc1f319-c6b5-4221-b541-c717f38dbd3c
-get_predicted_outcome([0.5, 0.4], slow_tree)
+get_predicted_outcome([0.5, 0.4], jsondict["regressors"]["(1)"]["regressor"]["0"])
 
 # ╔═╡ 29301b84-00b6-47e9-9474-3a7abdc67db7
 function get_action(slow_tree, fast_tree, x, t)
@@ -147,11 +150,16 @@ function get_action(slow_tree, fast_tree, x, t)
 	end
 end
 
-# ╔═╡ 89ae58b4-d9ae-4d40-b65d-6fc3031afee2
-get_action(slow_tree, fast_tree, 0.5, 0.4)
+# ╔═╡ 9b255fd4-46b7-4216-89b2-add035e55285
+function get_policy(filedata)
+	jsondict = filedata |> IOBuffer |> JSON.parse
+	slow_tree = jsondict["regressors"]["(1)"]["regressor"]["0"]
+	fast_tree = jsondict["regressors"]["(1)"]["regressor"]["1"]
+	policy(x, t) = get_action(slow_tree, fast_tree, x, t)
+end
 
-# ╔═╡ 19d294d5-b85e-4979-b844-7f02637a4ffd
-policy(x, t) = get_action(slow_tree, fast_tree, x, t)
+# ╔═╡ ab03777c-e0d0-438f-b448-9bdf65a7575f
+policy = get_policy(selected_file["data"])
 
 # ╔═╡ 54e162c7-cb94-4dc5-9e3a-9582bdddf5e7
 md"""
@@ -165,7 +173,7 @@ begin
 	policy_animation = 
 	@animate for i in 1:10	
 		xs, ts, actions, total_cost, winner = 
-			take_walk(cost_fast, cost_slow, cost_loss, x_max, t_max, mechanics..., policy, unlucky=unlucky)
+			take_walk(fixed_cost, cost_loss, x_max, t_max, mechanics..., policy, unlucky=unlucky)
 		push!(costs, total_cost)
 		push!(winners, winner)
 		plot_with_size(x_max, t_max)
@@ -182,7 +190,7 @@ Wins: $(length(filter(x -> x, winners))) out of $(length(winners))
 """
 
 # ╔═╡ 25c591e2-3c17-4345-acac-956435c61338
-evaluate(cost_slow, cost_fast, cost_loss, x_max, t_max, mechanics..., policy, iterations=10000)
+evaluate(fixed_cost, cost_loss, x_max, t_max, mechanics..., policy, iterations=10000)
 
 # ╔═╡ 2725e93f-c3c6-4d5c-9150-1c55e60c13a7
 draw(policy, x_max, t_max, 0.01)
@@ -1116,18 +1124,17 @@ version = "0.9.1+5"
 # ╟─695b0ba0-0dbb-4984-b26d-16af0e5843b4
 # ╟─115b213b-2de4-463e-b772-97485e79b317
 # ╟─83be809e-7c73-4e86-aa09-03fc46561048
+# ╠═8313ba2a-5b2a-4ae2-9d48-264592662b9e
 # ╟─cdd4a3d2-b4b5-4b26-8a48-78661d5d5cba
 # ╟─56a2a1d4-84f1-4e8f-a311-b006ed947d93
-# ╠═5d34a812-8ed1-411b-bb4e-6776802d55b0
-# ╠═80ca1649-0ce7-4d6d-94f4-979853b63eeb
+# ╠═6b64cde1-b050-49d6-97a0-ef1777a4bf12
 # ╠═9b255fd4-46b7-4216-89b2-add035e55285
+# ╠═ab03777c-e0d0-438f-b448-9bdf65a7575f
 # ╟─30709054-fb1a-4358-bc41-6764a4bf40c0
 # ╟─edc4906e-4b8c-407a-a99b-6792200d0b98
-# ╠═f4681c7f-6d06-491d-bab7-3acc4e82ed8b
+# ╟─f4681c7f-6d06-491d-bab7-3acc4e82ed8b
 # ╠═9bc1f319-c6b5-4221-b541-c717f38dbd3c
-# ╠═29301b84-00b6-47e9-9474-3a7abdc67db7
-# ╠═89ae58b4-d9ae-4d40-b65d-6fc3031afee2
-# ╠═19d294d5-b85e-4979-b844-7f02637a4ffd
+# ╟─29301b84-00b6-47e9-9474-3a7abdc67db7
 # ╟─54e162c7-cb94-4dc5-9e3a-9582bdddf5e7
 # ╟─f84b9ea0-e470-45da-9b19-9fd150a4ad07
 # ╟─a4ddd3cc-c3f7-47bc-95e8-dbaa7b1d9698
