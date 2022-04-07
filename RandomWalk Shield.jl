@@ -84,11 +84,40 @@ cost\_loss = $(@bind cost_loss NumberField(0:1:100, default=15))
 # ╔═╡ e27afbfe-a90d-4c60-b82a-9bfc007c39fb
 function fixed_cost(x, t, action)
 	if action == :fast
-		_costs.cost_fast
+		cost_fast
 	else
-		_costs.cost_slow
+		cost_slow
 	end
 end
+
+# ╔═╡ 739c0741-d35d-4fc8-b93d-678371142411
+function x_dependent_cost(x, t, action)
+	x = x/x_lim # Same cost no matter scaling
+	a = action == :fast ? 3*cost_fast : 3*cost_slow
+	b = action == :fast ? cost_fast : cost_slow
+	c = 15
+	d = action == :fast ? -5 : 1
+	max(0, a + b*sin(x*c) + d*x)
+end
+
+# ╔═╡ 53fa5c41-a5fb-4571-92ee-090ededa5cc1
+call(() -> begin
+	G = 0.01
+	xs = [0:G:x_max;]
+	fast_costs = []
+	slow_costs = []
+	for x in xs
+		push!(fast_costs, x_dependent_cost(x, 0, :fast))
+		push!(slow_costs, x_dependent_cost(x, 0, :slow))
+	end
+	plot(xs, fast_costs, label="fast action")
+	plot!(xs, slow_costs, label="slow action")
+	hline!([0], label=nothing, c=:gray)
+	vline!([x_lim], label=nothing, c=:gray)
+	title!("x-dependent cost")
+	xlabel!("x")
+	ylabel!("cost")
+end)
 
 # ╔═╡ f8607cc8-30e5-454e-acec-6d0050a48904
 begin
@@ -579,7 +608,7 @@ begin
 end
 
 # ╔═╡ 4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
-evaluate(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., shielded_layabout, iterations=100000)
+evaluate(x_dependent_cost, cost_loss, x_lim, t_lim, mechanics..., shielded_layabout, iterations=100000)
 
 # ╔═╡ 45aabb2b-6a8f-462c-b082-7d7675676d64
 begin
@@ -1527,6 +1556,8 @@ version = "0.9.1+5"
 # ╟─715d0acd-a271-438c-a3ed-8712b024603f
 # ╟─fdedc5a6-6993-4d33-93b8-ef30e1bc6ee5
 # ╠═e27afbfe-a90d-4c60-b82a-9bfc007c39fb
+# ╠═739c0741-d35d-4fc8-b93d-678371142411
+# ╟─53fa5c41-a5fb-4571-92ee-090ededa5cc1
 # ╟─a831bacb-9f95-4c94-b6ea-6e84351da678
 # ╟─1d555d13-9b81-48e7-a74c-8e2ee388bfc2
 # ╟─4165c794-4c2f-4d37-8a85-d1c86a32fd6c
