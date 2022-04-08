@@ -22,12 +22,15 @@ function step(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a; unlucky=false)
 end
 
 
-plot_with_size(x_max, t_max) = 
+function plot_with_size(x_max, t_max)
 	plot(	xlim=[0, x_max],
 			ylim=[0, t_max], 
 			aspectratio=:equal, 
 			xlabel="x",
 			ylabel="t")
+	hline!([x_lim], c=:gray)
+	vline!([t_lim], c=:gray)
+end
 
 
 plot_with_size!(x_max, t_max) = 
