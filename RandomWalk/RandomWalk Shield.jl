@@ -489,6 +489,7 @@ end
 colors = [_colors...];
 
 # ╔═╡ b00bbbb7-6587-4664-ae82-82c081f66f37
+#### Make the shield! ###
 begin
 	initialize!(grid, init_func)
 	if max_steps == 0
@@ -1583,7 +1584,7 @@ version = "0.9.1+5"
 # ╟─24d292a0-ac39-497e-b520-8fd3931369fc
 # ╟─3633ff5e-19a1-4272-8c7c-5c1a3f00cc72
 # ╠═4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
-# ╠═ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
+# ╟─ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
 # ╟─795c5353-fdeb-41c6-8502-2aa70689dcc4
 # ╟─340dcc48-3787-4894-85aa-0d13873d19db
 # ╠═c2add912-1322-4f34-b9d5-e2284f631b3c
