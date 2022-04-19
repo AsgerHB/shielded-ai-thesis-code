@@ -29,13 +29,13 @@ call(f) = f()
 @bind _mechanics PlutoUI.combine() do Child
 
 md"""
-ϵ = $(Child("ϵ", NumberField(0:0.01:10, default=0.1)))
+ϵ = $(Child("ϵ", NumberField(0:0.01:10, default=0.04)))
 
-δ(:fast) = $(Child("δ_fast", NumberField(0:0.01:10, default=0.3)))
-τ(:fast) = $(Child("τ_fast", NumberField(0:0.01:10, default=0.1)))
+δ(:fast) = $(Child("δ_fast", NumberField(0:0.01:10, default=0.17)))
+τ(:fast) = $(Child("τ_fast", NumberField(0:0.01:10, default=0.05)))
 
-δ(:slow) = $(Child("δ_slow", NumberField(0:0.01:10, default=0.15)))
-τ(:slow) = $(Child("τ_slow", NumberField(0:0.01:10, default=0.2)))
+δ(:slow) = $(Child("δ_slow", NumberField(0:0.01:10, default=0.1)))
+τ(:slow) = $(Child("τ_slow", NumberField(0:0.01:10, default=0.12)))
 """
 	
 end

@@ -15,8 +15,8 @@ void updateFast()
 {
     if (x&lt;=1 and t &lt;=1)
     {
-        x = x + 0.3 - 0.1 + random(0.2); 
-        t = t + 0.1 - 0.1 + random(0.2);    
+        x = x + 0.17 - 0.2 + random(0.4); 
+        t = t + 0.05 - 0.2 + random(0.4);    
     }
 }
 
@@ -26,51 +26,49 @@ void updateSlow()
 
     if (x&lt;=1 and t &lt;=1)
     {
-        x = x + 0.15 - 0.1 + random(0.2); 
-        t = t + 0.2 - 0.1 + random(0.2);    
+        x = x + 0.1 - 0.2 + random(0.4); 
+        t = t + 0.12 - 0.2 + random(0.4);    
     }
 }</declaration>
 	<template>
 		<name x="5" y="5">Template</name>
 		<declaration>// Place local declarations here.
 </declaration>
-		<location id="id0" x="0" y="68">
+		<location id="id0" x="-8" y="-93">
 			<committed/>
 		</location>
-		<location id="id1" x="-119" y="255">
+		<location id="id1" x="0" y="255">
 			<committed/>
 		</location>
-		<location id="id2" x="170" y="340">
+		<location id="id2" x="102" y="340">
 		</location>
 		<init ref="id0"/>
 		<transition id="id3" controllable="false">
 			<source ref="id1"/>
 			<target ref="id2"/>
-			<label kind="guard" x="-34" y="357">t &gt; 1 || x &gt; 1</label>
-			<nail x="-85" y="340"/>
+			<label kind="guard" x="-59" y="348">t &gt; 1 || x &gt; 1</label>
+			<nail x="-68" y="340"/>
 		</transition>
 		<transition id="id4" controllable="false">
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-85" y="119">t &lt;= 1 &amp;&amp; x &lt;= 1</label>
+			<label kind="guard" x="-76" y="-8">t &lt;= 1 &amp;&amp; x &lt;= 1</label>
 		</transition>
 		<transition id="id5">
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="synchronisation" x="-204" y="-17">slow!</label>
-			<label kind="assignment" x="-450" y="0">updateSlow(), counterSlow++</label>
+			<label kind="synchronisation" x="-213" y="-17">slow!</label>
+			<label kind="assignment" x="-408" y="0">updateSlow(), counterSlow++</label>
 			<nail x="-153" y="-93"/>
 			<nail x="-153" y="76"/>
-			<nail x="-119" y="170"/>
 		</transition>
 		<transition id="id6">
 			<source ref="id0"/>
 			<target ref="id1"/>
 			<label kind="synchronisation" x="170" y="-25">fast!</label>
 			<label kind="assignment" x="170" y="0">updateFast(), counterFast ++</label>
-			<nail x="153" y="-76"/>
-			<nail x="153" y="68"/>
-			<nail x="59" y="229"/>
+			<nail x="153" y="-93"/>
+			<nail x="153" y="85"/>
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
