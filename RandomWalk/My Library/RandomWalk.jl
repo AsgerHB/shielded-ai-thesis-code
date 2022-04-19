@@ -22,23 +22,28 @@ function step(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a; unlucky=false)
 end
 
 
-function plot_with_size(x_max, t_max)
+function plot_with_size(x_max, t_max; figure_width=600, figure_height=600)
 	plot(	xlim=[0, x_max],
 			ylim=[0, t_max], 
 			aspectratio=:equal, 
 			xlabel="x",
-			ylabel="t")
-	hline!([x_lim], c=:gray)
-	vline!([t_lim], c=:gray)
+			ylabel="t",
+			size=(figure_width, figure_height))
+	hline!([x_max], c=:gray)
+	vline!([t_max], c=:gray)
 end
 
 
-plot_with_size!(x_max, t_max) = 
+function plot_with_size!(x_max, t_max; figure_width=600, figure_height=600)
 	plot!(	xlim=[0, x_max],
 			ylim=[0, t_max], 
 			aspectratio=:equal, 
 			xlabel="x",
-			ylabel="t")
+			ylabel="t",
+			size=(figure_width, figure_height))
+	hline!([x_max], c=:gray)
+	vline!([t_max], c=:gray)
+end
 
 
 function draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)

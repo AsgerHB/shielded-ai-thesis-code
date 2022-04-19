@@ -107,23 +107,28 @@ end
 step(mechanics..., 0.5, 0.5, :slow)
 
 # ╔═╡ 1854dc96-144a-4465-914e-5316263d8240
-function plot_with_size(x_max, t_max)
+function plot_with_size(x_max, t_max; figure_width=600, figure_height=600)
 	plot(	xlim=[0, x_max],
 			ylim=[0, t_max], 
 			aspectratio=:equal, 
 			xlabel="x",
-			ylabel="t")
+			ylabel="t",
+			size=(figure_width, figure_height))
 	hline!([x_lim], c=:gray)
 	vline!([t_lim], c=:gray)
 end
 
 # ╔═╡ 9177fb93-4785-496d-99ea-0c273fc3b3f1
-plot_with_size!(x_max, t_max) = 
+function plot_with_size!(x_max, t_max; figure_width=600, figure_height=600)
 	plot!(	xlim=[0, x_max],
 			ylim=[0, t_max], 
 			aspectratio=:equal, 
 			xlabel="x",
-			ylabel="t")
+			ylabel="t",
+			size=(figure_width, figure_height))
+	hline!([x_lim], c=:gray)
+	vline!([t_lim], c=:gray)
+end
 
 # ╔═╡ c1db0440-9bc8-4a05-9cb2-2702da002917
 function draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
@@ -156,12 +161,6 @@ function draw_walk!(xs, ts, actions)
 		markercolor=:black,
 		linecolor=linecolors,
 		legend=nothing)
-end
-
-# ╔═╡ 94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
-begin
-	plot_with_size(x_lim, t_lim)
-	draw_next_step!(mechanics..., 0.1, 0.23, :both)
 end
 
 # ╔═╡ 50b97718-9f0d-49e0-b930-e519405955f1
@@ -279,6 +278,18 @@ function take_walk(	cost_function, cost_of_losing,
 
 	(;xs, ts, actions, total_cost, winner)
 end
+
+# ╔═╡ 94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
+call(() -> begin
+	plot_with_size(x_lim, t_lim)
+	draw_next_step!(mechanics..., 0.25, 0.25, :both)
+	wost_case_slow = take_walk(	fixed_cost, cost_loss, x_lim, t_lim, mechanics..., 
+		 		(_, _) -> :slow, unlucky=true)
+	wost_case_fast = take_walk(	fixed_cost, cost_loss, x_lim, t_lim, mechanics..., 
+		 		(_, _) -> :fast, unlucky=true)
+	draw_walk!(wost_case_slow.xs, wost_case_slow.ts, wost_case_slow.actions)
+	draw_walk!(wost_case_fast.xs, wost_case_fast.ts, wost_case_fast.actions)
+end)
 
 # ╔═╡ d2d20a03-6740-4b55-b971-0240156b6aa2
 begin
@@ -1253,17 +1264,17 @@ version = "0.9.1+5"
 # ╟─06ba8aa1-7664-47d9-b0c3-432cb3f29c05
 # ╟─53da05d1-f776-4994-8aac-b252fdec89aa
 # ╟─d333c8c3-175f-473d-b5c4-0b38735ce1c6
+# ╟─94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
 # ╟─57478173-1f1c-43f3-a727-c776b2e6135e
 # ╟─58d066e2-45df-44e0-8473-9ce30a121016
 # ╠═35be6f4d-2397-4012-8034-5582aba63648
-# ╠═c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
+# ╟─c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
 # ╟─f4389c7a-4220-4612-a27d-095da4bacfaf
 # ╠═ac704811-f1b1-455c-991d-4ede5671c39e
 # ╟─1854dc96-144a-4465-914e-5316263d8240
 # ╟─9177fb93-4785-496d-99ea-0c273fc3b3f1
 # ╟─c1db0440-9bc8-4a05-9cb2-2702da002917
 # ╟─b9668aa9-fcc7-4ca4-8603-33ec8aeafe93
-# ╟─94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
 # ╟─50b97718-9f0d-49e0-b930-e519405955f1
 # ╟─2a7ffe34-3c60-47f4-9be2-8638303d68eb
 # ╟─42990e88-4926-48f4-bf08-9b1142c47ff7
