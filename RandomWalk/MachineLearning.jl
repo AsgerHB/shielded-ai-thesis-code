@@ -14,24 +14,27 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 78969e37-9895-4077-bdae-ff4857174c6b
-begin
-	using PlutoUI
-	using Random
+# ╔═╡ d54e6584-29b1-46f7-b7b8-ec6c9342ad04
+begin 
+	using Flux: gradient
+	using Flux: params
+	using Flux
 	using Plots
+	using PlutoUI
+	using StatsBase
 	include("My Library/RandomWalk.jl");
-end
+end 
 
-# ╔═╡ 6fc2d7ee-ae97-11ec-1e57-a16e01431e37
-ingredients = include("My Library/Ingredients.jl")
-
-# ╔═╡ 3611edfd-a4cb-4632-9d94-2fe71e2195ae
+# ╔═╡ e7fc4cb4-1795-40ec-b0fb-93112fedf12a
 call(f) = f()
 
-# ╔═╡ 5229f8dd-ca19-4ed0-a9d2-da1691f79089
-md"""### Configure random walk game"""
+# ╔═╡ d983d721-7753-4a7a-a72b-bf40e733a4fc
+md"""
+# Setup
+## Mechanics of the Randomm Walk
+"""
 
-# ╔═╡ 2c05e965-545f-43c1-b0b0-0a81e08c6293
+# ╔═╡ d5429b27-c856-496a-858c-df34785c4cfb
 
 @bind _mechanics PlutoUI.combine() do Child
 
@@ -43,40 +46,35 @@ md"""
 
 δ(:slow) = $(Child("δ_slow", NumberField(0:0.01:10, default=0.1)))
 τ(:slow) = $(Child("τ_slow", NumberField(0:0.01:10, default=0.12)))
+
+x\_lim = $(Child("x_lim", NumberField(0:0.01:1000, default=1.0)))
+t\_lim = $(Child("t_lim", NumberField(0:0.01:1000, default=1.0)))
 """
 	
 end
 
-# ╔═╡ 6ad63c50-77eb-4fd7-8669-085adebc0ddc
-mechanics = (;_mechanics.ϵ, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
+# ╔═╡ c1b79329-90e8-40b2-9b8f-5c908c664e5f
+begin
+	mechanics = (;_mechanics.ϵ, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
+	x_max, t_max = x_lim, t_lim = _mechanics.x_lim, _mechanics.t_lim;
+end
 
-# ╔═╡ 4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
-md"""
-cost\_slow = $(@bind cost_slow NumberField(0:1:100, default=1))
-cost\_fast = $(@bind cost_fast NumberField(0:1:100, default=3))
-"""
-
-# ╔═╡ 715d0acd-a271-438c-a3ed-8712b024603f
-md"""
-t\_lim = $(@bind t_lim NumberField(0:0.1:10000, default=1))
-x\_lim = $(@bind x_lim NumberField(0:0.1:10000, default=1))
-"""
-
-# ╔═╡ fdedc5a6-6993-4d33-93b8-ef30e1bc6ee5
-md"""
-cost\_loss = $(@bind cost_loss NumberField(0:1:100, default=15))
-"""
-
-# ╔═╡ e27afbfe-a90d-4c60-b82a-9bfc007c39fb
-function fixed_cost(x, t, action)
-	if action == :fast
-		cost_fast
-	else
-		cost_slow
+# ╔═╡ 018e629d-b250-4900-b125-1f6b82e59491
+function get_step_func(mechanics, x_lim, t_lim, cost::Function)
+	return (x, t, action) -> begin
+		x′, t′ = step(mechanics..., x, t, action)
+		done = x′ >= x_lim || t′ >= t_lim
+		if done
+			x′, t′ = 0., 0.
+		end
+		return (state=(x′, t′), 
+				reward = -cost(x, t, action),
+				done,
+				safety_violation = t > t_lim)
 	end
 end
 
-# ╔═╡ 739c0741-d35d-4fc8-b93d-678371142411
+# ╔═╡ 500fe59e-080a-4c89-9f99-bb82a9e598bd
 function sinus_x(x, t, action)
 	x = x/x_lim # Same cost no matter scaling
 	a = action == :fast ? 3 : 1
@@ -84,376 +82,13 @@ function sinus_x(x, t, action)
 	1.5 + a + sin(b + x*pi*4)*1.5
 end
 
-# ╔═╡ 6034243b-4e9a-4720-8354-24b669bf4882
-function parabola_x(x, t, action)
-	x = x/x_lim - 0.5# Same cost no matter scaling
-	a = action == :fast ? 0 : 0
-	b = action == :fast ? 5 : -4
-	c = action == :fast ? 0.7 : 1
-	a*x + b*x^2 + c
-end
+# ╔═╡ 86fcef5a-3c4a-4463-bfbd-c0fcff0037f7
+step_sinus_cost = get_step_func(mechanics, x_lim, t_lim, sinus_x)
 
-# ╔═╡ 55b4643a-68fb-439f-b9d7-cdcf2a432589
-function cheapskate(x, t)
-	if parabola_x(x, t, :fast) < parabola_x(x, t, :slow) 
-		:fast
-	else 
-		:slow
-	end
-end
+# ╔═╡ 6f71ff8d-e74b-40c7-9565-9ae59e52ff01
+step_sinus_cost(0.9, 0.9, :fast)
 
-# ╔═╡ 5a1e9619-b64a-443d-8649-8cce928ae983
-evaluate(parabola_x, cost_loss, x_lim, t_lim, mechanics..., cheapskate)
-
-# ╔═╡ f8607cc8-30e5-454e-acec-6d0050a48904
-begin
-	struct Grid{T}
-	    G::Real
-	    x_min::Real
-	    x_max::Real
-	    y_min::Real
-	    y_max::Real
-	    x_count::Int
-	    y_count::Int
-	    array::Matrix{T}
-	end
-		
-	function Grid(G, x_min, x_max, y_min, y_max)
-	    x_count::Int = ceil((x_max - x_min)/G)
-	    y_count::Int = ceil((y_max - y_min)/G)
-	    array = Matrix(undef, x_count, y_count)
-	    Grid(G, x_min, x_max, y_min, y_max, x_count, y_count, array)
-	end
-	
-	Base.show(io::IO, ::MIME"text/plain", grid::Grid) = println(io, "Grid($(grid.G), $(grid.x_min), $(grid.x_max), $(grid.y_min), $(grid.y_max))")
-end
-
-# ╔═╡ d14ff7c8-742b-4eb2-aa04-5b1e88213f71
-struct Square
-    grid::Grid
-    ix::Int
-    iy::Int
-end
-
-# ╔═╡ d92581e2-3691-4bc8-9862-aff23a75fdcc
-md"""### Symbolic Transition"""
-
-# ╔═╡ c0490360-9d91-431c-8997-583c3c06b609
-begin
-	NEUTRAL_SQUARE = 1	# Either action allowable
-	FAST_SQUARE = 2		# Must take the :fast action
-	BAD_SQUARE = 3		# Risk of safety violation
-	nothing
-end
-
-# ╔═╡ b06918de-37de-471f-8c6e-f5af3edcf024
-init_func(Ixl, Ixu, Itl, Itu) = Itu > 1 ? BAD_SQUARE : NEUTRAL_SQUARE
-
-# ╔═╡ 895b0abb-4ee6-4a70-b638-262583c5c8ab
-function box(grid::Grid, x, y)::Square
-	if x < grid.x_min || x > grid.x_max
-		error("x value out of bounds.")
-	end
-	if y < grid.y_min || y > grid.y_max
-		error("x value out of bounds.")
-	end
-
-	ix = floor(Int, (x - grid.x_min)/grid.G) + 1
-	iy = floor(Int, (y - grid.y_min)/grid.G) + 1
-	Square(grid, ix, iy)
-end
-
-# ╔═╡ d9867d36-908e-4e5e-b013-0cc0c9475982
-function bounds(square::Square)
-	ix, iy = square.ix-1, square.iy-1
-	x_min, x_max = square.grid.x_min, square.grid.x_max
-	y_min, y_max = square.grid.y_min, square.grid.y_max
-	G = square.grid.G
-	Ixl, Iyl = G * ix + x_min, G * iy + y_min
-	Ixu, Iyu = G * (ix+1) + x_min, G * (iy+1) + y_min
-	Ixl, Ixu, Iyl, Iyu
-end
-
-# ╔═╡ e1fd73cf-9651-4f94-85f9-882fd68a4ea0
-function set_value!(square::Square, value)
-	square.grid.array[square.ix, square.iy] = value
-end
-
-# ╔═╡ cc2f97bb-57d5-4b30-bdde-fa5e2b372c12
-function get_value(square::Square)
-	square.grid.array[square.ix, square.iy]
-end
-
-# ╔═╡ d85de62a-c308-4c46-9a49-5ceb37a586ba
-function clear(grid::Grid)
-	for ix in 1:grid.x_count
-		for iy in 1:grid.y_count
-			grid.array[ix, iy] = 0
-		end
-	end
-end
-
-# ╔═╡ fe6341e8-2a52-4142-8532-52c118358c5e
-function initialize!(grid::Grid, value_function=
-								(Ixl, Ixu, Iyl, Iyu) -> Ixl == 0 && Iyl == 0 ? 2 : 1)
-	for ix in 1:grid.x_count
-		for iy in 1:grid.y_count
-			square = Square(grid, ix, iy)
-			set_value!(square, value_function(bounds(square)...))
-		end
-	end
-end
-
-# ╔═╡ d4e0a0aa-b34e-4801-9819-ea51f5b9df2a
-function draw(grid::Grid; colors=[:white, :black], show_grid=false)
-	colors = cgrad(colors, length(colors), categorical=true)
-	x_tics = grid.x_min:grid.G:grid.x_max
-	y_tics = grid.y_min:grid.G:grid.y_max
-	
-	hm = heatmap(x_tics, y_tics, permutedims(grid.array, (2, 1)), c=colors, colorbar=nothing, aspect_ratio=:equal, clim=(1, length(colors)))
-
-	if show_grid && length(grid.x_min:grid.G:grid.x_max) < 100
-		vline!(grid.x_min:grid.G:grid.y_max, color="#afafaf", label=nothing)
-		hline!(grid.y_min:grid.G:grid.y_max, color="#afafaf", label=nothing)
-	end
-
-	return hm
-end
-
-# ╔═╡ a2e85767-6f31-4c1a-a174-3bc60faf0d1b
-function cover(grid, x_lower, x_upper, y_lower, y_upper)
-	ix_lower = floor((x_lower - grid.x_min)/grid.G) + 1 # Julia indexes start at 1
-	ix_upper = floor((x_upper - grid.x_min)/grid.G) + 1
-	
-	iy_lower = floor((y_lower - grid.y_min)/grid.G) + 1
-	iy_upper = floor((y_upper - grid.y_min)/grid.G) + 1
-	
-	# Discard squares outside the grid dimensions
-	ix_lower = max(ix_lower, 1)
-	ix_upper = min(ix_upper, grid.x_count)
-	
-	iy_lower = max(iy_lower, 1)
-	iy_upper = min(iy_upper, grid.y_count)
-	
-	[ (ix, iy)
-		for ix in ix_lower:ix_upper
-		for iy in iy_lower:iy_upper
-	]
-end
-
-# ╔═╡ 886e8c1f-83d1-4aed-beb8-d0d73460348f
-"""Get a list of grid indexes representing reachable squares. 
-
-I could have used the square datatype for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
-"""
-function get_reachable_area(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action)
-	Ixl, Ixu, Itl, Itu = bounds(square)
-	δ, τ = action == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
-	cover(	square.grid, 
-			Ixl + δ - ϵ, 
-			Ixu + δ + ϵ, 
-			Itl + τ - ϵ, 
-			Itu + τ + ϵ)
-end
-
-# ╔═╡ 9a0c0fbe-c450-4b42-a320-5868756a2f3d
-function draw_barbaric_transition!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action, resolution)
-	Ixl, Ixu, Itl, Itu = bounds(square)
-	δ = action == :fast ? δ_fast : δ_slow 
-	τ = action == :fast ? τ_fast : τ_slow
-	stride = square.grid.G/resolution
-	x_start, t_start = [], []
-	x_end, t_end = [], []
-
-	for x in Ixl:stride:(Ixu)
-		for t in Itl:stride:(Itu)
-			push!(x_start, x)
-			push!(t_start, t)
-			for offset_x in (δ - ϵ):(ϵ/resolution):(δ + ϵ)
-				for offset_t in (τ - ϵ):(ϵ/resolution):(τ + ϵ)
-					xʹ = x + offset_x
-					tʹ = t + offset_t
-					push!(x_end, xʹ)
-					push!(t_end, tʹ)
-				end
-			end
-		end
-	end
-	scatter!(x_start, t_start, label="start", markersize=1, markerstrokewidth=0, markercolor="#888A85")
-	scatter!(x_end, t_end, label="end", markersize=1, markerstrokewidth=0, markercolor="#000000")
-end
-
-# ╔═╡ a25d8cf1-1b47-4f8d-b4f7-f4e77af0ff20
-	function step(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
-		x′, t′ =  x, t
-		if a == :fast
-			x′ = x + rand(δ_fast - ϵ:0.005:δ_fast + ϵ )
-			t′ = t + rand(τ_fast - ϵ:0.005:τ_fast + ϵ )
-		else
-			x′ = x + rand(δ_slow - ϵ:0.005:δ_slow + ϵ )
-			t′ = t + rand(τ_slow - ϵ:0.005:τ_slow + ϵ )
-		end
-		x′, t′
-	end
-
-# ╔═╡ 24d292a0-ac39-497e-b520-8fd3931369fc
-function set_reachable_area!(square, t, resolution, point_function, value; upto_t=false)
-	reachable_area = get_reachable_area(square, t, resolution, point_function, upto_t=upto_t)
-	for (ix, iy) in reachable_area
-		square.grid.array[ix, iy] = value
-	end
-end
-
-# ╔═╡ 3633ff5e-19a1-4272-8c7c-5c1a3f00cc72
-"""Computes and returns the tuple `(fast, slow)`.
-
-`fast` is a 2D-array of vectors of the same layout as the `array` of the gixen `grid`. If a square in `grid` has index `ix, iy`, then the vector at `fst[ix, iy]` will contain tuples `(ixʹ, iyʹ)` of square indexes that are reachable by performing a fast move from the given square.
-
-The same goes for `slow` just with the :slow action. 
-"""
-function get_transitions(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid)
-	fast = Matrix{Vector{Any}}(undef, grid.x_count, grid.y_count)
-	slow = Matrix{Vector{Any}}(undef, grid.x_count, grid.y_count)
-	
-	for ix in 1:grid.x_count
-		for iy in 1:grid.y_count
-			square = Square(grid, ix, iy)
-			fast[ix, iy] = get_reachable_area(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square, :fast)
-			slow[ix, iy] = get_reachable_area(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square, :slow)
-		end
-	end
-	fast, slow
-end
-
-# ╔═╡ 7abee61b-36bc-488b-893e-d42b5ca8665d
-mechanics
-
-# ╔═╡ 795c5353-fdeb-41c6-8502-2aa70689dcc4
-# TODO: This assumes an ordering of actions where if one action does not lead to a bad state, neither does the ones after it
-"""Compute the new value of a single square.
-
-NOTE: Requires pre-baked transition matrices. Get these by calling `get_transitions`. 
-"""
-function get_new_value(fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, square)
-	value = get_value(square)
-
-	if value == BAD_SQUARE # Bad squares stay bad. 
-		return BAD_SQUARE
-	end
-
-	Ixl, Ixu, Itl, Itu = bounds(square)
-
-	if Ixl >= 1 && Itu <= 1 
-		return NEUTRAL_SQUARE
-	end
-
-	# Check if a bad square is reachable while going slow.
-	slow_bad = false
-	for (ix, iy) in slow[square.ix, square.iy]
-		if get_value(Square(square.grid, ix, iy)) == BAD_SQUARE
-			slow_bad = true
-			break
-		end
-	end
-
-	if !slow_bad
-		# Assuming fast is better than slow, this means both actions are allowable
-		return NEUTRAL_SQUARE 
-	end
-
-	# Check if bad squares can be avoided by going fast.
-	fast_bad = false
-	for (ix, iy) in fast[square.ix, square.iy]
-		if get_value(Square(square.grid, ix, iy)) == BAD_SQUARE
-			fast_bad = true
-			break
-		end
-	end
-
-	if !fast_bad
-		return FAST_SQUARE # Gotta go fast.
-	else
-		return BAD_SQUARE
-	end
-end
-
-# ╔═╡ 340dcc48-3787-4894-85aa-0d13873d19db
-(;NEUTRAL_SQUARE, FAST_SQUARE, BAD_SQUARE)
-
-# ╔═╡ f9b7b12f-5193-48ec-b61c-ba22f4a1fb4c
-"""Take a single step in the fixed point compuation.
-"""
-function shield_step(fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, grid)
-	grid′ = Grid(grid.G, grid.x_min, grid.x_max, grid.y_min, grid.y_max)
-	
-	for ix in 1:grid.x_count
-		for iy in 1:grid.y_count
-			grid′.array[ix, iy] = get_new_value(fast, slow, Square(grid, ix, iy))
-		end
-	end
-	grid′
-end
-
-# ╔═╡ e7c8c0fe-8008-4ae0-abc8-c2cb3eb711d9
-"""Generate shield. 
-
-Gixen some initial grid, returns a tuple `(shield, terminated_early)`. 
-
-`shield` is a new grid containing the fixed point for the gixen values. 
-
-`terminted_early` is a boolean value indicating if `max_steps` were exceeded before the fixed point could be reached.
-"""
-function make_shield(	fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, grid; 
-					 	max_steps=1000,
-					  	animate=false,
-						colors=[:white, :blue, :red])
-	animation = nothing
-	if animate
-		animation = Animation()
-		draw(grid, colors=colors)
-		frame(animation)
-	end
-	i = max_steps
-	grid′ = nothing
-	while i > 0
-		grid′ = shield_step(fast, slow, grid)
-		if grid′.array == grid.array
-			break
-		end
-		grid = grid′
-		i -= 1
-		if animate
-			draw(grid, colors=colors)
-			frame(animation)
-		end
-	end
-	(grid=grid′, terminated_early=i==0, animation)
-end
-
-# ╔═╡ 6c7b61f9-98d5-4f7b-b88d-8f74ca1bbcb3
-function make_shield(   ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid;
-					    max_steps=1000, 
-						animate=false)
-	transitions = get_transitions(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid)
-	
-	return make_shield(transitions..., grid, max_steps=max_steps, animate=animate)
-end
-
-# ╔═╡ 779f0f70-ce94-4a9e-af26-3b06406aa036
-md"""
-### Configure grid
-`G = ` $(@bind G NumberField(0.01:0.01:2, default=0.2))
-
-`x ∈  [ ` $(@bind x_min NumberField(-100:0.1:100, default=0))
-	   `;`
-		$(@bind x_max NumberField(-100:0.1:100, default=1.2)) `]`
-
-`y ∈  [` $(@bind y_min NumberField(-100:0.1:100, default=0))
-	   `;`
-		$(@bind y_max NumberField(-100:0.1:100, default=1.2)) `]`
-"""
-
-# ╔═╡ 53fa5c41-a5fb-4571-92ee-090ededa5cc1
+# ╔═╡ 9d52a580-4742-4248-b139-de58a7ed685b
 call(() -> begin
 	G = 0.01
 	xs = [0:G:x_max;]
@@ -472,7 +107,16 @@ call(() -> begin
 	ylabel!("cost")
 end)
 
-# ╔═╡ e1d6608b-a7b7-4233-8de5-fcb87a148408
+# ╔═╡ c719152c-7074-4088-bcd6-7dafdee9bb67
+function parabola_x(x, t, action)
+	x = x/x_lim - 0.5# Same cost no matter scaling
+	a = action == :fast ? 0 : 0
+	b = action == :fast ? 5 : -4
+	c = action == :fast ? 0.7 : 1
+	a*x + b*x^2 + c
+end
+
+# ╔═╡ 0dd958ac-0fe9-4c21-a66e-d27a4feecc66
 call(() -> begin
 	G = 0.01
 	xs = [0:G:x_max;]
@@ -491,259 +135,105 @@ call(() -> begin
 	ylabel!("cost")
 end)
 
-# ╔═╡ 1d555d13-9b81-48e7-a74c-8e2ee388bfc2
-grid = Grid(G, x_min, x_max, y_min, y_max)
-
-# ╔═╡ 4165c794-4c2f-4d37-8a85-d1c86a32fd6c
-"($(length(grid.array)) squares)"
-
-# ╔═╡ 2cc179a4-8848-4345-a634-bf9adca525be
-initialize!(grid, init_func)
-
-# ╔═╡ 4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
-fast, slow = get_transitions(mechanics..., grid);
-
-# ╔═╡ 18b843fd-2ab8-4380-a700-240115dd23da
+# ╔═╡ cfd8d90a-6566-4336-b25e-dbb878022640
 md"""
-#### Shield config
-`max_steps =` $(@bind max_steps NumberField(0:1:1000, default=100))
-
-`animate ` $(@bind animate html"<input type=checkbox>")
-
-`fps =` $(@bind fps NumberField(0:1:1000, default=3))
+## Replay Buffer
+Will store transitions in memory to recall later for training.
 """
 
-# ╔═╡ be817e03-90a1-45ec-b5dd-04ab4ca2aaa9
+# ╔═╡ 02adee7e-a0fa-4408-b7dc-ca7d7c683561
 begin
-	cheapskate_animation = 
-		@animate for i in 1:50
-			call(() -> begin 
-				plot_with_size(x_lim, t_lim)
-				xs, ts, actions, total_cost, winner =  take_walk(	
-					fixed_cost, cost_loss, x_lim, t_lim, mechanics..., 
-					cheapskate, unlucky=false)
-				draw_walk!(xs, ts, actions)
-			end)
-		end
-	gif(cheapskate_animation, "cheapskate.gif", fps=fps)
-end
-
-# ╔═╡ 629cc812-4972-4011-a9c7-83e1cdff3d07
-
-@bind _colors PlutoUI.combine() do Child
-
-md"""
-`colors: ` 	$(Child("c1", ColorPicker(default=colorant"#FFFFFF")))
-			$(Child("c2", ColorPicker(default=colorant"#7A95FF")))
-			$(Child("c3", ColorPicker(default=colorant"#FD5353")))
-			$(Child("c4", ColorPicker(default=colorant"#ECF15C")))
-"""
-	
-end
-
-# ╔═╡ 3c95eb29-4f26-4677-bccc-8dc98774a894
-colors = [_colors...];
-
-# ╔═╡ b00bbbb7-6587-4664-ae82-82c081f66f37
-#### Make the shield! ###
-begin
-	initialize!(grid, init_func)
-	if max_steps == 0
-		shield, finished_early, animation = grid, true, nothing
-	else
-		shield, finished_early, animation = 
-			make_shield(fast, slow, grid, max_steps=max_steps, colors=colors, animate=animate)
+	mutable struct ReplayBuffer{T}
+	    state_length::Int 		# Number of elements in the state vector
+		memory_size::Int 		# Size of the replay memory
+		memory_counter::Int 	# Counts total number of stores (possibly greater than memory)
+		states::Matrix{T} 		# Main replay memory
+		actions::Vector
+		successor_states::Matrix{T}	# Successor states (??)
+		rewards::Vector
+		dones::Vector
+		safety_violations::Vector
 	end
-	"Stopped before completion: $finished_early"
-end
-
-# ╔═╡ fc2dafd2-aea5-49c9-92d3-f7b478be3be0
-md"""
-show step: $(@bind show_step CheckBox(default=true))
-"""
-
-# ╔═╡ be4a5a08-79b8-4ac9-8396-db5d62eb3f97
-md"""
-#### Example values for x and t
-
-`x = ` $(@bind x NumberField(0.01:0.01:4))
-`t = ` $(@bind t NumberField(0.01:0.01:4))
-"""
-
-# ╔═╡ a831bacb-9f95-4c94-b6ea-6e84351da678
-begin
-	plot_with_size(x_max, y_max)
-	draw_next_step!(mechanics..., x, t, :both)
-end
-
-# ╔═╡ 3a9bff13-e75e-4400-aefb-6ac004ca9d2e
-square = box(grid, x, t)
-
-# ╔═╡ ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
-call(() -> begin
-	action = :fast
-	transitions = action == :fast ? fast : slow
-	reachable_test = transitions[square.ix, square.iy]
-	grid = Grid(G, x_min, x_max, x_min, x_max)
-	initialize!(grid, init_func)
-	for (ix, it) in reachable_test
-		set_value!(Square(grid, ix, it), 2)
-	end
-	draw(grid, colors=[:white, :wheat, :red], show_grid=true)
-	#plot_with_size!(x_max, t_max)
-	Ixl, Ixu, Itl, Itu = bounds(square)
-	result = nothing
-	for (x, t) in [(x, t) for x in (Ixl, Ixu) for t in (Itl, Itu)]
-		result = draw_next_step!(mechanics..., x, t, action)
-	end
-	result
-end)
-
-# ╔═╡ c2add912-1322-4f34-b9d5-e2284f631b3c
-get_new_value(fast, slow, square)
-
-# ╔═╡ c96bd5bc-6f4a-43db-a3d0-892b0f960cc4
-begin
-	# Check if a bad square is reachable while going slow.
-	slow_bad = false
-	for (ix, iy) in slow[square.ix, square.iy]
-		if get_value(Square(square.grid, ix, iy)) == BAD_SQUARE
-			slow_bad = true
-			break
-		end
+		
+	function ReplayBuffer(state_length, memory_size)
+	    memory_counter = 0
+		states = zeros((state_length, memory_size))
+		actions = zeros(Int32, memory_size)
+		successor_states = zeros((state_length, memory_size))
+		rewards = zeros(memory_size)
+		dones = zeros(Int32, memory_size)
+		safety_violations = zeros(Int32, memory_size)
+	    ReplayBuffer(state_length, memory_size, memory_counter, states, actions, successor_states, rewards, dones, safety_violations)
 	end
 	
-	# Check if bad squares can be avoided by going fast.
-	fast_bad = false
-	for (ix, iy) in fast[square.ix, square.iy]
-		if get_value(Square(square.grid, ix, iy)) == BAD_SQUARE
-			fast_bad = true
-			break
-		end
+	#Base.show(io::IO, ::MIME"text/plain", grid::Grid) = println(io, "Grid($(grid.G), $(grid.x_min), $(grid.x_max), $(grid.y_min), $(grid.y_max))")
+end
+
+# ╔═╡ d7f6bcfb-5c21-4282-a7dc-3e70327fd61e
+replay_buffer = ReplayBuffer(2, 5000)
+
+# ╔═╡ 1306c9c6-3084-44f3-a15f-e7272a6b49f3
+function store_transition!(rb::ReplayBuffer, state, action, successor_state, reward, done, safety_violation)
+	i = 1 + rb.memory_counter%rb.memory_size
+	rb.states[:, i] .= state
+	rb.actions[i] = action
+	rb.successor_states[:, i] .= successor_state
+	rb.rewards[i] = reward
+	rb.dones[i] = done
+	rb.safety_violations[i] = safety_violation
+	rb.memory_counter += 1
+	rb
+end
+
+# ╔═╡ 30cce133-1964-4f2c-99d8-a22b38eeb918
+call() do 
+	state = (0.9, 0.9)
+	for _ in 1:2500
+		action = :fast
+		successor_state, reward, done, safety_violation = step_sinus_cost(state..., :fast)
+		store_transition!(replay_buffer, state, action == :fast ? 1 : 0, successor_state, reward, done, safety_violation)
+		state = successor_state
 	end
-	(;slow_bad, fast_bad)
+	replay_buffer
 end
 
-# ╔═╡ cb460b6d-aa08-4472-bab9-737c89e2224f
-begin
-	shieldplot = draw(shield, colors=colors, show_grid=true)
-	plot_with_size!(x_max, y_max)
-	if show_step
-		draw_next_step!(mechanics..., x, t, :both)
-	end
-	shieldplot
+# ╔═╡ 8f7a8ca3-9d94-4edd-af5d-a12018ff99a2
+function sample_memory(rb::ReplayBuffer, batch_size)
+	indexes = 1:min(rb.memory_counter, rb.memory_size)
+	batch = sample(indexes, batch_size)
+	
+	(states=rb.states[:, batch],
+	actions=rb.actions[batch],
+	successor_states=rb.successor_states[:, batch],
+	rewards=rb.rewards[batch],
+	dones=rb.dones[batch],
+	safety_violations=rb.safety_violations[batch])
 end
 
-# ╔═╡ 896993db-f8d4-492b-bff1-463658587a83
-animation != nothing ? gif(animation, "shield.gif", fps=fps) : nothing
+# ╔═╡ e2ea55b1-d00e-4296-8ce0-8ec446bceca7
+sample_memory(replay_buffer, 4)
 
-# ╔═╡ 397ca36e-bd4a-45da-9f26-573c10a938fa
-function shield_action(shield, x, t, action)
-	if x < shield.x_min || x > shield.x_max || t < shield.y_min || t > shield.y_max
-		return action
-	end
-    square_value = get_value(box(shield, x, t))
-	if square_value == FAST_SQUARE || square_value == BAD_SQUARE
-		return :fast
-	else
-		return action
-	end
-end
-
-# ╔═╡ 97962767-65eb-4b22-80bb-e352ec60e3e8
-shielded_layabout = (x, t) -> shield_action(shield, x, t, :slow);
-
-# ╔═╡ 6387760b-9c16-4ab0-8229-07f084d2b050
-xs, ts, actions, total_cost, winner = 
-	take_walk(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., shielded_layabout, unlucky=true)
-
-# ╔═╡ 7c911e4c-e132-473e-a579-c47c0b348e6c
-begin
-	draw(shield, colors=colors)
-	draw_walk!(xs, ts, actions)
-	plot_with_size!(x_max, y_max)
-	plot!(title="Worst-case walk under shield")
-end
-
-# ╔═╡ 4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
-evaluate(x_dependent_cost, cost_loss, x_lim, t_lim, mechanics..., shielded_layabout, iterations=100000)
-
-# ╔═╡ 45aabb2b-6a8f-462c-b082-7d7675676d64
-begin
-	shielded_walks_animation = 
-		@animate for i in 1:50
-			call(() -> begin 
-				draw(shield, colors=colors)
-				plot_with_size!(x_max, y_max)
-				xs, ts, actions, total_cost, winner =  take_walk(	
-					fixed_cost, cost_loss, x_lim, t_lim, mechanics..., 
-					shielded_layabout, unlucky=false)
-				draw_walk!(xs, ts, actions)
-			end)
-		end
-	gif(shielded_walks_animation, "shielded_walks.gif", fps=fps)
-end
-
-# ╔═╡ b0f5055d-36fe-4593-bdfa-f6968dbb8242
+# ╔═╡ 186ac0f9-e49d-49b9-8f92-8f9d54c115ae
 md"""
-**Make C header:** $(@bind make_c_header CheckBox(default=false))
-
-Generates a header snippet for the C shielding library, to import the shield into UPPAAL.
+## Neural Network
 """
 
-# ╔═╡ aa8a34cb-fd4e-4afc-87a3-7d92d12a25a1
-function stringdump(grid)
-	result = Vector{Char}(repeat('?', grid.x_count*grid.y_count))
-	for it in 1:grid.y_count
-		for ix in 1:grid.x_count
-			square_value = get_value(Square(grid, ix, it))
-			if square_value == BAD_SQUARE
-				result[ix + (it-1)*grid.y_count] = 'r'
-			elseif square_value == FAST_SQUARE
-				result[ix + (it-1)*grid.y_count] = 'b'
-			else
-				result[ix + (it-1)*grid.y_count] = 'w'
-			end
-		end
-	end
-	return String(result)
-end
+# ╔═╡ f36503d6-5543-425f-9dd0-3208f431064b
 
-# ╔═╡ c020277d-2dea-4879-90f7-85f7f85d1e3b
-function get_c_library_header(grid)
-	"""
-	/* This code was automatically generated by function get_c_library_header*/
-	char grid[] = "$(stringdump(grid))";
-    const float G = $(grid.G);
-    const float x_min = $(grid.x_min);
-    const float x_max = $(grid.x_max);
-    const float y_min = $(grid.y_min);
-	const float y_max = $(grid.y_max);"""
-end
-
-# ╔═╡ fd0289fb-b463-4bb5-a775-597f011d8a36
-if make_c_header
-	Markdown.parse(string(get_c_library_header(shield)))
-else
-	md"(C header will not be generated)"
-end
-
-# ╔═╡ 27e3cdb0-59b8-4728-bbd9-da606763d18e
-shield_action(shield, 0.1, 0.9, :slow)
-
-# ╔═╡ 6c4c07b7-89f0-4cc6-9d60-ab51ef9fe566
-shield_action(shield, 1.0, 0.0, :slow)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
-Plots = "~1.27.3"
-PlutoUI = "~0.7.37"
+Flux = "~0.13.0"
+Plots = "~1.27.5"
+PlutoUI = "~0.7.38"
+StatsBase = "~0.33.16"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -753,11 +243,23 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 julia_version = "1.7.2"
 manifest_format = "2.0"
 
+[[deps.AbstractFFTs]]
+deps = ["ChainRulesCore", "LinearAlgebra"]
+git-tree-sha1 = "6f1d9bc1c08f9f4a8fa92e3ea3cb50153a1b40d4"
+uuid = "621f4979-c628-5d54-868e-fcf4e3e8185c"
+version = "1.1.0"
+
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
 git-tree-sha1 = "8eaf9f1b4921132a4cff3f36a1d9ba923b14a481"
 uuid = "6e696c72-6542-2067-7265-42206c756150"
 version = "1.1.4"
+
+[[deps.Accessors]]
+deps = ["Compat", "CompositionsBase", "ConstructionBase", "Future", "LinearAlgebra", "MacroTools", "Requires", "Test"]
+git-tree-sha1 = "2bba2aa45df94e95b1a9c2405d7cfc3d60281db8"
+uuid = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
+version = "0.1.9"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -765,14 +267,42 @@ git-tree-sha1 = "af92965fb30777147966f58acb05da51c5616b5f"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 version = "3.3.3"
 
+[[deps.ArgCheck]]
+git-tree-sha1 = "a3a402a35a2f7e0b87828ccabbd5ebfbebe356b4"
+uuid = "dce04be8-c92d-5529-be00-80e4d2c0e197"
+version = "2.3.0"
+
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
+
+[[deps.ArrayInterface]]
+deps = ["Compat", "IfElse", "LinearAlgebra", "Requires", "SparseArrays", "Static"]
+git-tree-sha1 = "c933ce606f6535a7c7b98e1d86d5d1014f730596"
+uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+version = "5.0.7"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
+[[deps.BFloat16s]]
+deps = ["LinearAlgebra", "Printf", "Random", "Test"]
+git-tree-sha1 = "a598ecb0d717092b5539dbbe890c98bac842b072"
+uuid = "ab4f0b2a-ad5b-11e8-123f-65d77653426b"
+version = "0.2.0"
+
+[[deps.BangBang]]
+deps = ["Compat", "ConstructionBase", "Future", "InitialValues", "LinearAlgebra", "Requires", "Setfield", "Tables", "ZygoteRules"]
+git-tree-sha1 = "b15a6bc52594f5e4a3b825858d1089618871bf9d"
+uuid = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
+version = "0.3.36"
+
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+
+[[deps.Baselet]]
+git-tree-sha1 = "aebf55e6d7795e02ca500a689d326ac979aaf89e"
+uuid = "9718e550-a3fa-408a-8086-8db961cd8217"
+version = "0.1.1"
 
 [[deps.Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -780,11 +310,28 @@ git-tree-sha1 = "19a35467a82e236ff51bc17a3a44b69ef35185a2"
 uuid = "6e34b625-4abd-537c-b88f-471c36dfa7a0"
 version = "1.0.8+0"
 
+[[deps.CEnum]]
+git-tree-sha1 = "215a9aa4a1f23fbd05b92769fdd62559488d70e9"
+uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
+version = "0.4.1"
+
+[[deps.CUDA]]
+deps = ["AbstractFFTs", "Adapt", "BFloat16s", "CEnum", "CompilerSupportLibraries_jll", "ExprTools", "GPUArrays", "GPUCompiler", "LLVM", "LazyArtifacts", "Libdl", "LinearAlgebra", "Logging", "Printf", "Random", "Random123", "RandomNumbers", "Reexport", "Requires", "SparseArrays", "SpecialFunctions", "TimerOutputs"]
+git-tree-sha1 = "ba75320aaa092b3e17c020a2d8b9e0a572dbfa6a"
+uuid = "052768ef-5323-5732-b1bb-66c8b64840ba"
+version = "3.9.0"
+
 [[deps.Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
 git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.16.1+1"
+
+[[deps.ChainRules]]
+deps = ["ChainRulesCore", "Compat", "IrrationalConstants", "LinearAlgebra", "Random", "RealDot", "SparseArrays", "Statistics"]
+git-tree-sha1 = "8b887daa6af5daf705081061e36386190204ac87"
+uuid = "082447d4-558c-5d27-93f4-14fc19e9eca2"
+version = "1.28.1"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
@@ -816,15 +363,38 @@ git-tree-sha1 = "417b0ed7b8b838aa6ca0a87aadf1bb9eb111ce40"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.12.8"
 
+[[deps.CommonSubexpressions]]
+deps = ["MacroTools", "Test"]
+git-tree-sha1 = "7b8a93dba8af7e3b42fecabf646260105ac373f7"
+uuid = "bbf7d656-a473-5ed7-a52c-81e309532950"
+version = "0.3.0"
+
 [[deps.Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
-git-tree-sha1 = "96b0bc6c52df76506efc8a441c6cf1adcb1babc4"
+git-tree-sha1 = "b153278a25dd42c65abbf4e62344f9d22e59191b"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "3.42.0"
+version = "3.43.0"
 
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
+
+[[deps.CompositionsBase]]
+git-tree-sha1 = "455419f7e328a1a2493cabc6428d79e951349769"
+uuid = "a33af91c-f02d-484b-be07-31d278c5ca2b"
+version = "0.1.1"
+
+[[deps.ConstructionBase]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "f74e9d5388b8620b4cee35d4c5a618dd4dc547f4"
+uuid = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
+version = "1.3.0"
+
+[[deps.ContextVariablesX]]
+deps = ["Compat", "Logging", "UUIDs"]
+git-tree-sha1 = "8ccaa8c655bc1b83d2da4d569c9b28254ababd6e"
+uuid = "6add18c4-b38d-439d-96f6-d6bc489c04c5"
+version = "0.1.2"
 
 [[deps.Contour]]
 deps = ["StaticArrays"]
@@ -852,9 +422,26 @@ version = "1.0.0"
 deps = ["Printf"]
 uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 
+[[deps.DefineSingletons]]
+git-tree-sha1 = "0fba8b706d0178b4dc7fd44a96a92382c9065c2c"
+uuid = "244e2a9f-e319-4986-a169-4d1fe445cd52"
+version = "0.1.2"
+
 [[deps.DelimitedFiles]]
 deps = ["Mmap"]
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+
+[[deps.DiffResults]]
+deps = ["StaticArrays"]
+git-tree-sha1 = "c18e98cba888c6c25d1c3b048e4b3380ca956805"
+uuid = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
+version = "1.0.3"
+
+[[deps.DiffRules]]
+deps = ["IrrationalConstants", "LogExpFunctions", "NaNMath", "Random", "SpecialFunctions"]
+git-tree-sha1 = "dd933c4ef7b4c270aacd4eb88fa64c147492acf0"
+uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
+version = "1.10.0"
 
 [[deps.Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
@@ -878,9 +465,14 @@ version = "2.2.3+0"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "ae13fcbc7ab8f16b0856729b050ef0c446aa3492"
+git-tree-sha1 = "bad72f730e9e91c08d9427d5e8db95478a3c323d"
 uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
-version = "2.4.4+0"
+version = "2.4.8+0"
+
+[[deps.ExprTools]]
+git-tree-sha1 = "56559bbef6ca5ea0c0818fa5c90320398a6fbf8d"
+uuid = "e2ba6199-217a-4e67-a87a-7c52f15ade04"
+version = "0.1.8"
 
 [[deps.FFMPEG]]
 deps = ["FFMPEG_jll"]
@@ -894,11 +486,41 @@ git-tree-sha1 = "d8a578692e3077ac998b50c0217dfd67f21d1e5f"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
 version = "4.4.0+0"
 
+[[deps.FLoops]]
+deps = ["BangBang", "Compat", "FLoopsBase", "InitialValues", "JuliaVariables", "MLStyle", "Serialization", "Setfield", "Transducers"]
+git-tree-sha1 = "4391d3ed58db9dc5a9883b23a0578316b4798b1f"
+uuid = "cc61a311-1640-44b5-9fba-1b764f453329"
+version = "0.2.0"
+
+[[deps.FLoopsBase]]
+deps = ["ContextVariablesX"]
+git-tree-sha1 = "656f7a6859be8673bf1f35da5670246b923964f7"
+uuid = "b9860ae5-e623-471e-878b-f6a53c775ea6"
+version = "0.1.1"
+
+[[deps.FillArrays]]
+deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
+git-tree-sha1 = "246621d23d1f43e3b9c368bf3b72b2331a27c286"
+uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
+version = "0.13.2"
+
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
 git-tree-sha1 = "335bfdceacc84c5cdf16aadc768aa5ddfc5383cc"
 uuid = "53c48c17-4a7d-5ca2-90c5-79b7896eea93"
 version = "0.8.4"
+
+[[deps.Flux]]
+deps = ["Adapt", "ArrayInterface", "CUDA", "ChainRulesCore", "Functors", "LinearAlgebra", "MLUtils", "MacroTools", "NNlib", "NNlibCUDA", "Optimisers", "ProgressLogging", "Random", "Reexport", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "Test", "Zygote"]
+git-tree-sha1 = "e932b26ac243f312af2d9009de08b89be0e01a84"
+uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+version = "0.13.0"
+
+[[deps.FoldsThreads]]
+deps = ["Accessors", "FunctionWrappers", "InitialValues", "SplittablesBase", "Transducers"]
+git-tree-sha1 = "eb8e1989b9028f7e0985b4268dabe94682249025"
+uuid = "9c68100b-dfe1-47cf-94c8-95104e173443"
+version = "0.1.1"
 
 [[deps.Fontconfig_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Expat_jll", "FreeType2_jll", "JLLWrappers", "Libdl", "Libuuid_jll", "Pkg", "Zlib_jll"]
@@ -912,6 +534,12 @@ git-tree-sha1 = "8339d61043228fdd3eb658d86c926cb282ae72a8"
 uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
 version = "0.4.2"
 
+[[deps.ForwardDiff]]
+deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions", "StaticArrays"]
+git-tree-sha1 = "1bd6fc0c344fc0cbee1f42f8d2e7ec8253dda2d2"
+uuid = "f6369f11-7733-5829-9624-2563aa707210"
+version = "0.10.25"
+
 [[deps.FreeType2_jll]]
 deps = ["Artifacts", "Bzip2_jll", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
 git-tree-sha1 = "87eb71354d8ec1a96d4a7636bd57a7347dde3ef9"
@@ -924,23 +552,49 @@ git-tree-sha1 = "aa31987c2ba8704e23c6c8ba8a4f769d5d7e4f91"
 uuid = "559328eb-81f9-559d-9380-de523a88c83c"
 version = "1.0.10+0"
 
+[[deps.FunctionWrappers]]
+git-tree-sha1 = "241552bc2209f0fa068b6415b1942cc0aa486bcc"
+uuid = "069b7b12-0de2-55c6-9aab-29f3d0a68a2e"
+version = "1.1.2"
+
+[[deps.Functors]]
+git-tree-sha1 = "223fffa49ca0ff9ce4f875be001ffe173b2b7de4"
+uuid = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
+version = "0.2.8"
+
+[[deps.Future]]
+deps = ["Random"]
+uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
+
 [[deps.GLFW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pkg", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll"]
 git-tree-sha1 = "51d2dfe8e590fbd74e7a842cf6d13d8a2f45dc01"
 uuid = "0656b61e-2033-5cc2-a64a-77c0f6c09b89"
 version = "3.3.6+0"
 
+[[deps.GPUArrays]]
+deps = ["Adapt", "LLVM", "LinearAlgebra", "Printf", "Random", "Serialization", "Statistics"]
+git-tree-sha1 = "c783e8883028bf26fb05ed4022c450ef44edd875"
+uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
+version = "8.3.2"
+
+[[deps.GPUCompiler]]
+deps = ["ExprTools", "InteractiveUtils", "LLVM", "Libdl", "Logging", "TimerOutputs", "UUIDs"]
+git-tree-sha1 = "556190e1e0ea3e37d83059fc9aa576f1e2104375"
+uuid = "61eb1bfa-7361-4325-ad38-22787b887f55"
+version = "0.14.1"
+
 [[deps.GR]]
 deps = ["Base64", "DelimitedFiles", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Pkg", "Printf", "Random", "RelocatableFolders", "Serialization", "Sockets", "Test", "UUIDs"]
-git-tree-sha1 = "df5f5b0450c489fe6ed59a6c0a9804159c22684d"
+git-tree-sha1 = "af237c08bda486b74318c8070adb96efa6952530"
 uuid = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
-version = "0.64.1"
+version = "0.64.2"
 
 [[deps.GR_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Pkg", "Qt5Base_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "83578392343a7885147726712523c39edc714956"
+git-tree-sha1 = "cd6efcf9dc746b06709df14e462f0a3fe0786b1e"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
-version = "0.64.1+0"
+version = "0.64.2+0"
 
 [[deps.GeometryBasics]]
 deps = ["EarCut_jll", "IterTools", "LinearAlgebra", "StaticArrays", "StructArrays", "Tables"]
@@ -1000,10 +654,26 @@ git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
 uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
 version = "0.2.2"
 
+[[deps.IRTools]]
+deps = ["InteractiveUtils", "MacroTools", "Test"]
+git-tree-sha1 = "7f43342f8d5fd30ead0ba1b49ab1a3af3b787d24"
+uuid = "7869d1d1-7146-5819-86e3-90919afe41df"
+version = "0.4.5"
+
+[[deps.IfElse]]
+git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
+uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
+version = "0.1.1"
+
 [[deps.IniFile]]
 git-tree-sha1 = "f550e6e32074c939295eb5ea6de31849ac2c9625"
 uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
 version = "0.5.1"
+
+[[deps.InitialValues]]
+git-tree-sha1 = "4da0f88e9a39111c2fa3add390ab15f3a44f3ca3"
+uuid = "22cec73e-a1b8-11e9-2c92-598750a2cf9c"
+version = "0.3.1"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
@@ -1048,6 +718,12 @@ git-tree-sha1 = "b53380851c6e6664204efb2e62cd24fa5c47e4ba"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
 version = "2.1.2+0"
 
+[[deps.JuliaVariables]]
+deps = ["MLStyle", "NameResolution"]
+git-tree-sha1 = "49fb3cb53362ddadb4415e9b73926d6b40709e70"
+uuid = "b14d175d-62b4-44ba-8fb7-3064adc8c3ec"
+version = "0.2.4"
+
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "f6250b16881adf048549549fba48b1161acdac8c"
@@ -1059,6 +735,18 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "bf36f528eec6634efc60d7ec062008f171071434"
 uuid = "88015f11-f218-50d7-93a8-a6af411a945d"
 version = "3.0.0+1"
+
+[[deps.LLVM]]
+deps = ["CEnum", "LLVMExtra_jll", "Libdl", "Printf", "Unicode"]
+git-tree-sha1 = "c9b86064be5ae0f63e50816a5a90b08c474507ae"
+uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
+version = "4.9.1"
+
+[[deps.LLVMExtra_jll]]
+deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "Pkg"]
+git-tree-sha1 = "5558ad3c8972d602451efe9d81c78ec14ef4f5ef"
+uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
+version = "0.0.14+2"
 
 [[deps.LZO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1073,9 +761,13 @@ version = "1.3.0"
 
 [[deps.Latexify]]
 deps = ["Formatting", "InteractiveUtils", "LaTeXStrings", "MacroTools", "Markdown", "Printf", "Requires"]
-git-tree-sha1 = "4f00cc36fede3c04b8acf9b2e2763decfdcecfa6"
+git-tree-sha1 = "6f14549f7760d84b2db7a9b10b88cd3cc3025730"
 uuid = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
-version = "0.15.13"
+version = "0.15.14"
+
+[[deps.LazyArtifacts]]
+deps = ["Artifacts", "Pkg"]
+uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
@@ -1150,12 +842,23 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LogExpFunctions]]
 deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "58f25e56b706f95125dcb796f39e1fb01d913a71"
+git-tree-sha1 = "a970d55c2ad8084ca317a4658ba6ce99b7523571"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.10"
+version = "0.3.12"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
+
+[[deps.MLStyle]]
+git-tree-sha1 = "594e189325f66e23a8818e5beb11c43bb0141bcd"
+uuid = "d8e11817-5142-5d16-987a-aa16d5891078"
+version = "0.4.10"
+
+[[deps.MLUtils]]
+deps = ["ChainRulesCore", "DelimitedFiles", "FLoops", "FoldsThreads", "Random", "ShowCases", "Statistics", "StatsBase"]
+git-tree-sha1 = "32eeb46fa393ae36a4127c9442ade478c8d01117"
+uuid = "f1d291b0-491e-4a28-83b9-f70985020b54"
+version = "0.2.3"
 
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
@@ -1182,6 +885,12 @@ git-tree-sha1 = "e498ddeee6f9fdb4551ce855a46f54dbd900245f"
 uuid = "442fdcdd-2543-5da2-b0f3-8c86c306513e"
 version = "0.3.1"
 
+[[deps.MicroCollections]]
+deps = ["BangBang", "InitialValues", "Setfield"]
+git-tree-sha1 = "6bb7786e4f24d44b4e29df03c69add1b63d88f01"
+uuid = "128add7d-3638-4c79-886c-908ea0c25c34"
+version = "0.1.2"
+
 [[deps.Missings]]
 deps = ["DataAPI"]
 git-tree-sha1 = "bf210ce90b6c9eed32d25dbcae1ebc565df2687f"
@@ -1194,10 +903,28 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 
+[[deps.NNlib]]
+deps = ["Adapt", "ChainRulesCore", "Compat", "LinearAlgebra", "Pkg", "Requires", "Statistics"]
+git-tree-sha1 = "a59a614b8b4ea6dc1dcec8c6514e251f13ccbe10"
+uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
+version = "0.8.4"
+
+[[deps.NNlibCUDA]]
+deps = ["CUDA", "LinearAlgebra", "NNlib", "Random", "Statistics"]
+git-tree-sha1 = "0d18b4c80a92a00d3d96e8f9677511a7422a946e"
+uuid = "a00861dc-f156-4864-bf3c-e6376f28a68d"
+version = "0.2.2"
+
 [[deps.NaNMath]]
-git-tree-sha1 = "737a5957f387b17e74d4ad2f440eb330b39a62c5"
+git-tree-sha1 = "b086b7ea07f8e38cf122f5016af580881ac914fe"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
-version = "1.0.0"
+version = "0.3.7"
+
+[[deps.NameResolution]]
+deps = ["PrettyPrint"]
+git-tree-sha1 = "1a0fa0e9613f46c9b8c11eee38ebb4f590013c5e"
+uuid = "71a1bf82-56d0-4bbc-8a3c-48b961074391"
+version = "0.1.5"
 
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
@@ -1212,11 +939,27 @@ version = "1.3.5+1"
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
 
+[[deps.OpenLibm_jll]]
+deps = ["Artifacts", "Libdl"]
+uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
+
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "ab05aa4cc89736e95915b01e7279e61b1bfe33b8"
 uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
 version = "1.1.14+0"
+
+[[deps.OpenSpecFun_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "13652491f6856acfd2db29360e1bbcd4565d04f1"
+uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
+version = "0.5.5+0"
+
+[[deps.Optimisers]]
+deps = ["ChainRulesCore", "Functors", "LinearAlgebra", "Random", "Statistics"]
+git-tree-sha1 = "e440ecef249dea69e79248857e800e71820d386c"
+uuid = "3bd65402-5787-11e9-1adc-39752487f4e2"
+version = "0.2.1"
 
 [[deps.Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1237,9 +980,9 @@ version = "8.44.0+0"
 
 [[deps.Parsers]]
 deps = ["Dates"]
-git-tree-sha1 = "85b5da0fa43588c75bb1ff986493443f821c70b7"
+git-tree-sha1 = "621f4f3b4977325b9128d5fae7a8b4829a0c2222"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.2.3"
+version = "2.2.4"
 
 [[deps.Pixman_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1252,10 +995,10 @@ deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markd
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[deps.PlotThemes]]
-deps = ["PlotUtils", "Requires", "Statistics"]
-git-tree-sha1 = "a3a964ce9dc7898193536002a6dd892b1b5a6f1d"
+deps = ["PlotUtils", "Statistics"]
+git-tree-sha1 = "8162b2f8547bc23876edd0c5181b27702ae58dce"
 uuid = "ccf2f8ad-2431-5c83-bf29-c5338b663b6a"
-version = "2.0.1"
+version = "3.0.0"
 
 [[deps.PlotUtils]]
 deps = ["ColorSchemes", "Colors", "Dates", "Printf", "Random", "Reexport", "Statistics"]
@@ -1265,25 +1008,36 @@ version = "1.2.0"
 
 [[deps.Plots]]
 deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "GeometryBasics", "JSON", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "Unzip"]
-git-tree-sha1 = "5f6e1309595e95db24342e56cd4dabd2159e0b79"
+git-tree-sha1 = "88ee01b02fba3c771ac4dce0dfc4ecf0cb6fb772"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.27.3"
+version = "1.27.5"
 
 [[deps.PlutoUI]]
 deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
-git-tree-sha1 = "bf0a1121af131d9974241ba53f601211e9303a9e"
+git-tree-sha1 = "670e559e5c8e191ded66fa9ea89c97f10376bb4c"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-version = "0.7.37"
+version = "0.7.38"
 
 [[deps.Preferences]]
 deps = ["TOML"]
-git-tree-sha1 = "d3538e7f8a790dc8903519090857ef8e1283eecd"
+git-tree-sha1 = "47e5f437cc0e7ef2ce8406ce1e7e24d44915f88d"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
-version = "1.2.5"
+version = "1.3.0"
+
+[[deps.PrettyPrint]]
+git-tree-sha1 = "632eb4abab3449ab30c5e1afaa874f0b98b586e4"
+uuid = "8162dcfd-2161-5ef2-ae6c-7681170c5f98"
+version = "0.2.0"
 
 [[deps.Printf]]
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[[deps.ProgressLogging]]
+deps = ["Logging", "SHA", "UUIDs"]
+git-tree-sha1 = "80d919dee55b9c50e8d9e2da5eeafff3fe58b539"
+uuid = "33c8b6b6-d38a-422a-b730-caa89a2f386c"
+version = "0.1.4"
 
 [[deps.Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
@@ -1298,6 +1052,24 @@ uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 [[deps.Random]]
 deps = ["SHA", "Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[[deps.Random123]]
+deps = ["Random", "RandomNumbers"]
+git-tree-sha1 = "afeacaecf4ed1649555a19cb2cad3c141bbc9474"
+uuid = "74087812-796a-5b5d-8853-05524746bad3"
+version = "1.5.0"
+
+[[deps.RandomNumbers]]
+deps = ["Random", "Requires"]
+git-tree-sha1 = "043da614cc7e95c703498a491e2c21f58a2b8111"
+uuid = "e6cf234a-135c-5ec9-84dd-332b85af5143"
+version = "1.5.3"
+
+[[deps.RealDot]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "9f0a1b71baaf7650f4fa8a1d168c7fb6ee41f0c9"
+uuid = "c1ae055f-0cd5-4b69-90a6-9a35b1a98df9"
+version = "0.1.0"
 
 [[deps.RecipesBase]]
 git-tree-sha1 = "6bf3f380ff52ce0832ddd3a2a7b9538ed1bcca7d"
@@ -1339,9 +1111,20 @@ version = "1.1.0"
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
+[[deps.Setfield]]
+deps = ["ConstructionBase", "Future", "MacroTools", "Requires"]
+git-tree-sha1 = "38d88503f695eb0301479bc9b0d4320b378bafe5"
+uuid = "efcf1570-3423-57d1-acb7-fd33fddbac46"
+version = "0.8.2"
+
 [[deps.SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
 uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
+
+[[deps.ShowCases]]
+git-tree-sha1 = "7f534ad62ab2bd48591bdeac81994ea8c445e4a5"
+uuid = "605ecd9f-84a6-4c9e-81e2-4798472b76a3"
+version = "0.1.0"
 
 [[deps.Showoff]]
 deps = ["Dates", "Grisu"]
@@ -1362,6 +1145,24 @@ version = "1.0.1"
 deps = ["LinearAlgebra", "Random"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
+[[deps.SpecialFunctions]]
+deps = ["ChainRulesCore", "IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
+git-tree-sha1 = "5ba658aeecaaf96923dce0da9e703bd1fe7666f9"
+uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
+version = "2.1.4"
+
+[[deps.SplittablesBase]]
+deps = ["Setfield", "Test"]
+git-tree-sha1 = "39c9f91521de844bad65049efd4f9223e7ed43f9"
+uuid = "171d559e-b47b-412a-8079-5efa626c420e"
+version = "0.1.14"
+
+[[deps.Static]]
+deps = ["IfElse"]
+git-tree-sha1 = "87e9954dfa33fd145694e42337bdd3d5b07021a6"
+uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
+version = "0.6.0"
+
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
 git-tree-sha1 = "4f6ec5d99a28e1a749559ef7dd518663c5eca3d5"
@@ -1374,9 +1175,9 @@ uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [[deps.StatsAPI]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "c3d8ba7f3fa0625b062b82853a7d5229cb728b6b"
+git-tree-sha1 = "8d7530a38dbd2c397be7ddd01a424e4f411dcc41"
 uuid = "82ae8749-77ed-4fe6-ae5f-f523153014b0"
-version = "1.2.1"
+version = "1.2.2"
 
 [[deps.StatsBase]]
 deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
@@ -1413,6 +1214,18 @@ uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[[deps.TimerOutputs]]
+deps = ["ExprTools", "Printf"]
+git-tree-sha1 = "d60b0c96a16aaa42138d5d38ad386df672cb8bd8"
+uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
+version = "0.5.16"
+
+[[deps.Transducers]]
+deps = ["Adapt", "ArgCheck", "BangBang", "Baselet", "CompositionsBase", "DefineSingletons", "Distributed", "InitialValues", "Logging", "Markdown", "MicroCollections", "Requires", "Setfield", "SplittablesBase", "Tables"]
+git-tree-sha1 = "c76399a3bbe6f5a88faa33c8f8a65aa631d95013"
+uuid = "28d57a85-8fef-5791-bfe6-a80928e7c999"
+version = "0.4.73"
 
 [[deps.URIs]]
 git-tree-sha1 = "97bbe755a53fe859669cd907f2d96aee8d2c1355"
@@ -1597,6 +1410,18 @@ git-tree-sha1 = "e45044cd873ded54b6a5bac0eb5c971392cf1927"
 uuid = "3161d3a3-bdf6-5164-811a-617609db77b4"
 version = "1.5.2+0"
 
+[[deps.Zygote]]
+deps = ["AbstractFFTs", "ChainRules", "ChainRulesCore", "DiffRules", "Distributed", "FillArrays", "ForwardDiff", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NaNMath", "Random", "Requires", "SparseArrays", "SpecialFunctions", "Statistics", "ZygoteRules"]
+git-tree-sha1 = "8c3e9ae8c2b520200df59d4f683a0dab65685ade"
+uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
+version = "0.6.38"
+
+[[deps.ZygoteRules]]
+deps = ["MacroTools"]
+git-tree-sha1 = "8c1a8e4dfacb1fd631745552c8db35d0deb09ea0"
+uuid = "700de1a5-db45-46bc-99cf-38207098b444"
+version = "0.2.2"
+
 [[deps.libass_jll]]
 deps = ["Artifacts", "Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
 git-tree-sha1 = "5982a94fcba20f02f42ace44b9894ee2b140fe47"
@@ -1653,76 +1478,26 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
-# ╠═6fc2d7ee-ae97-11ec-1e57-a16e01431e37
-# ╠═78969e37-9895-4077-bdae-ff4857174c6b
-# ╠═3611edfd-a4cb-4632-9d94-2fe71e2195ae
-# ╟─5229f8dd-ca19-4ed0-a9d2-da1691f79089
-# ╟─2c05e965-545f-43c1-b0b0-0a81e08c6293
-# ╠═6ad63c50-77eb-4fd7-8669-085adebc0ddc
-# ╠═a831bacb-9f95-4c94-b6ea-6e84351da678
-# ╟─4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
-# ╟─715d0acd-a271-438c-a3ed-8712b024603f
-# ╟─fdedc5a6-6993-4d33-93b8-ef30e1bc6ee5
-# ╠═e27afbfe-a90d-4c60-b82a-9bfc007c39fb
-# ╠═739c0741-d35d-4fc8-b93d-678371142411
-# ╟─53fa5c41-a5fb-4571-92ee-090ededa5cc1
-# ╠═6034243b-4e9a-4720-8354-24b669bf4882
-# ╠═e1d6608b-a7b7-4233-8de5-fcb87a148408
-# ╠═55b4643a-68fb-439f-b9d7-cdcf2a432589
-# ╠═be817e03-90a1-45ec-b5dd-04ab4ca2aaa9
-# ╠═5a1e9619-b64a-443d-8649-8cce928ae983
-# ╟─1d555d13-9b81-48e7-a74c-8e2ee388bfc2
-# ╟─4165c794-4c2f-4d37-8a85-d1c86a32fd6c
-# ╠═f8607cc8-30e5-454e-acec-6d0050a48904
-# ╟─d14ff7c8-742b-4eb2-aa04-5b1e88213f71
-# ╠═3a9bff13-e75e-4400-aefb-6ac004ca9d2e
-# ╟─d92581e2-3691-4bc8-9862-aff23a75fdcc
-# ╠═c0490360-9d91-431c-8997-583c3c06b609
-# ╠═b06918de-37de-471f-8c6e-f5af3edcf024
-# ╠═2cc179a4-8848-4345-a634-bf9adca525be
-# ╠═895b0abb-4ee6-4a70-b638-262583c5c8ab
-# ╟─d9867d36-908e-4e5e-b013-0cc0c9475982
-# ╟─e1fd73cf-9651-4f94-85f9-882fd68a4ea0
-# ╟─cc2f97bb-57d5-4b30-bdde-fa5e2b372c12
-# ╟─d85de62a-c308-4c46-9a49-5ceb37a586ba
-# ╟─fe6341e8-2a52-4142-8532-52c118358c5e
-# ╠═d4e0a0aa-b34e-4801-9819-ea51f5b9df2a
-# ╠═886e8c1f-83d1-4aed-beb8-d0d73460348f
-# ╠═a2e85767-6f31-4c1a-a174-3bc60faf0d1b
-# ╟─9a0c0fbe-c450-4b42-a320-5868756a2f3d
-# ╟─a25d8cf1-1b47-4f8d-b4f7-f4e77af0ff20
-# ╟─24d292a0-ac39-497e-b520-8fd3931369fc
-# ╟─3633ff5e-19a1-4272-8c7c-5c1a3f00cc72
-# ╠═4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
-# ╟─ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
-# ╠═7abee61b-36bc-488b-893e-d42b5ca8665d
-# ╟─795c5353-fdeb-41c6-8502-2aa70689dcc4
-# ╟─340dcc48-3787-4894-85aa-0d13873d19db
-# ╠═c2add912-1322-4f34-b9d5-e2284f631b3c
-# ╠═c96bd5bc-6f4a-43db-a3d0-892b0f960cc4
-# ╟─f9b7b12f-5193-48ec-b61c-ba22f4a1fb4c
-# ╠═e7c8c0fe-8008-4ae0-abc8-c2cb3eb711d9
-# ╠═6c7b61f9-98d5-4f7b-b88d-8f74ca1bbcb3
-# ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
-# ╟─18b843fd-2ab8-4380-a700-240115dd23da
-# ╟─629cc812-4972-4011-a9c7-83e1cdff3d07
-# ╟─3c95eb29-4f26-4677-bccc-8dc98774a894
-# ╠═b00bbbb7-6587-4664-ae82-82c081f66f37
-# ╟─fc2dafd2-aea5-49c9-92d3-f7b478be3be0
-# ╟─be4a5a08-79b8-4ac9-8396-db5d62eb3f97
-# ╟─cb460b6d-aa08-4472-bab9-737c89e2224f
-# ╟─896993db-f8d4-492b-bff1-463658587a83
-# ╠═397ca36e-bd4a-45da-9f26-573c10a938fa
-# ╠═97962767-65eb-4b22-80bb-e352ec60e3e8
-# ╠═6387760b-9c16-4ab0-8229-07f084d2b050
-# ╟─7c911e4c-e132-473e-a579-c47c0b348e6c
-# ╠═4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
-# ╠═45aabb2b-6a8f-462c-b082-7d7675676d64
-# ╟─b0f5055d-36fe-4593-bdfa-f6968dbb8242
-# ╟─aa8a34cb-fd4e-4afc-87a3-7d92d12a25a1
-# ╟─c020277d-2dea-4879-90f7-85f7f85d1e3b
-# ╟─fd0289fb-b463-4bb5-a775-597f011d8a36
-# ╠═27e3cdb0-59b8-4728-bbd9-da606763d18e
-# ╠═6c4c07b7-89f0-4cc6-9d60-ab51ef9fe566
+# ╠═d54e6584-29b1-46f7-b7b8-ec6c9342ad04
+# ╠═e7fc4cb4-1795-40ec-b0fb-93112fedf12a
+# ╟─d983d721-7753-4a7a-a72b-bf40e733a4fc
+# ╟─d5429b27-c856-496a-858c-df34785c4cfb
+# ╟─c1b79329-90e8-40b2-9b8f-5c908c664e5f
+# ╠═018e629d-b250-4900-b125-1f6b82e59491
+# ╠═86fcef5a-3c4a-4463-bfbd-c0fcff0037f7
+# ╠═6f71ff8d-e74b-40c7-9565-9ae59e52ff01
+# ╠═500fe59e-080a-4c89-9f99-bb82a9e598bd
+# ╟─9d52a580-4742-4248-b139-de58a7ed685b
+# ╠═c719152c-7074-4088-bcd6-7dafdee9bb67
+# ╟─0dd958ac-0fe9-4c21-a66e-d27a4feecc66
+# ╟─cfd8d90a-6566-4336-b25e-dbb878022640
+# ╠═02adee7e-a0fa-4408-b7dc-ca7d7c683561
+# ╠═d7f6bcfb-5c21-4282-a7dc-3e70327fd61e
+# ╠═1306c9c6-3084-44f3-a15f-e7272a6b49f3
+# ╠═30cce133-1964-4f2c-99d8-a22b38eeb918
+# ╠═8f7a8ca3-9d94-4edd-af5d-a12018ff99a2
+# ╠═e2ea55b1-d00e-4296-8ce0-8ec446bceca7
+# ╟─186ac0f9-e49d-49b9-8f92-8f9d54c115ae
+# ╠═f36503d6-5543-425f-9dd0-3208f431064b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
