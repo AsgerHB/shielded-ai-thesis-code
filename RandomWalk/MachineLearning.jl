@@ -18,10 +18,12 @@ end
 begin 
 	using Flux: gradient
 	using Flux: params
+	using Flux.Losses: mse
 	using Flux
 	using Plots
 	using PlutoUI
 	using StatsBase
+	using CUDA
 	include("My Library/RandomWalk.jl");
 end 
 
@@ -56,7 +58,8 @@ end
 # ╔═╡ c1b79329-90e8-40b2-9b8f-5c908c664e5f
 begin
 	mechanics = (;_mechanics.ϵ, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
-	x_max, t_max = x_lim, t_lim = _mechanics.x_lim, _mechanics.t_lim;
+	x_max, t_max = x_lim, t_lim = _mechanics.x_lim, _mechanics.t_lim
+	"unwrapping: mechanics, x_lim, t_lim"
 end
 
 # ╔═╡ 018e629d-b250-4900-b125-1f6b82e59491
@@ -67,7 +70,7 @@ function get_step_func(mechanics, x_lim, t_lim, cost::Function)
 		if done
 			x′, t′ = 0., 0.
 		end
-		return (state=(x′, t′), 
+		return (state=[x′, t′], 
 				reward = -cost(x, t, action),
 				done,
 				safety_violation = t > t_lim)
@@ -218,18 +221,120 @@ md"""
 ## Neural Network
 """
 
-# ╔═╡ f36503d6-5543-425f-9dd0-3208f431064b
+# ╔═╡ 44437cb9-84a6-409b-b7f9-925d1a3b778e
 
+@bind args PlutoUI.combine() do Child
+
+md"""
+|**args**| |
+|:---|:---|
+|η = 			| $(Child("η", NumberField(0:0.001:2, default=0.1))) |
+|γ = 			| $(Child("γ", NumberField(0:0.001:2, default=0.999))) |
+|batch\_size =	| $(Child("batch_size", NumberField(0:10000, default=4))) |
+|epochs = 		| $(Child("epochs", NumberField(0:10000, default=2))) |
+|use\_cuda 		| $(Child("use_cuda", CheckBox(default=true))) |
+|number\_of\_actions	| $(Child("number_of_actions", NumberField(2:100, default=2))) |
+"""
+
+end
+
+# ╔═╡ f36503d6-5543-425f-9dd0-3208f431064b
+Q = Chain(
+	Dense(2, 512, relu), 	# Input (x, t)
+	Dense(512, 512, relu), 	# A single hidden layer
+	Dense(512, 2) 			# Output (:fast, :slow)
+)
+
+# ╔═╡ db29eed0-8199-495f-8462-4790760c1fee
+Q([0.9, 0.9])
+
+# ╔═╡ 4591cbcc-f622-40f5-a6ab-e0610d63a0e5
+optimizer = ADAM(args.η)
+
+# ╔═╡ 901d1eb7-cf4b-4c87-9c56-769e8383ebee
+if CUDA.functional() && use_cuda
+	device = gpu
+	device(Q)
+	"Using GPU."
+else
+	device = cpu
+	device(Q)
+	"Using CPU like some kind of plebian."
+end
+
+# ╔═╡ 0a4ed512-0aec-48dd-a9f4-dc325c83eced
+md"""
+Q-learning loss: 
+
+``L(s_t,\ a) = \left ( 
+	Q(s_t,\ a) - \left ( r_t + \gamma \cdot \max_{a'} Q(s_{t+1},\ a') \right ) 
+\right )^2``
+
+But I'll be calculating the losses for a whole batch at a time.
+"""
+
+# ╔═╡ 97f59c51-fa73-43fb-b719-a10b56949974
+function loss(γ, successor_states, rewards, predictions)
+	target = rewards
+end
+
+# ╔═╡ 00b03abf-cf9f-49dd-88b8-c901e10b50b8
+function loss(prediction, γ, state, action, successor_state, reward, done)
+	if done==1 
+		target = reward
+	else
+		bar = 3#Q(successor_state)
+		foo = γ*max(bar...)
+		target = reward + foo
+	end
+	mse(target, prediction)
+end
+
+# ╔═╡ eeab7035-4fd0-4b06-b31c-bdadb37d0baa
+loss( 	0.5, args.γ, 
+		replay_buffer.states[:, 10], 
+		replay_buffer.actions[10], 
+		replay_buffer.successor_states[:, 10], 
+		replay_buffer.rewards[10], 
+		replay_buffer.dones[10])
+
+# ╔═╡ b44dfcf8-dfea-4df3-a17b-bb217ddeea1e
+function learn(Q, replay_buffer, args)
+	if replay_buffer.memory_counter < args.batch_size
+		return
+	end
+	learning_parameters = params(Q)
+	batch = sample_memory(replay_buffer, args.batch_size)
+	device(batch.states)
+	losses = zeros(args.batch_size)
+	for i in 1:args.batch_size
+		prediction = Q(batch.states[:, i])
+		gradients = gradient(learning_parameters) do
+			loss(	prediction, args.γ, 
+							batch.states[:, i], 
+							batch.actions[i], 
+							batch.successor_states[:, i], 
+							batch.rewards[i], 
+							batch.dones[i])
+		end
+	end
+	gradients
+end
+
+# ╔═╡ 4a0d4b60-7677-4e49-8c88-102abfa54111
+learn(Q, replay_buffer, args)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
+CUDA = "~3.9.0"
 Flux = "~0.13.0"
 Plots = "~1.27.5"
 PlutoUI = "~0.7.38"
@@ -1498,6 +1603,16 @@ version = "0.9.1+5"
 # ╠═8f7a8ca3-9d94-4edd-af5d-a12018ff99a2
 # ╠═e2ea55b1-d00e-4296-8ce0-8ec446bceca7
 # ╟─186ac0f9-e49d-49b9-8f92-8f9d54c115ae
+# ╟─44437cb9-84a6-409b-b7f9-925d1a3b778e
 # ╠═f36503d6-5543-425f-9dd0-3208f431064b
+# ╠═db29eed0-8199-495f-8462-4790760c1fee
+# ╠═4591cbcc-f622-40f5-a6ab-e0610d63a0e5
+# ╟─901d1eb7-cf4b-4c87-9c56-769e8383ebee
+# ╟─0a4ed512-0aec-48dd-a9f4-dc325c83eced
+# ╠═97f59c51-fa73-43fb-b719-a10b56949974
+# ╠═00b03abf-cf9f-49dd-88b8-c901e10b50b8
+# ╠═eeab7035-4fd0-4b06-b31c-bdadb37d0baa
+# ╠═b44dfcf8-dfea-4df3-a17b-bb217ddeea1e
+# ╠═4a0d4b60-7677-4e49-8c88-102abfa54111
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
