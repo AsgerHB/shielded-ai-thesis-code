@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.18.0
+# v0.19.2
 
 using Markdown
 using InteractiveUtils
@@ -220,6 +220,21 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 	return hm
 end
 
+# ╔═╡ 886e8c1f-83d1-4aed-beb8-d0d73460348f
+"""Get a list of grid indexes representing reachable squares. 
+
+I could have used the square datatype for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
+"""
+function get_reachable_area(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action)
+	Ixl, Ixu, Itl, Itu = bounds(square)
+	δ, τ = action == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
+	cover(	square.grid, 
+			Ixl + δ - ϵ, 
+			Ixu + δ + ϵ, 
+			Itl + τ - ϵ, 
+			Itu + τ + ϵ)
+end
+
 # ╔═╡ a2e85767-6f31-4c1a-a174-3bc60faf0d1b
 function cover(grid, x_lower, x_upper, y_lower, y_upper)
 	ix_lower = floor((x_lower - grid.x_min)/grid.G) + 1 # Julia indexes start at 1
@@ -239,21 +254,6 @@ function cover(grid, x_lower, x_upper, y_lower, y_upper)
 		for ix in ix_lower:ix_upper
 		for iy in iy_lower:iy_upper
 	]
-end
-
-# ╔═╡ 886e8c1f-83d1-4aed-beb8-d0d73460348f
-"""Get a list of grid indexes representing reachable squares. 
-
-I could have used the square datatype for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
-"""
-function get_reachable_area(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action)
-	Ixl, Ixu, Itl, Itu = bounds(square)
-	δ, τ = action == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
-	cover(	square.grid, 
-			Ixl + δ - ϵ, 
-			Ixu + δ + ϵ, 
-			Itl + τ - ϵ, 
-			Itu + τ + ϵ)
 end
 
 # ╔═╡ 9a0c0fbe-c450-4b42-a320-5868756a2f3d
@@ -733,6 +733,9 @@ shield_action(shield, 0.1, 0.9, :slow)
 
 # ╔═╡ 6c4c07b7-89f0-4cc6-9d60-ab51ef9fe566
 shield_action(shield, 1.0, 0.0, :slow)
+
+# ╔═╡ d977eb33-f8bd-49cc-b1b5-ddd83bab8449
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1724,5 +1727,6 @@ version = "0.9.1+5"
 # ╟─fd0289fb-b463-4bb5-a775-597f011d8a36
 # ╠═27e3cdb0-59b8-4728-bbd9-da606763d18e
 # ╠═6c4c07b7-89f0-4cc6-9d60-ab51ef9fe566
+# ╠═d977eb33-f8bd-49cc-b1b5-ddd83bab8449
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

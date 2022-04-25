@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.5//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_5.dtd'>
 <nta>
-	<declaration>import "/home/rgc/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/RandomWalk/CLib/libshield.so"
+	<declaration>import "/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/RandomWalk/CLib/libshield.so"
 {
     bool must_go_fast(double x, double t);
     int testytest(double ix, double it);
@@ -94,7 +94,7 @@ system Process;
 		<query>
 			<formula>strategy GoFast = minE ((t&gt;=1.0)*15.0 + counterSlow + counterFast*3) [#&lt;=30] {} -&gt; {x, t} : &lt;&gt; x&gt;=1 or t&gt;=1</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2022-04-19 15:13:58 +0200">
+			<result outcome="success" type="quality" timestamp="2022-04-23 21:06:00 +0200">
 			</result>
 		</query>
 		<query>
