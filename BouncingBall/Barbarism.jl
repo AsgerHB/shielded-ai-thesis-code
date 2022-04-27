@@ -23,6 +23,53 @@ end
 # ╔═╡ 77171eaa-f29d-49f7-962f-d81b95092540
 call(f) = f()
 
+# ╔═╡ c4be0970-9a53-4a14-a250-68b1607b446c
+md"""
+## Color shceme
+
+Colors by [Flat UI](https://flatuicolors.com/palette/defo)
+"""
+
+# ╔═╡ 69cddf0d-618e-4033-8e3e-5ffa1987fdae
+begin
+	colors = 
+	(TURQUOISE = colorant"#1abc9c", 
+	EMERALD = colorant"#2ecc71", 
+	PETER_RIVER = colorant"#3498db", 
+	AMETHYST = colorant"#9b59b6", 
+	WET_ASPHALT = colorant"#34495e",
+	
+	GREEN_SEA   = colorant"#16a085", 
+	NEPHRITIS   = colorant"#27ae60", 
+	BELIZE_HOLE  = colorant"#2980b9", 
+	WISTERIA     = colorant"#8e44ad", 
+	MIDNIGHT_BLUE = colorant"#2c3e50", 
+	
+	SUNFLOWER = colorant"#f1c40f",
+	CARROT   = colorant"#e67e22",
+	ALIZARIN = colorant"#e74c3c",
+	CLOUDS   = colorant"#ecf0f1",
+	CONCRETE = colorant"#95a5a6",
+	
+	ORANGE = colorant"#f39c12",
+	PUMPKIN = colorant"#d35400",
+	POMEGRANATE = colorant"#c0392b",
+	SILVER = colorant"#bdc3c7",
+	ASBESTOS = colorant"#7f8c8d")
+	
+	[colors...]
+end
+
+# ╔═╡ f1b25c8d-404e-4139-aeab-8be8fc02f4a5
+# I had to lighten some flatUI , though I'm sure that's against the principles of the color scheme.
+shieldcolors=[colorant"#ffffff", colorant"#a1eaff", colorant"#ff9178"]
+
+# ╔═╡ 96ee04f8-7da9-4291-be4c-e6c7a62bcca0
+transition_background_colors=[colorant"#ffffff", colorant"#93d0ff", colorant"#93ffb4"]
+
+# ╔═╡ 96db3dbc-1ace-463e-a952-3451b72caf85
+transition_colors=(start=colors.BELIZE_HOLE, _end=colors.NEPHRITIS)
+
 # ╔═╡ 89cee980-3094-43eb-99e5-fdc6f6ca4d6a
 md"""
 # The barbaric approach to computing a transition function
@@ -34,26 +81,6 @@ A ball is bouncing on a flat surface, and can be hit by a hammer for additional 
 To figure out the latest possible time to hit the ball and still guarantee that it keeps bouncing, the (velocity, position) state space is split up into a grid of squares. A strategy is then synthesized for each square in the grid, based on which other squares a ball could end up in after starting anywhere within the initial square.
 
 The "barbaric" method brute-forces calculation of the transition function, by placing a lot of individual points at regular intervals inside the given square, and simulating the ball at those points to figure out which squares the ball can reach.
-"""
-
-# ╔═╡ f9f31a6f-6267-4afc-baf8-ef62a8425000
-md"""
-## Color shceme
-Shield colors:
-$(@bind c1 html"<input type=color style='width:5em' step='0.01' value='#90ee90'>")
-$(@bind c2 html"<input type=color style='width:5em' step='0.01' value='#ffffe0'>")
-$(@bind c3 html"<input type=color style='width:5em' step='0.01' value='#ea786b'>")
-
-Transition indicators:
-$(@bind c4 html"<input type=color style='width:5em' step='0.01' value='#c8dcc8'>")
-$(@bind c5 html"<input type=color style='width:5em' step='0.01' value='#c7d2e3'>")
-
-Grid color:
-$(@bind c6 html"<input type=color style='width:5em' step='0.01' value='#afafaf'>")
-
-Resp. start/end marker color:
-$(@bind c7 html"<input type=color style='width:5em' step='0.01' value='#888A85'>")
-$(@bind c8 html"<input type=color style='width:5em' step='0.01' value='#000000'>")
 """
 
 # ╔═╡ c5942a34-159f-412a-bfd5-0518115afedf
@@ -291,8 +318,8 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 	hm = heatmap(x_tics, y_tics, transpose(grid.array), c=colors)
 
 	if show_grid && length(grid.v_min:grid.G:grid.v_max) < 100
-		vline!(grid.v_min:grid.G:grid.v_max, color=c6, label=nothing)
-		hline!(grid.p_min:grid.G:grid.p_max, color=c6, label=nothing)
+		vline!(grid.v_min:grid.G:grid.v_max, color=:gray, label=nothing)
+		hline!(grid.p_min:grid.G:grid.p_max, color=:gray, label=nothing)
 	end
 
 	return hm
@@ -303,15 +330,15 @@ call(() -> begin
 	grid = Grid(G, v_min, v_max, p_min, p_max)
 	value_function(Ivl, Ivu, Ipl, Ipu) = e_mek(g, Ivu, Ipu) < e_mek(g, 0, 4) ? 2 : 0
 	initialize!(grid, value_function)
-	draw(grid, colors=[c1, c2, c3])
+	draw(grid, colors=shieldcolors)
 end)
 
 # ╔═╡ bafefabb-50c2-421e-80b4-044c1488a24a
 begin
 	clear(grid)
 	set_value!(square, 1)
-	draw(grid, colors=[:white, c5], show_grid=false)
-	plot!(vv, pp, color=c6, linewidth=2)
+	draw(grid, colors=[:white, colors.CONCRETE], show_grid=false)
+	plot!(vv, pp, color=colors.MIDNIGHT_BLUE, linewidth=2)
 end
 
 # ╔═╡ d8eb0ab7-b335-4191-adc5-586ad4dab074
@@ -330,7 +357,7 @@ md"""
 """Update current plot with an illustration of the barbaric way in which transitions are computed.
 
 A set of `resolution` × `resolution` evenly spaced points is drawn inside the given square, and the same points are drawn again after time `t` has elapsed."""
-function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, action; upto_t=false)
+function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, action; upto_t=false, colors=(start=:black, _end=:gray))
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	step = square.grid.G/resolution
 	v_start, p_start = [], []
@@ -353,8 +380,8 @@ function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, a
 			end
 		end
 	end
-	scatter!(v_start, p_start, label="start", markersize=1, markerstrokewidth=0, markercolor=c7)
-	scatter!(v_end, p_end, label="end", markersize=1, markerstrokewidth=0, markercolor=c8)
+	scatter!(v_start, p_start, label="start", markersize=3, markerstrokewidth=0, markercolor=colors.start)
+	scatter!(v_end, p_end, label="end", markersize=3, markerstrokewidth=0, markercolor=colors._end)
 end
 
 # ╔═╡ 14fadc22-1218-43c1-8e7b-7b58256594d1
@@ -406,8 +433,8 @@ call(() -> begin
 	square = box(grid, 1, 2)
 	set_reachable_area!(square, resolution, β1, β2, t, g, "nohit", 2, upto_t=upto_t)
 	set_value!(square, 1)
-	draw(grid, colors=[:white, c4, c5])
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit", upto_t=upto_t)
+	draw(grid, colors=transition_background_colors)
+	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit", upto_t=upto_t, colors=transition_colors)
 end)
 
 # ╔═╡ 869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
@@ -456,9 +483,9 @@ call(() -> begin
 		set_value!(square′, 2)
 	end
 	
-	draw(grid, colors=[:white, c5, c4], show_grid=true)
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "hit", upto_t=upto_t)
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit", upto_t=upto_t)
+	draw(grid, show_grid=true, colors=transition_background_colors)
+	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "hit", upto_t=upto_t, colors=transition_colors)
+	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit", upto_t=upto_t, colors=transition_colors)
 end)
 
 # ╔═╡ 8ee09119-9eba-4dfd-ad25-5496e714892c
@@ -511,9 +538,9 @@ call(() -> begin
 	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
 	new_value = get_new_value(reachable_hit, reachable_nohit, square, grid, β1, β2, t, g)
 	set_value!(square, new_value)
-	draw(grid, colors=[c1, c2, c3])
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit")
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "hit")
+	draw(grid, colors=transition_background_colors)
+	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit", colors=transition_colors)
+	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "hit", colors=transition_colors)
 	title!("Square type: $(new_value)")
 end)
 
@@ -605,7 +632,7 @@ begin
 										  max_steps=steps, 
 										  animate=animate, 
 										  upto_t=upto_t)
-	draw(shield, colors=[c1, c2, c3], show_grid=true)
+	draw(shield, colors=shieldcolors, show_grid=true)
 end
 
 # ╔═╡ 8b46e388-f6f9-42eb-be92-230742c59fcc
@@ -635,7 +662,7 @@ end)
 # ╔═╡ 7e55b882-892d-4b7a-bdbd-a52055f45732
 call(() -> begin
 	vv, pp, tt = shielded_simulation
-	draw(shield, colors=[c1, c2, c3])
+	draw(shield, colors=shieldcolors)
 	plot!(vv, pp, color=:black)
 end)
 
@@ -1532,8 +1559,12 @@ version = "0.9.1+5"
 # ╔═╡ Cell order:
 # ╠═5f0278a4-29bc-43fc-af88-922f86ab5931
 # ╠═77171eaa-f29d-49f7-962f-d81b95092540
+# ╟─c4be0970-9a53-4a14-a250-68b1607b446c
+# ╟─69cddf0d-618e-4033-8e3e-5ffa1987fdae
+# ╟─f1b25c8d-404e-4139-aeab-8be8fc02f4a5
+# ╟─96ee04f8-7da9-4291-be4c-e6c7a62bcca0
+# ╟─96db3dbc-1ace-463e-a952-3451b72caf85
 # ╟─89cee980-3094-43eb-99e5-fdc6f6ca4d6a
-# ╟─f9f31a6f-6267-4afc-baf8-ef62a8425000
 # ╟─c5942a34-159f-412a-bfd5-0518115afedf
 # ╠═412a16e6-a059-11ec-2a22-f557508307c3
 # ╠═95dd69fb-14c1-4745-ae1d-e5596b37581d
@@ -1567,10 +1598,10 @@ version = "0.9.1+5"
 # ╠═2716a75b-db77-4de2-87fe-8460dfa4a8ad
 # ╠═14fadc22-1218-43c1-8e7b-7b58256594d1
 # ╠═7fff10bd-8d93-41fa-ba2b-73756a73ffeb
-# ╠═a8d9178b-fb85-4daa-ad1f-58d6b9a734ef
+# ╟─a8d9178b-fb85-4daa-ad1f-58d6b9a734ef
 # ╠═869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 # ╠═d2b82214-239b-4a5c-9654-49006caaa295
-# ╠═02893fb2-58ce-46f9-b609-3b2cb13e67b0
+# ╟─02893fb2-58ce-46f9-b609-3b2cb13e67b0
 # ╠═8ee09119-9eba-4dfd-ad25-5496e714892c
 # ╠═04b99556-60d4-46a8-8714-e3f349df9e1a
 # ╠═030b4085-0c00-470b-82fa-1cc603dd189f

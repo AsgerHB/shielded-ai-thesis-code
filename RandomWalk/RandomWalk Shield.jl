@@ -28,6 +28,50 @@ ingredients = include("My Library/Ingredients.jl")
 # ╔═╡ 3611edfd-a4cb-4632-9d94-2fe71e2195ae
 call(f) = f()
 
+# ╔═╡ 3a43b3fe-ff43-4bf0-8bcb-6ae1781dfc41
+md"""
+## Color shceme
+
+Colors by [Flat UI](https://flatuicolors.com/palette/defo)
+"""
+
+# ╔═╡ d5280fbb-cb7c-417b-816a-ded973bebb4a
+begin
+	colors = 
+	(TURQUOISE = colorant"#1abc9c", 
+	EMERALD = colorant"#2ecc71", 
+	PETER_RIVER = colorant"#3498db", 
+	AMETHYST = colorant"#9b59b6", 
+	WET_ASPHALT = colorant"#34495e",
+	
+	GREEN_SEA   = colorant"#16a085", 
+	NEPHRITIS   = colorant"#27ae60", 
+	BELIZE_HOLE  = colorant"#2980b9", 
+	WISTERIA     = colorant"#8e44ad", 
+	MIDNIGHT_BLUE = colorant"#2c3e50", 
+	
+	SUNFLOWER = colorant"#f1c40f",
+	CARROT   = colorant"#e67e22",
+	ALIZARIN = colorant"#e74c3c",
+	CLOUDS   = colorant"#ecf0f1",
+	CONCRETE = colorant"#95a5a6",
+	
+	ORANGE = colorant"#f39c12",
+	PUMPKIN = colorant"#d35400",
+	POMEGRANATE = colorant"#c0392b",
+	SILVER = colorant"#bdc3c7",
+	ASBESTOS = colorant"#7f8c8d")
+	
+	[colors...]
+end
+
+# ╔═╡ 1b3b563a-9a3d-48fb-9c8e-34172fb80325
+rwcolors = (slow=colors.PUMPKIN, fast=colors.BELIZE_HOLE, line=colors.MIDNIGHT_BLUE)
+
+# ╔═╡ baee33de-c4b8-47a9-b231-8c7215d4b651
+# I had to lighten some flatUI , though I'm sure that's against the principles of the color scheme.
+shieldcolors=[colorant"#ffffff", colorant"#a1eaff", colorant"#ff9178"]
+
 # ╔═╡ 5229f8dd-ca19-4ed0-a9d2-da1691f79089
 md"""### Configure random walk game"""
 
@@ -93,9 +137,14 @@ function parabola_x(x, t, action)
 	a*x + b*x^2 + c
 end
 
+# ╔═╡ 6bfed0ff-56eb-4eed-9de7-bbd425a4978c
+md"""
+`cost_function`: $(@bind cost_function Select([sinus_x, parabola_x]))
+"""
+
 # ╔═╡ 55b4643a-68fb-439f-b9d7-cdcf2a432589
 function cheapskate(x, t)
-	if parabola_x(x, t, :fast) < parabola_x(x, t, :slow) 
+	if cost_function(x, t, :fast) <= cost_function(x, t, :slow) 
 		:fast
 	else 
 		:slow
@@ -103,7 +152,7 @@ function cheapskate(x, t)
 end
 
 # ╔═╡ 5a1e9619-b64a-443d-8649-8cce928ae983
-evaluate(parabola_x, cost_loss, x_lim, t_lim, mechanics..., cheapskate)
+evaluate(cost_function, cost_loss, x_lim, t_lim, mechanics..., cheapskate)
 
 # ╔═╡ f8607cc8-30e5-454e-acec-6d0050a48904
 begin
@@ -220,21 +269,6 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 	return hm
 end
 
-# ╔═╡ 886e8c1f-83d1-4aed-beb8-d0d73460348f
-"""Get a list of grid indexes representing reachable squares. 
-
-I could have used the square datatype for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
-"""
-function get_reachable_area(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action)
-	Ixl, Ixu, Itl, Itu = bounds(square)
-	δ, τ = action == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
-	cover(	square.grid, 
-			Ixl + δ - ϵ, 
-			Ixu + δ + ϵ, 
-			Itl + τ - ϵ, 
-			Itu + τ + ϵ)
-end
-
 # ╔═╡ a2e85767-6f31-4c1a-a174-3bc60faf0d1b
 function cover(grid, x_lower, x_upper, y_lower, y_upper)
 	ix_lower = floor((x_lower - grid.x_min)/grid.G) + 1 # Julia indexes start at 1
@@ -254,6 +288,21 @@ function cover(grid, x_lower, x_upper, y_lower, y_upper)
 		for ix in ix_lower:ix_upper
 		for iy in iy_lower:iy_upper
 	]
+end
+
+# ╔═╡ 886e8c1f-83d1-4aed-beb8-d0d73460348f
+"""Get a list of grid indexes representing reachable squares. 
+
+I could have used the square datatype for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
+"""
+function get_reachable_area(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, square::Square, action)
+	Ixl, Ixu, Itl, Itu = bounds(square)
+	δ, τ = action == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
+	cover(	square.grid, 
+			Ixl + δ - ϵ, 
+			Ixu + δ + ϵ, 
+			Itl + τ - ϵ, 
+			Itu + τ + ϵ)
 end
 
 # ╔═╡ 9a0c0fbe-c450-4b42-a320-5868756a2f3d
@@ -460,33 +509,14 @@ call(() -> begin
 	fast_costs = []
 	slow_costs = []
 	for x in xs
-		push!(fast_costs, sinus_x(x, 0, :fast))
-		push!(slow_costs, sinus_x(x, 0, :slow))
+		push!(fast_costs, cost_function(x, 0, :fast))
+		push!(slow_costs, cost_function(x, 0, :slow))
 	end
-	plot(xs, fast_costs, label="fast action", c=:blue, width=2)
-	plot!(xs, slow_costs, label="slow action", c=:yellow, width=2)
+	plot(xs, fast_costs, label="fast action", c=rwcolors.fast, width=2)
+	plot!(xs, slow_costs, label="slow action", c=rwcolors.slow, width=2, linestyle=:dash)
 	hline!([0], label=nothing, c=:gray)
 	vline!([x_lim], label=nothing, c=:gray)
-	title!("sinus")
-	xlabel!("x")
-	ylabel!("cost")
-end)
-
-# ╔═╡ e1d6608b-a7b7-4233-8de5-fcb87a148408
-call(() -> begin
-	G = 0.01
-	xs = [0:G:x_max;]
-	fast_costs = []
-	slow_costs = []
-	for x in xs
-		push!(fast_costs, parabola_x(x, 0, :fast))
-		push!(slow_costs, parabola_x(x, 0, :slow))
-	end
-	plot(xs, fast_costs, label="fast action", c=:blue, width=2)
-	plot!(xs, slow_costs, label="slow action", c=:yellow, width=2)
-	hline!([0], label=nothing, c=:gray)
-	vline!([x_lim], label=nothing, c=:gray)
-	title!("parabola")
+	title!("$cost_function")
 	xlabel!("x")
 	ylabel!("cost")
 end)
@@ -522,27 +552,12 @@ begin
 				xs, ts, actions, total_cost, winner =  take_walk(	
 					fixed_cost, cost_loss, x_lim, t_lim, mechanics..., 
 					cheapskate, unlucky=false)
-				draw_walk!(xs, ts, actions)
+				draw_walk!(xs, ts, actions, colors=rwcolors)
+				title!("Picking the cheapest cost for $(cost_function):")
 			end)
 		end
 	gif(cheapskate_animation, "cheapskate.gif", fps=fps)
 end
-
-# ╔═╡ 629cc812-4972-4011-a9c7-83e1cdff3d07
-
-@bind _colors PlutoUI.combine() do Child
-
-md"""
-`colors: ` 	$(Child("c1", ColorPicker(default=colorant"#FFFFFF")))
-			$(Child("c2", ColorPicker(default=colorant"#7A95FF")))
-			$(Child("c3", ColorPicker(default=colorant"#FD5353")))
-			$(Child("c4", ColorPicker(default=colorant"#ECF15C")))
-"""
-	
-end
-
-# ╔═╡ 3c95eb29-4f26-4677-bccc-8dc98774a894
-colors = [_colors...];
 
 # ╔═╡ b00bbbb7-6587-4664-ae82-82c081f66f37
 #### Make the shield! ###
@@ -573,31 +588,11 @@ md"""
 # ╔═╡ a831bacb-9f95-4c94-b6ea-6e84351da678
 begin
 	plot_with_size(x_max, y_max)
-	draw_next_step!(mechanics..., x, t, :both)
+	draw_next_step!(mechanics..., x, t, :both, colors=rwcolors)
 end
 
 # ╔═╡ 3a9bff13-e75e-4400-aefb-6ac004ca9d2e
 square = box(grid, x, t)
-
-# ╔═╡ ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
-call(() -> begin
-	action = :fast
-	transitions = action == :fast ? fast : slow
-	reachable_test = transitions[square.ix, square.iy]
-	grid = Grid(G, x_min, x_max, x_min, x_max)
-	initialize!(grid, init_func)
-	for (ix, it) in reachable_test
-		set_value!(Square(grid, ix, it), 2)
-	end
-	draw(grid, colors=[:white, :wheat, :red], show_grid=true)
-	#plot_with_size!(x_max, t_max)
-	Ixl, Ixu, Itl, Itu = bounds(square)
-	result = nothing
-	for (x, t) in [(x, t) for x in (Ixl, Ixu) for t in (Itl, Itu)]
-		result = draw_next_step!(mechanics..., x, t, action)
-	end
-	result
-end)
 
 # ╔═╡ c2add912-1322-4f34-b9d5-e2284f631b3c
 get_new_value(fast, slow, square)
@@ -626,10 +621,10 @@ end
 
 # ╔═╡ cb460b6d-aa08-4472-bab9-737c89e2224f
 begin
-	shieldplot = draw(shield, colors=colors, show_grid=true)
+	shieldplot = draw(shield, colors=shieldcolors, show_grid=true)
 	plot_with_size!(x_max, y_max)
 	if show_step
-		draw_next_step!(mechanics..., x, t, :both)
+		draw_next_step!(mechanics..., x, t, :both, colors=rwcolors)
 	end
 	shieldplot
 end
@@ -659,26 +654,26 @@ xs, ts, actions, total_cost, winner =
 
 # ╔═╡ 7c911e4c-e132-473e-a579-c47c0b348e6c
 begin
-	draw(shield, colors=colors)
-	draw_walk!(xs, ts, actions)
+	draw(shield, colors=shieldcolors)
+	draw_walk!(xs, ts, actions, colors=rwcolors)
 	plot_with_size!(x_max, y_max)
 	plot!(title="Worst-case walk under shield")
 end
 
 # ╔═╡ 4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
-evaluate(x_dependent_cost, cost_loss, x_lim, t_lim, mechanics..., shielded_layabout, iterations=100000)
+evaluate(cost_function, cost_loss, x_lim, t_lim, mechanics..., shielded_layabout, iterations=100000)
 
 # ╔═╡ 45aabb2b-6a8f-462c-b082-7d7675676d64
 begin
 	shielded_walks_animation = 
 		@animate for i in 1:50
 			call(() -> begin 
-				draw(shield, colors=colors)
+				draw(shield, colors=shieldcolors)
 				plot_with_size!(x_max, y_max)
 				xs, ts, actions, total_cost, winner =  take_walk(	
 					fixed_cost, cost_loss, x_lim, t_lim, mechanics..., 
 					shielded_layabout, unlucky=false)
-				draw_walk!(xs, ts, actions)
+				draw_walk!(xs, ts, actions, colors=rwcolors)
 			end)
 		end
 	gif(shielded_walks_animation, "shielded_walks.gif", fps=fps)
@@ -733,9 +728,6 @@ shield_action(shield, 0.1, 0.9, :slow)
 
 # ╔═╡ 6c4c07b7-89f0-4cc6-9d60-ab51ef9fe566
 shield_action(shield, 1.0, 0.0, :slow)
-
-# ╔═╡ d977eb33-f8bd-49cc-b1b5-ddd83bab8449
-
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1290,9 +1282,9 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [[deps.Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
-git-tree-sha1 = "ad368663a5e20dbb8d6dc2fddeefe4dae0781ae8"
+git-tree-sha1 = "c6c0f690d0cc7caddb74cef7aa847b824a16b256"
 uuid = "ea2cea3b-5b76-57ae-a6ef-0a8af62496e1"
-version = "5.15.3+0"
+version = "5.15.3+1"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -1659,6 +1651,10 @@ version = "0.9.1+5"
 # ╠═6fc2d7ee-ae97-11ec-1e57-a16e01431e37
 # ╠═78969e37-9895-4077-bdae-ff4857174c6b
 # ╠═3611edfd-a4cb-4632-9d94-2fe71e2195ae
+# ╟─3a43b3fe-ff43-4bf0-8bcb-6ae1781dfc41
+# ╟─d5280fbb-cb7c-417b-816a-ded973bebb4a
+# ╟─1b3b563a-9a3d-48fb-9c8e-34172fb80325
+# ╟─baee33de-c4b8-47a9-b231-8c7215d4b651
 # ╟─5229f8dd-ca19-4ed0-a9d2-da1691f79089
 # ╟─2c05e965-545f-43c1-b0b0-0a81e08c6293
 # ╠═6ad63c50-77eb-4fd7-8669-085adebc0ddc
@@ -1668,12 +1664,12 @@ version = "0.9.1+5"
 # ╟─fdedc5a6-6993-4d33-93b8-ef30e1bc6ee5
 # ╠═e27afbfe-a90d-4c60-b82a-9bfc007c39fb
 # ╠═739c0741-d35d-4fc8-b93d-678371142411
-# ╟─53fa5c41-a5fb-4571-92ee-090ededa5cc1
 # ╠═6034243b-4e9a-4720-8354-24b669bf4882
-# ╠═e1d6608b-a7b7-4233-8de5-fcb87a148408
-# ╠═55b4643a-68fb-439f-b9d7-cdcf2a432589
-# ╠═be817e03-90a1-45ec-b5dd-04ab4ca2aaa9
-# ╠═5a1e9619-b64a-443d-8649-8cce928ae983
+# ╠═6bfed0ff-56eb-4eed-9de7-bbd425a4978c
+# ╟─53fa5c41-a5fb-4571-92ee-090ededa5cc1
+# ╟─55b4643a-68fb-439f-b9d7-cdcf2a432589
+# ╟─be817e03-90a1-45ec-b5dd-04ab4ca2aaa9
+# ╟─5a1e9619-b64a-443d-8649-8cce928ae983
 # ╟─1d555d13-9b81-48e7-a74c-8e2ee388bfc2
 # ╟─4165c794-4c2f-4d37-8a85-d1c86a32fd6c
 # ╠═f8607cc8-30e5-454e-acec-6d0050a48904
@@ -1697,7 +1693,6 @@ version = "0.9.1+5"
 # ╟─24d292a0-ac39-497e-b520-8fd3931369fc
 # ╟─3633ff5e-19a1-4272-8c7c-5c1a3f00cc72
 # ╠═4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
-# ╟─ca6ba9e5-94c4-4196-be99-2fdd5449a4d3
 # ╠═7abee61b-36bc-488b-893e-d42b5ca8665d
 # ╟─795c5353-fdeb-41c6-8502-2aa70689dcc4
 # ╟─340dcc48-3787-4894-85aa-0d13873d19db
@@ -1708,8 +1703,6 @@ version = "0.9.1+5"
 # ╠═6c7b61f9-98d5-4f7b-b88d-8f74ca1bbcb3
 # ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
 # ╟─18b843fd-2ab8-4380-a700-240115dd23da
-# ╟─629cc812-4972-4011-a9c7-83e1cdff3d07
-# ╟─3c95eb29-4f26-4677-bccc-8dc98774a894
 # ╠═b00bbbb7-6587-4664-ae82-82c081f66f37
 # ╟─fc2dafd2-aea5-49c9-92d3-f7b478be3be0
 # ╟─be4a5a08-79b8-4ac9-8396-db5d62eb3f97
@@ -1719,7 +1712,7 @@ version = "0.9.1+5"
 # ╠═97962767-65eb-4b22-80bb-e352ec60e3e8
 # ╠═6387760b-9c16-4ab0-8229-07f084d2b050
 # ╟─7c911e4c-e132-473e-a579-c47c0b348e6c
-# ╠═4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
+# ╟─4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
 # ╠═45aabb2b-6a8f-462c-b082-7d7675676d64
 # ╟─b0f5055d-36fe-4593-bdfa-f6968dbb8242
 # ╟─aa8a34cb-fd4e-4afc-87a3-7d92d12a25a1
@@ -1727,6 +1720,5 @@ version = "0.9.1+5"
 # ╟─fd0289fb-b463-4bb5-a775-597f011d8a36
 # ╠═27e3cdb0-59b8-4728-bbd9-da606763d18e
 # ╠═6c4c07b7-89f0-4cc6-9d60-ab51ef9fe566
-# ╠═d977eb33-f8bd-49cc-b1b5-ddd83bab8449
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

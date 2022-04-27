@@ -24,6 +24,46 @@ end
 # ╔═╡ 53f82db0-b7eb-4af3-8b43-eb5c087bb409
 call(f) = f()
 
+# ╔═╡ 414ca11f-d52a-46f8-99b6-f10039455d29
+md"""
+## Color shceme
+
+Colors by [Flat UI](https://flatuicolors.com/palette/defo)
+"""
+
+# ╔═╡ a36e3fdb-e704-442d-b605-fae715e5139c
+begin
+	colors = 
+	(TURQUOISE = colorant"#1abc9c", 
+	EMERALD = colorant"#2ecc71", 
+	PETER_RIVER = colorant"#3498db", 
+	AMETHYST = colorant"#9b59b6", 
+	WET_ASPHALT = colorant"#34495e",
+	
+	GREEN_SEA   = colorant"#16a085", 
+	NEPHRITIS   = colorant"#27ae60", 
+	BELIZE_HOLE  = colorant"#2980b9", 
+	WISTERIA     = colorant"#8e44ad", 
+	MIDNIGHT_BLUE = colorant"#2c3e50", 
+	
+	SUNFLOWER = colorant"#f1c40f",
+	CARROT   = colorant"#e67e22",
+	ALIZARIN = colorant"#e74c3c",
+	CLOUDS   = colorant"#ecf0f1",
+	CONCRETE = colorant"#95a5a6",
+	
+	ORANGE = colorant"#f39c12",
+	PUMPKIN = colorant"#d35400",
+	POMEGRANATE = colorant"#c0392b",
+	SILVER = colorant"#bdc3c7",
+	ASBESTOS = colorant"#7f8c8d")
+	
+	[colors...]
+end
+
+# ╔═╡ 94bee469-9e4f-4bb1-b6b9-25bc7e11ad9a
+rwcolors = (slow=colors.PUMPKIN, fast=colors.BELIZE_HOLE, line=colors.MIDNIGHT_BLUE)
+
 # ╔═╡ 06ba8aa1-7664-47d9-b0c3-432cb3f29c05
 
 @bind _mechanics PlutoUI.combine() do Child
@@ -131,15 +171,19 @@ function plot_with_size!(x_max, t_max; figure_width=600, figure_height=600)
 end
 
 # ╔═╡ c1db0440-9bc8-4a05-9cb2-2702da002917
-function draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
+function draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
+			x, t, a;
+			colors=(slow=:yellow, fast=:blue, line=:black))
 	if a == :both
-		draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :fast)
-		return draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow)
+		draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :fast, colors=colors)
+		return draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow, colors=colors)
 	end
-	color = a == :fast ? :blue : :yellow
+	color = a == :fast ? colors.fast : colors.slow
+	linestyle = a == :fast ? :solid : :dash
 	scatter!([x], [t], 
-		markersize=2, 
-		color=:black)
+		markersize=3, 
+		markerstrokewidth=0,
+		color=colors.line)
 	δ, τ = a == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
 	δ, τ = δ + x, τ + t
 	plot!(Shape([δ - ϵ, δ - ϵ, δ + ϵ, δ + ϵ], 
@@ -148,18 +192,24 @@ function draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
 			opacity=0.8,
 			linewidth=0,
 			legend=nothing)
-	plot!([x, δ], [t, τ], linestyle=:dash, linecolor=:blue)
+	plot!([x, δ], [t, τ], linestyle=linestyle, linewidth=1, linecolor=color)
 end
 
 # ╔═╡ b9668aa9-fcc7-4ca4-8603-33ec8aeafe93
-function draw_walk!(xs, ts, actions)
-	linecolors = [a == :fast ? :blue : :yellow for a in actions]
-	push!(linecolors, :red)
+function draw_walk!(xs, ts, actions;
+			colors=(slow=:yellow, fast=:blue, line=:black))
+	linecolors = [a == :fast ? colors.fast : colors.slow for a in actions]
+	linestyles = [a == :fast ? :solid : :dash for a in actions]
+	push!(linecolors, colors.line)
+	push!(linestyles, :solid)
 	plot!(xs, ts,
 		markershape=:circle,
-		markersize=2,
-		markercolor=:black,
+		markersize=3,
+		markercolor=colors.line,
+		markerstrokewidth=0,
+		linewidth=3,
 		linecolor=linecolors,
+		linestyle=linestyles,
 		legend=nothing)
 end
 
@@ -219,8 +269,8 @@ end
 begin
 	fast, slow
 	plot_with_size(x_lim, t_lim)
-	draw_walk!(xs, ts, actions[2:end])
-	draw_next_step!(mechanics..., last(xs), last(ts), :both)
+	draw_walk!(xs, ts, actions[2:end], colors=rwcolors)
+	draw_next_step!(mechanics..., last(xs), last(ts), :both, colors=rwcolors)
 end
 
 # ╔═╡ cb14c520-ef2b-4f77-ae02-029415bbc049
@@ -256,7 +306,8 @@ function take_walk(	cost_function, cost_of_losing,
 					x_max, t_max, 
 					ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
 					policy::Function;
-					unlucky=false)
+					unlucky=false,
+					colors=(slow=:yellow, fast=:blue, line=:black))
 	xs, ts, actions = [0.], [0.], []
 	total_cost = 0
 
@@ -282,13 +333,13 @@ end
 # ╔═╡ 94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
 call(() -> begin
 	plot_with_size(x_lim, t_lim)
-	draw_next_step!(mechanics..., 0.25, 0.25, :both)
+	draw_next_step!(mechanics..., 0.25, 0.25, :both, colors=rwcolors)
 	wost_case_slow = take_walk(	fixed_cost, cost_loss, x_lim, t_lim, mechanics..., 
 		 		(_, _) -> :slow, unlucky=true)
 	wost_case_fast = take_walk(	fixed_cost, cost_loss, x_lim, t_lim, mechanics..., 
 		 		(_, _) -> :fast, unlucky=true)
-	draw_walk!(wost_case_slow.xs, wost_case_slow.ts, wost_case_slow.actions)
-	draw_walk!(wost_case_fast.xs, wost_case_fast.ts, wost_case_fast.actions)
+	draw_walk!(wost_case_slow.xs, wost_case_slow.ts, wost_case_slow.actions, colors=rwcolors)
+	draw_walk!(wost_case_fast.xs, wost_case_fast.ts, wost_case_fast.actions, colors=rwcolors)
 end)
 
 # ╔═╡ d2d20a03-6740-4b55-b971-0240156b6aa2
@@ -296,8 +347,8 @@ begin
 	walk_again
 	xs′, ts′, actions′, total_cost′, winner′ = 
 		take_walk(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., policy, unlucky=unlucky)
-	plot_with_size(x_max, t_max)
-	draw_walk!(xs′, ts′, actions′)
+	plot_with_size(x_lim, t_lim)
+	draw_walk!(xs′, ts′, actions′, colors=rwcolors)
 end
 
 # ╔═╡ 58eaad4b-68e9-438d-beea-5c416a9fd2ae
@@ -893,9 +944,9 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [[deps.Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
-git-tree-sha1 = "ad368663a5e20dbb8d6dc2fddeefe4dae0781ae8"
+git-tree-sha1 = "c6c0f690d0cc7caddb74cef7aa847b824a16b256"
 uuid = "ea2cea3b-5b76-57ae-a6ef-0a8af62496e1"
-version = "5.15.3+0"
+version = "5.15.3+1"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -1261,6 +1312,9 @@ version = "0.9.1+5"
 # ╔═╡ Cell order:
 # ╠═31af0db2-ab6b-11ec-3677-6d36ee7e97df
 # ╠═53f82db0-b7eb-4af3-8b43-eb5c087bb409
+# ╟─414ca11f-d52a-46f8-99b6-f10039455d29
+# ╟─a36e3fdb-e704-442d-b605-fae715e5139c
+# ╟─94bee469-9e4f-4bb1-b6b9-25bc7e11ad9a
 # ╟─06ba8aa1-7664-47d9-b0c3-432cb3f29c05
 # ╟─53da05d1-f776-4994-8aac-b252fdec89aa
 # ╟─d333c8c3-175f-473d-b5c4-0b38735ce1c6
@@ -1282,10 +1336,10 @@ version = "0.9.1+5"
 # ╟─e1811cbc-a8c4-46f7-a362-fdbf8ab89cc2
 # ╟─3250b0a5-606a-4aab-bc23-2ee69c1593bf
 # ╟─cb14c520-ef2b-4f77-ae02-029415bbc049
-# ╠═098905f0-781a-49f2-89d5-a447841da77a
+# ╟─098905f0-781a-49f2-89d5-a447841da77a
 # ╟─b47ba5a9-00e8-41ee-a156-c8642e537224
 # ╟─87856447-dfd7-4569-93b3-eb1a1da10987
-# ╠═d2d20a03-6740-4b55-b971-0240156b6aa2
+# ╟─d2d20a03-6740-4b55-b971-0240156b6aa2
 # ╟─58eaad4b-68e9-438d-beea-5c416a9fd2ae
 # ╠═92f18efe-cacc-4a4c-98f6-0965db071e36
 # ╟─2d4d0a0c-be8a-4d65-96c9-f702d562865b

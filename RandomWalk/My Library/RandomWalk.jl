@@ -46,15 +46,18 @@ function plot_with_size!(x_max, t_max; figure_width=600, figure_height=600)
 end
 
 
-function draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
+function draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, 
+			x, t, a;
+			colors=(slow=:yellow, fast=:blue, line=:black))
 	if a == :both
-		draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :fast)
-		return draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow)
+		draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :fast, colors=colors)
+		return draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow, colors=colors)
 	end
-	color = a == :fast ? :blue : :yellow
+	color = a == :fast ? colors.fast : colors.slow
 	scatter!([x], [t], 
-		markersize=2, 
-		color=:black)
+		markersize=3, 
+		markerstrokewidth=0,
+		color=colors.line)
 	δ, τ = a == :fast ? (δ_fast, τ_fast) : (δ_slow, τ_slow)
 	δ, τ = δ + x, τ + t
 	plot!(Shape([δ - ϵ, δ - ϵ, δ + ϵ, δ + ϵ], 
@@ -63,19 +66,25 @@ function draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, a)
 			opacity=0.8,
 			linewidth=0,
 			legend=nothing)
-	plot!([x, δ], [t, τ], linestyle=:dash, linecolor=:blue)
+	plot!([x, δ], [t, τ], linestyle=:dot, linewidth=2, linecolor=colors.line)
 end
 
 
-function draw_walk!(xs, ts, actions)
-	linecolors = [a == :fast ? :blue : :yellow for a in actions]
-	push!(linecolors, :red)
-	plot!(xs, ts,
-		markershape=:circle,
-		markersize=2,
-		markercolor=:black,
-		linecolor=linecolors,
-		legend=nothing)
+function draw_walk!(xs, ts, actions;
+	colors=(slow=:yellow, fast=:blue, line=:black))
+linecolors = [a == :fast ? colors.fast : colors.slow for a in actions]
+linestyles = [a == :fast ? :solid : :dash for a in actions]
+push!(linecolors, colors.line)
+push!(linestyles, :solid)
+plot!(xs, ts,
+markershape=:circle,
+markersize=3,
+markercolor=colors.line,
+markerstrokewidth=0,
+linewidth=3,
+linecolor=linecolors,
+linestyle=linestyles,
+legend=nothing)
 end
 
 

@@ -30,32 +30,44 @@ end
 call(f) = f()
 
 # ╔═╡ b32b5260-5e6e-4f10-8505-00d2b139e35d
-@bind colors confirm(PlutoUI.combine() do Child
 md"""
 ## Color shceme
-Shield colors:
-$(Child(ColorPicker(default=colorant"#90ee90")))
-$(Child(ColorPicker(default=colorant"#ffffe0")))
-$(Child(ColorPicker(default=colorant"#ea786b")))
 
-Transition indicators:
-$(Child(ColorPicker(default=colorant"#c8dcc8")))
-$(Child(ColorPicker(default=colorant"#c7d2e3")))
-
-Grid color:
-$(Child(ColorPicker(default=colorant"#afafaf")))
-
-Resp. start/end marker color:
-$(Child(ColorPicker(default=colorant"#888A85")))
-$(Child(ColorPicker(default=colorant"#000000")))
+Colors by [Flat UI](https://flatuicolors.com/palette/defo)
 """
-end)
 
-# ╔═╡ 2e5664d6-cfbf-4961-b9ef-df977c2542b0
+# ╔═╡ 75d68f84-5965-4174-be97-97e5a4c7247b
 begin
-	c1, c2, c3, c4, c5, c6, c7 = colors
-	nothing
+	colors = 
+	(TURQUOISE = colorant"#1abc9c", 
+	EMERALD = colorant"#2ecc71", 
+	PETER_RIVER = colorant"#3498db", 
+	AMETHYST = colorant"#9b59b6", 
+	WET_ASPHALT = colorant"#34495e",
+	
+	GREEN_SEA   = colorant"#16a085", 
+	NEPHRITIS   = colorant"#27ae60", 
+	BELIZE_HOLE  = colorant"#2980b9", 
+	WISTERIA     = colorant"#8e44ad", 
+	MIDNIGHT_BLUE = colorant"#2c3e50", 
+	
+	SUNFLOWER = colorant"#f1c40f",
+	CARROT   = colorant"#e67e22",
+	ALIZARIN = colorant"#e74c3c",
+	CLOUDS   = colorant"#ecf0f1",
+	CONCRETE = colorant"#95a5a6",
+	
+	ORANGE = colorant"#f39c12",
+	PUMPKIN = colorant"#d35400",
+	POMEGRANATE = colorant"#c0392b",
+	SILVER = colorant"#bdc3c7",
+	ASBESTOS = colorant"#7f8c8d")
+	
+	[colors...]
 end
+
+# ╔═╡ 50d27ce0-5658-4227-9952-1fe593d55d3c
+shieldcolors=[colorant"#ffffff", colorant"#a1eaff", colorant"#ff9178"]
 
 # ╔═╡ c4018e8a-bc73-4f37-bbc4-56fc1a1d7763
 @bind ballconfig confirm(PlutoUI.combine() do Child
@@ -156,7 +168,7 @@ md"""
 begin
 	initial_value(Ivl, Ivu, Ipl, Ipu) = Ipl == 0 && 0 <= Ivl < 1 ? 2 : 0
 	initialize!(grid, initial_value)
-	draw(grid, colors=[c1, c2, c3])
+	draw(grid, colors=shieldcolors)
 end
 
 # ╔═╡ 3e12d7a7-4037-453d-b1e7-b3b5f66895d4
@@ -181,7 +193,7 @@ begin
 	else
 		shield, terminated_early, animation = grid, true, nothing
 	end
-	draw(shield, colors=[c1, c2, c3], show_grid=true)
+	draw(shield, colors=shieldcolors, show_grid=true)
 end
 
 # ╔═╡ 1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
@@ -223,7 +235,7 @@ md"""
 # ╔═╡ f767940c-7f07-46b8-a511-815a0ac890f0
 begin
 	square′ = box(shield, v′, p′)
-	draw(shield, colors=[c1, c2, c3], show_grid=true)
+	draw(shield, colors=shieldcolors, show_grid=true)
 	draw_barbaric_transition!(square′, resolution, β1, β2, t, g, "nohit")
 	draw_barbaric_transition!(square′, resolution, β1, β2, t, g, "hit")
 end
@@ -246,8 +258,8 @@ end)
 # ╔═╡ 3170d6d4-40e6-45d5-a29b-d4e9b746813c
 call(() -> begin
 	vv, pp, tt = shielded_simulation
-	draw(shield, colors=[c1, c2, c3], show_grid=true)
-	plot!(vv, pp, color=:black)
+	draw(shield, colors=shieldcolors, show_grid=true)
+	plot!(vv, pp, color=colors.MIDNIGHT_BLUE)
 end)
 
 # ╔═╡ 396b0315-7ce3-403f-9859-825de63800a0
@@ -811,9 +823,9 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [[deps.Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
-git-tree-sha1 = "ad368663a5e20dbb8d6dc2fddeefe4dae0781ae8"
+git-tree-sha1 = "c6c0f690d0cc7caddb74cef7aa847b824a16b256"
 uuid = "ea2cea3b-5b76-57ae-a6ef-0a8af62496e1"
-version = "5.15.3+0"
+version = "5.15.3+1"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -1180,7 +1192,8 @@ version = "0.9.1+5"
 # ╠═ef673aea-a39c-11ec-1e49-a7ea73ad56c5
 # ╠═0253730c-3cb9-4489-af7c-dc907212f4fe
 # ╟─b32b5260-5e6e-4f10-8505-00d2b139e35d
-# ╟─2e5664d6-cfbf-4961-b9ef-df977c2542b0
+# ╟─75d68f84-5965-4174-be97-97e5a4c7247b
+# ╟─50d27ce0-5658-4227-9952-1fe593d55d3c
 # ╟─c4018e8a-bc73-4f37-bbc4-56fc1a1d7763
 # ╟─fab78e11-174b-431e-bb8f-901c24639972
 # ╟─190d3d5a-d225-4068-b924-a2dcf406c007
