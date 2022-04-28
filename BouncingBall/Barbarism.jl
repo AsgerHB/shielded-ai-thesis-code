@@ -16,6 +16,7 @@ end
 
 # ╔═╡ 5f0278a4-29bc-43fc-af88-922f86ab5931
 begin
+	using PlutoUI
 	using Plots
 	using Random
 end
@@ -89,14 +90,19 @@ md"""
 """
 
 # ╔═╡ 412a16e6-a059-11ec-2a22-f557508307c3
-function simulate_point(v, p, β1, β2, t, g, action; min_v_on_impact=1)
+function simulate_point(mechanics, v, p, action; min_v_on_impact=1, unlucky=false)
+	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
     v0, p0 = v, p
     
-    if action=="hit" && p >= 4 # Hitting the ball changes the velocity
+    if action=="hit" && p >= p_hit # Hitting the ball changes the velocity
         if v < 0
-            v0 = min(v, -4)
+            v0 = min(v, v_hit)
         else
-            v0 = -β2*v - 4
+			if unlucky
+            	v0 = -(β2 - ϵ2)*v - 4
+			else
+				v0 = -rand(β2 - ϵ2:0.01:β2 + ϵ2)*v - 4
+			end
         end
     end
     
@@ -107,12 +113,16 @@ function simulate_point(v, p, β1, β2, t, g, action; min_v_on_impact=1)
         t_impact = (-v0 - sqrt(v0^2 - 2*g*p0))/g 
         t_remaining = t - t_impact       # Time left this timestep after bounce occurs
         new_v = g * t_impact + v0        # Gravity pull before impact
-        new_v = -β1 * new_v              # Impact 
+		# Impact
+		if unlucky
+        	new_v = -(β1 - ϵ1)*new_v
+		else
+        	new_v = -rand(β1 - ϵ1:0.01:β1 + ϵ1)*new_v 
+		end
 		new_p = 0
 
 		if new_v >= min_v_on_impact
-	        new_v, new_p = simulate_point(new_v, new_p, β1, β2, t_remaining, g, action, 
-										  min_v_on_impact=min_v_on_impact)
+	        new_v, new_p = simulate_point(mechanics, new_v, new_p, action, min_v_on_impact=min_v_on_impact, unlucky=unlucky)
 		else
 			new_v, new_p = 0, 0
 		end
@@ -122,8 +132,10 @@ function simulate_point(v, p, β1, β2, t, g, action; min_v_on_impact=1)
 end
 
 # ╔═╡ 95dd69fb-14c1-4745-ae1d-e5596b37581d
-function simulate_sequence(v0, p0, t, g, policy, duration; 
-							β1=:random, β2=:random)
+function simulate_sequence(mechanics, v0, p0, 
+						   policy, duration; 
+						   unlucky=false)
+	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
 	randomize_β1 = β1 == :random
 	randomize_β2 = β2 == :random
     velocities::Array{Real}, positions::Array{Real}, times::Array{Real} = [v0], [p0], [0.0]
@@ -132,7 +144,7 @@ function simulate_sequence(v0, p0, t, g, policy, duration;
 		β1 = randomize_β1 ? rand(0.85:0.01:0.97) : β1
 		β2 = randomize_β2 ? rand(0.90:0.01:1.00) : β2
         action = policy(v, p)
-        v, p = simulate_point(v, p, β1, β2, t, g, action)
+        v, p = simulate_point(mechanics, v, p, action, unlucky=unlucky)
         push!(velocities, v)
         push!(positions, p)
         push!(times, i*t)
@@ -141,24 +153,48 @@ function simulate_sequence(v0, p0, t, g, policy, duration;
 end
 
 # ╔═╡ fdeb89e9-4cc1-403d-b7c0-5e91429bc696
-
+@bind mechanics PlutoUI.combine() do Child
 md"""
 ### Configure parameters controlling the ball
 
-`t = ` $(@bind t html"<input type=number style='width:5em' step='0.01' value='0.10'>")
+`t = ` $(Child("t", NumberField(-100:0.01:100, default=0.10)))
 
-`g = ` $(@bind g html"<input type=number style='width:5em' step='0.01' value='-9.81'>")
+`g = ` $(Child("g", NumberField(-100:0.01:100, default=-9.81)))
 
-`β1 = ` $(@bind β1 html"<input type=number style='width:5em' step='0.01' value='0.85'>")
-`β2  = ` $(@bind β2 html"<input type=number style='width:5em' step='0.01' value='0.90'>")
+`β1 = ` $(Child("β1", NumberField(-100:0.01:100, default=0.91)))
+`ϵ1 = ` $(Child("ϵ1", NumberField(-100:0.01:100, default=0.06)))
 
-`v = ` $(@bind v html"<input type=number style='width:5em' step='0.1' value='-4'>")
+`β2  = ` $(Child("β2", NumberField(-100:0.01:100, default=0.95)))
+`ϵ2  = ` $(Child("ϵ2", NumberField(-100:0.01:100, default=0.05)))
+
+`v_hit = ` $(Child("v_hit", NumberField(-100:0.01:100, default=-4)))
+`p_hit = ` $(Child("p_hit", NumberField(-100:0.01:100, default=4)))
+"""
+end
+
+# ╔═╡ 6adbbdb5-7ab5-4e4f-96c7-eaf6d79ab6a0
+-mechanics.β1 + mechanics.ϵ1
+
+# ╔═╡ 2b81ff1e-d32f-4fd2-a805-f30b6815c3bf
+rand(-mechanics.β1 - mechanics.ϵ1:0.01:-mechanics.β1 + mechanics.ϵ1)
+
+# ╔═╡ 63be82ea-dbc1-4fcc-a97a-791d803e1f2e
+md"""
+Bounce best case: $(mechanics.β1 - mechanics.ϵ1). Worst case: $(mechanics.β1 + mechanics.ϵ1)
+
+Hit best case: $(mechanics.β2 - mechanics.ϵ2). Worst case: $(mechanics.β2 + mechanics.ϵ2)
+"""
+
+# ╔═╡ 5948f3dd-103d-43c0-978c-6f92d714a043
+md"""
+Example values 
+`v = ` $(@bind v html"<input type=number style='width:5em' step='0.1' value='-4'>"), 
 `p = ` $(@bind p html"<input type=number style='width:5em' step='0.1' value='1'>")
 """
 
 # ╔═╡ 8bd60185-b7a4-437c-9b1c-77aa24b9f068
 begin
-	vv, pp, tt = simulate_sequence(v, p, t, g, (v, p)->"nohit", 10, β1=β1, β2=β2)
+	vv, pp, tt = simulate_sequence(mechanics, v, p, (v, p)->"nohit", 10, unlucky=false)
 	plot(tt, pp)
 end
 
@@ -166,7 +202,7 @@ end
 plot(vv, pp)
 
 # ╔═╡ 19b49458-3b8c-4e14-88cb-bdf01f242322
-e_kin(g, v) = 0.5*abs(g)*v^2
+e_kin(g, v) = 0.5*abs(mechanics.g)*v^2
 
 # ╔═╡ 708acd2e-2d8d-4282-b8e1-75b0b21984a4
 e_pot(g, p) = abs(g)*p
@@ -175,7 +211,7 @@ e_pot(g, p) = abs(g)*p
 e_mek(g, v, p) = e_kin(g, v) + e_pot(g, p)
 
 # ╔═╡ 2ca38f3f-272b-4226-91e2-8424f6e0dd99
-e_mek(g, 0, 4)
+e_mek(mechanics.g, 0, 4)
 
 # ╔═╡ 15992982-642a-4ec4-84ec-fad542e783c3
 md"""
@@ -325,14 +361,6 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 	return hm
 end
 
-# ╔═╡ 2be42d55-8736-43ae-b154-9a3a716f8323
-call(() -> begin
-	grid = Grid(G, v_min, v_max, p_min, p_max)
-	value_function(Ivl, Ivu, Ipl, Ipu) = e_mek(g, Ivu, Ipu) < e_mek(g, 0, 4) ? 2 : 0
-	initialize!(grid, value_function)
-	draw(grid, colors=shieldcolors)
-end)
-
 # ╔═╡ bafefabb-50c2-421e-80b4-044c1488a24a
 begin
 	clear(grid)
@@ -357,7 +385,8 @@ md"""
 """Update current plot with an illustration of the barbaric way in which transitions are computed.
 
 A set of `resolution` × `resolution` evenly spaced points is drawn inside the given square, and the same points are drawn again after time `t` has elapsed."""
-function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, action; upto_t=false, colors=(start=:black, _end=:gray))
+function draw_barbaric_transition!(square::Square, resolution, mechanics, action; upto_t=false, colors=(start=:black, _end=:gray), legend=false)
+	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	step = square.grid.G/resolution
 	v_start, p_start = [], []
@@ -374,14 +403,24 @@ function draw_barbaric_transition!(square::Square, resolution, β1, β2, t, g, a
 	for t′ in t_values
 		for v in Ivl:step:(Ivu)
 			for p in Ipl:step:(Ipu)
-				w, q = simulate_point(v, p, β1, β2, t′, g, action)
+				w, q = simulate_point(mechanics, v, p, action, unlucky=true)
 				push!(v_end, w)
 				push!(p_end, q)
 			end
 		end
 	end
-	scatter!(v_start, p_start, label="start", markersize=3, markerstrokewidth=0, markercolor=colors.start)
-	scatter!(v_end, p_end, label="end", markersize=3, markerstrokewidth=0, markercolor=colors._end)
+	
+	
+	scatter!(v_start, p_start, 
+			label= legend ? "start" : nothing, 
+			markersize=3, 
+			markerstrokewidth=0, 
+			markercolor=colors.start)
+	scatter!(v_end, p_end, 
+			label= legend ? "end" : nothing, 
+			markersize=3, 
+			markerstrokewidth=0,
+			markercolor=colors._end)
 end
 
 # ╔═╡ 14fadc22-1218-43c1-8e7b-7b58256594d1
@@ -389,8 +428,9 @@ end
 
 I could have used proper squares for this, but I want to save that extra bit of memory by not having lots of references back to the same  grid.
 """
-function get_reachable_area(square::Square, resolution, β1, β2, t, g, action; 
+function get_reachable_area(square::Square, resolution, mechanics, action; 
 							upto_t=false)
+	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	result = []
 	
@@ -399,7 +439,7 @@ function get_reachable_area(square::Square, resolution, β1, β2, t, g, action;
 	for t′ in t_values
 		for v in Ivl:step:(Ivu)
 			for p in Ipl:step:(Ipu)
-				w, q = simulate_point(v, p, β1, β2, t′, g, action)
+				w, q = simulate_point(mechanics, v, p, action, unlucky=true)
 				
 				if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
 					continue
@@ -419,8 +459,8 @@ end
 # ╔═╡ 7fff10bd-8d93-41fa-ba2b-73756a73ffeb
 """Update the value of every square reachable from the given `square`.
 """
-function set_reachable_area!(square::Square, resolution, β1, β2, t, g, action, value; upto_t=false)
-	reachable_area = get_reachable_area(square, resolution, β1, β2, t, g, action, upto_t=upto_t)
+function set_reachable_area!(square::Square, resolution, mechanics, action, value; upto_t=false)
+	reachable_area = get_reachable_area(square, resolution, mechanics, action, upto_t=upto_t)
 	for (iv, ip) in reachable_area
 		square.grid.array[iv, ip] = value
 	end
@@ -429,12 +469,12 @@ end
 # ╔═╡ a8d9178b-fb85-4daa-ad1f-58d6b9a734ef
 call(() -> begin
 	t=0.5
-	grid = Grid(0.5, -5, 5, 0, 5)
+	grid = Grid(0.5, -6, 6, 0, 5)
 	square = box(grid, 1, 2)
-	set_reachable_area!(square, resolution, β1, β2, t, g, "nohit", 2, upto_t=upto_t)
+	set_reachable_area!(square, resolution, mechanics, "nohit", 2, upto_t=upto_t)
 	set_value!(square, 1)
-	draw(grid, colors=transition_background_colors)
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit", upto_t=upto_t, colors=transition_colors)
+	draw(grid, show_grid=true, colors=transition_background_colors)
+	draw_barbaric_transition!(square, resolution, mechanics, "nohit", upto_t=upto_t, colors=transition_colors, legend=true)
 end)
 
 # ╔═╡ 869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
@@ -444,16 +484,16 @@ end)
 
 The same goes for `nohit` just with the "nohit" action. 
 """
-function get_transitions(grid, resolution, β1, β2, t, g; upto_t=false)
+function get_transitions(grid, resolution, mechanics; upto_t=false)
 	hit = Array{Vector{Any}}(undef, (grid.v_count, grid.p_count))
 	nohit = Array{Vector{Any}}(undef, (grid.v_count, grid.p_count))
 	
 	for iv in 1:grid.v_count
 		for ip in 1:grid.p_count
 			square = Square(grid, iv, ip)
-			hit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, 
+			hit[iv, ip] = get_reachable_area(square, resolution, mechanics, 
 											 "hit", upto_t=upto_t)
-			nohit[iv, ip] = get_reachable_area(square, resolution, β1, β2, t, g, 
+			nohit[iv, ip] = get_reachable_area(square, resolution, mechanics, 
 											   "nohit", upto_t=upto_t)
 		end
 	end
@@ -462,17 +502,17 @@ end
 
 # ╔═╡ d2b82214-239b-4a5c-9654-49006caaa295
 begin
-	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g, upto_t=upto_t)
+	reachable_hit, reachable_nohit = get_transitions(grid, resolution, mechanics, upto_t=upto_t)
 	reachable_nohit[square.iv, square.ip]
 end
 
 # ╔═╡ 02893fb2-58ce-46f9-b609-3b2cb13e67b0
 call(() -> begin
-	t = 0.32
+	mechanics = merge(mechanics, (t = 0.32,))
 	grid = Grid(1, -10, 10, 0, 10)
 	square = box(grid, 2, 5)
 	set_value!(square, 1)
-	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g, upto_t=upto_t)
+	reachable_hit, reachable_nohit = get_transitions(grid, resolution, mechanics, upto_t=upto_t)
 	
 	for (iv, ip) in reachable_hit[square.iv, square.ip]
 		square′ = Square(grid, iv, ip)
@@ -484,8 +524,8 @@ call(() -> begin
 	end
 	
 	draw(grid, show_grid=true, colors=transition_background_colors)
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "hit", upto_t=upto_t, colors=transition_colors)
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit", upto_t=upto_t, colors=transition_colors)
+	draw_barbaric_transition!(square, resolution, mechanics, "hit", upto_t=upto_t, colors=transition_colors, legend=true)
+	draw_barbaric_transition!(square, resolution, mechanics, "nohit", upto_t=upto_t, colors=transition_colors)
 end)
 
 # ╔═╡ 8ee09119-9eba-4dfd-ad25-5496e714892c
@@ -498,8 +538,7 @@ Value can be either 0, if this square cannot reach any bad squares, 1 if the bal
 function get_new_value( reachable_hit::Matrix{Vector{Any}}, 
 						reachable_nohit::Matrix{Vector{Any}}, 
 						square::Square,
-						grid:: Grid,
-						β1, β2, t, g)
+						grid:: Grid)
 	value = get_value(square)
 
 	if value == 2 # Bad squares stay bad. 
@@ -530,18 +569,20 @@ end
 
 # ╔═╡ 04b99556-60d4-46a8-8714-e3f349df9e1a
 call(() -> begin
-	t = 0.05
+	mechanics = merge(mechanics, (t=0.15,))
 	grid = Grid(1, -10, 10, 0, 10)
-	square = box(grid, -1, 5)
-	bad_square = box(grid, -2, 5)
-	set_value!(bad_square, 2)
-	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g)
-	new_value = get_new_value(reachable_hit, reachable_nohit, square, grid, β1, β2, t, g)
+	initialize!(grid, 
+		(Ivl, Ivu, Ipl, Ipu) -> e_mek(mechanics.g, Ivl, Ipl) < 50 ? 2 : 0)
+	square = box(grid, 1, 5)
+	reachable_hit, reachable_nohit = get_transitions(grid, resolution, mechanics)
+	new_value = get_new_value(reachable_hit, reachable_nohit, square, grid)
 	set_value!(square, new_value)
-	draw(grid, colors=transition_background_colors)
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "nohit", colors=transition_colors)
-	draw_barbaric_transition!(square, resolution, β1, β2, t, g, "hit", colors=transition_colors)
-	title!("Square type: $(new_value)")
+	draw(grid, colors=shieldcolors)
+	draw_barbaric_transition!(square, resolution, mechanics, 
+						"nohit", colors=transition_colors)
+	draw_barbaric_transition!(square, resolution, mechanics, 
+						"hit", colors=transition_colors, legend=true)
+	title!("Calculating value of start square... Square type: $(new_value)")
 end)
 
 # ╔═╡ 030b4085-0c00-470b-82fa-1cc603dd189f
@@ -550,12 +591,12 @@ end)
 function shield_step( reachable_hit::Matrix{Vector{Any}}, 
 					  reachable_nohit::Matrix{Vector{Any}}, 
 					  grid::Grid, 
-					  resolution, β1, β2, t, g)
+					  resolution)
 	grid′ = Grid(grid.G, grid.v_min, grid.v_max, grid.p_min, grid.p_max)
 	
 	for iv in 1:grid.v_count
 		for ip in 1:grid.p_count
-			grid′.array[iv, ip] = get_new_value(reachable_hit, reachable_nohit, Square(grid, iv, ip), grid, β1, β2, t, g)
+			grid′.array[iv, ip] = get_new_value(reachable_hit, reachable_nohit, Square(grid, iv, ip), grid)
 		end
 	end
 	grid′
@@ -573,26 +614,27 @@ Given some initial grid, returns a tuple `(shield, terminated_early)`.
 function make_shield( reachable_hit::Matrix{Vector{Any}}, 
 					  reachable_nohit::Matrix{Vector{Any}}, 
 					  grid::Grid, 
-					  resolution, β1, β2, t, g; 
+					  resolution; 
 					  max_steps=1000,
-					  animate=false)
+					  animate=false,
+					  colors=[:white, :powderblue, :salmon])
 	animation = nothing
 	if animate
 		animation = Animation()
-		draw(grid, colors=[c1, c2, c3])
+		draw(grid, colors=colors)
 		frame(animation)
 	end
 	i = max_steps
 	grid′ = nothing
 	while i > 0
-		grid′ = shield_step(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g)
+		grid′ = shield_step(reachable_hit, reachable_nohit, grid, resolution)
 		if grid′.array == grid.array
 			break
 		end
 		grid = grid′
 		i -= 1
 		if animate
-			draw(grid, colors=[c1, c2, c3])
+			draw(grid, colors=colors)
 			frame(animation)
 		end
 	end
@@ -600,19 +642,16 @@ function make_shield( reachable_hit::Matrix{Vector{Any}},
 end
 
 # ╔═╡ 9d9132b8-4df0-4f45-a9c9-58b99c280a9c
-"""Generate shield. 
-
-Given some initial grid, returns a tuple `(shield, terminated_early)`. 
-
-`shield` is a new grid containing the fixed point for the given values. 
-
-`terminted_early` is a boolean value indicating if `max_steps` were exceeded before the fixed point could be reached.
-"""
-function make_shield(grid::Grid, resolution, β1, β2, t, g;
-					 max_steps=1000, animate=false, upto_t=false)
-	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g; upto_t=upto_t)
+function make_shield(grid::Grid, resolution, mechanics;
+						max_steps=1000, 
+						animate=false, 
+						upto_t=false,
+						colors=[:white, :powderblue, :salmon])
+	reachable_hit, reachable_nohit = get_transitions(
+										grid, resolution, mechanics, upto_t=upto_t)
 	
-	return make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g; max_steps=max_steps, animate=animate)
+	return make_shield(reachable_hit, reachable_nohit, grid, resolution, 
+						max_steps=max_steps, animate=animate, colors=colors)
 end
 
 # ╔═╡ 2461801c-9efd-44fc-8d94-aa2eac826c64
@@ -628,9 +667,11 @@ animate: $(@bind animate html"<input type='checkbox'/>")
 # ╔═╡ 15494211-c698-486f-bee6-74fc34e584bb
 begin
 	initialize!(grid)
-	shield, terminated_early, animation = make_shield(grid, resolution, β1, β2, t, g,
+	shield, terminated_early, animation = make_shield(grid, resolution, 
+										  mechanics,
 										  max_steps=steps, 
 										  animate=animate, 
+										  colors=shieldcolors, 
 										  upto_t=upto_t)
 	draw(shield, colors=shieldcolors, show_grid=true)
 end
@@ -644,7 +685,8 @@ function shield_action(shield:: Grid, v, p, action)
 		return action
 	end
 	square = box(shield, v, p)
-	if get_value(square) == 1
+	value = get_value(square)
+	if  value == 1 || value == 2
 		return "hit"
 	else
 		return action
@@ -653,9 +695,9 @@ end
 
 # ╔═╡ bbd43aa2-7aae-474f-826f-869cc6d8651b
 shielded_simulation = call(() -> begin
-	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded loafer agent
+	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded layabout agent
 	v0, p0 = 0, 19# rand(7:1:10)
-	vv, pp, tt = simulate_sequence(v0, p0, 0.01, g, policy, 1000)
+	vv, pp, tt = simulate_sequence(mechanics, v0, p0, policy, 1000, unlucky=false)
 	vv, pp, tt
 end)
 
@@ -664,6 +706,7 @@ call(() -> begin
 	vv, pp, tt = shielded_simulation
 	draw(shield, colors=shieldcolors)
 	plot!(vv, pp, color=:black)
+	title!("Example run of layabout policy under shield")
 end)
 
 # ╔═╡ 138712ea-a7bd-4a08-bd44-f8b6ecf229bc
@@ -673,10 +716,12 @@ animation != nothing ? gif(animation, "shield.gif", fps=1) : nothing
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
 Plots = "~1.26.0"
+PlutoUI = "~0.7.38"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -685,6 +730,12 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.7.2"
 manifest_format = "2.0"
+
+[[deps.AbstractPlutoDingetjes]]
+deps = ["Pkg"]
+git-tree-sha1 = "8eaf9f1b4921132a4cff3f36a1d9ba923b14a481"
+uuid = "6e696c72-6542-2067-7265-42206c756150"
+version = "1.1.4"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -909,6 +960,23 @@ deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll",
 git-tree-sha1 = "129acf094d168394e80ee1dc4bc06ec835e510a3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "2.8.1+1"
+
+[[deps.Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.4"
+
+[[deps.HypertextLiteral]]
+git-tree-sha1 = "2b078b5a615c6c0396c77810d92ee8c6f470d238"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.3"
+
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.2"
 
 [[deps.IniFile]]
 git-tree-sha1 = "f550e6e32074c939295eb5ea6de31849ac2c9625"
@@ -1178,6 +1246,12 @@ deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers"
 git-tree-sha1 = "23d109aad5d225e945c813c6ebef79104beda955"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 version = "1.26.0"
+
+[[deps.PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
+git-tree-sha1 = "670e559e5c8e191ded66fa9ea89c97f10376bb4c"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.38"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -1567,8 +1641,12 @@ version = "0.9.1+5"
 # ╟─89cee980-3094-43eb-99e5-fdc6f6ca4d6a
 # ╟─c5942a34-159f-412a-bfd5-0518115afedf
 # ╠═412a16e6-a059-11ec-2a22-f557508307c3
+# ╠═6adbbdb5-7ab5-4e4f-96c7-eaf6d79ab6a0
+# ╠═2b81ff1e-d32f-4fd2-a805-f30b6815c3bf
 # ╠═95dd69fb-14c1-4745-ae1d-e5596b37581d
 # ╟─fdeb89e9-4cc1-403d-b7c0-5e91429bc696
+# ╟─63be82ea-dbc1-4fcc-a97a-791d803e1f2e
+# ╟─5948f3dd-103d-43c0-978c-6f92d714a043
 # ╠═8bd60185-b7a4-437c-9b1c-77aa24b9f068
 # ╠═533b6eb7-c32c-432d-9e64-2b23e15677a5
 # ╠═e6e78566-99e0-4e71-8695-dd94c93f14bc
@@ -1589,7 +1667,6 @@ version = "0.9.1+5"
 # ╠═20f6e0cd-767f-4de5-b7ee-cf77f01126a7
 # ╠═18f87faf-b3c8-46ee-9d38-00b30fb94137
 # ╠═47a14ed7-e795-4e05-9d01-c7510c2c13bb
-# ╠═2be42d55-8736-43ae-b154-9a3a716f8323
 # ╟─a9870679-d2dd-48f7-9193-050996ff9ff8
 # ╠═f10b185d-212b-4882-b64e-6dc67d88f5e9
 # ╠═bafefabb-50c2-421e-80b4-044c1488a24a
@@ -1598,10 +1675,10 @@ version = "0.9.1+5"
 # ╠═2716a75b-db77-4de2-87fe-8460dfa4a8ad
 # ╠═14fadc22-1218-43c1-8e7b-7b58256594d1
 # ╠═7fff10bd-8d93-41fa-ba2b-73756a73ffeb
-# ╟─a8d9178b-fb85-4daa-ad1f-58d6b9a734ef
+# ╠═a8d9178b-fb85-4daa-ad1f-58d6b9a734ef
 # ╠═869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 # ╠═d2b82214-239b-4a5c-9654-49006caaa295
-# ╟─02893fb2-58ce-46f9-b609-3b2cb13e67b0
+# ╠═02893fb2-58ce-46f9-b609-3b2cb13e67b0
 # ╠═8ee09119-9eba-4dfd-ad25-5496e714892c
 # ╠═04b99556-60d4-46a8-8714-e3f349df9e1a
 # ╠═030b4085-0c00-470b-82fa-1cc603dd189f
@@ -1613,7 +1690,7 @@ version = "0.9.1+5"
 # ╠═15494211-c698-486f-bee6-74fc34e584bb
 # ╠═a07a9512-bef9-4317-9f26-e1d143b85657
 # ╠═bbd43aa2-7aae-474f-826f-869cc6d8651b
-# ╠═7e55b882-892d-4b7a-bdbd-a52055f45732
+# ╟─7e55b882-892d-4b7a-bdbd-a52055f45732
 # ╟─138712ea-a7bd-4a08-bd44-f8b6ecf229bc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

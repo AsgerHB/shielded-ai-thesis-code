@@ -69,45 +69,49 @@ end
 # ╔═╡ 50d27ce0-5658-4227-9952-1fe593d55d3c
 shieldcolors=[colorant"#ffffff", colorant"#a1eaff", colorant"#ff9178"]
 
-# ╔═╡ c4018e8a-bc73-4f37-bbc4-56fc1a1d7763
-@bind ballconfig confirm(PlutoUI.combine() do Child
+# ╔═╡ 53d29226-7839-4fa1-bc56-077d4355042f
+@bind mechanics PlutoUI.combine() do Child
 md"""
 ### Configure parameters controlling the ball
 
-`t = ` $(Child(NumberField(0:0.01:1, default=0.25)))
+`t = ` $(Child("t", NumberField(-100:0.01:100, default=0.10)))
 
-`g = ` $(Child(NumberField(-100:0.01:0, default=-9.81)))
+`g = ` $(Child("g", NumberField(-100:0.01:100, default=-9.81)))
 
-`β1 = ` $(Child(NumberField(0:0.01:1, default=0.85)))
+`β1 = ` $(Child("β1", NumberField(-100:0.01:100, default=0.91)))
+`ϵ1 = ` $(Child("ϵ1", NumberField(-100:0.01:100, default=0.06)))
 
-`β2  = ` $(Child(NumberField(0:0.01:1, default=0.90)))
+`β2  = ` $(Child("β2", NumberField(-100:0.01:100, default=0.95)))
+`ϵ2  = ` $(Child("ϵ2", NumberField(-100:0.01:100, default=0.05)))
+
+`v_hit = ` $(Child("v_hit", NumberField(-100:0.01:100, default=-4)))
+`p_hit = ` $(Child("p_hit", NumberField(-100:0.01:100, default=4)))
 """
-end)
-
-# ╔═╡ fab78e11-174b-431e-bb8f-901c24639972
-begin
-	t, g, β1, β2 = ballconfig
-	nothing
 end
 
-# ╔═╡ 190d3d5a-d225-4068-b924-a2dcf406c007
-@bind ballposition confirm(PlutoUI.combine() do Child
+# ╔═╡ df1371db-1c70-41cf-a32c-82dd89242ff1
 md"""
-`v = ` $(Child(NumberField(-1000:0.1:1000, default=-4)))
+Bounce worst case: $(mechanics.β1 - mechanics.ϵ1). Best case: $(mechanics.β1 + mechanics.ϵ1)
 
-`p = ` $(Child(NumberField(-1000:0.1:1000, default=1)))
+Hit worst case: $(mechanics.β2 - mechanics.ϵ2). Best case: $(mechanics.β2 + mechanics.ϵ2)
 """
-end)
 
-# ╔═╡ be37bad7-049d-49de-9b56-1e60126f675c
-begin
-	v, p = ballposition
-	nothing
+# ╔═╡ 190d3d5a-d225-4068-b924-a2dcf406c007
+@bind simulation PlutoUI.combine() do Child
+md"""
+`Simulation`: 
+
+`v0` =  $(Child("v0", NumberField(-1000:0.1:1000, default=-0))) 
+
+`p0` =  $(Child("p0", NumberField(-1000:0.1:1000, default=1.5)))
+
+`unlucky` = $(Child("unlucky", CheckBox(default=false)))
+"""
 end
 
 # ╔═╡ 9e798144-4386-485b-99e9-682bf1535ff5
 call( () -> begin
-	vv, pp, tt = simulate_sequence(v, p, t, g, (v, p)->"nohit", 10)
+	vv, pp, tt = simulate_sequence(mechanics, simulation.v0, simulation.p0, (v, p)->"nohit", 10, unlucky=simulation.unlucky)
 	plot(tt, pp)
 end)
 
@@ -153,12 +157,6 @@ md"""
 `upto_t = ` $(@bind upto_t CheckBox())
 """
 
-# ╔═╡ f411721a-8442-4b3d-9d33-5e7b831031fc
-begin
-	reachable_hit, reachable_nohit = get_transitions(grid, resolution, β1, β2, t, g, upto_t=upto_t)
-	reachable_hit[square.iv, square.ip]
-end
-
 # ╔═╡ 3884c0af-f085-4e81-83c0-973d0d2bd6b7
 md"""
 ## Initialization
@@ -176,10 +174,29 @@ md"""
 ## Generating shield
 """
 
+# ╔═╡ 47ae7197-6e04-43fb-a457-52f5cccffa8d
+md"""
+ $(@bind audio_alert CheckBox(default=true)) Play audio alert when shield is done
+"""
+
+# ╔═╡ f411721a-8442-4b3d-9d33-5e7b831031fc
+# Compute reachability sets
+reachable_hit, reachable_nohit = get_transitions(grid, resolution, mechanics, upto_t=upto_t)
+
 # ╔═╡ 5c86f796-5fdd-4be0-a0c6-f66e19613d66
 md"""
 `max_steps = ` $(@bind max_steps confirm(NumberField(0:typemax(Int), default=100)))
 """
+
+# ╔═╡ 1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
+md"""
+mechanics: $(mechanics)
+
+
+upto\_t = $upto_t,
+resolution = $(resolution), 
+G = $(G),
+max\_steps = $(max_steps)"""
 
 # ╔═╡ 3e486218-e716-4fcb-9f85-1a98cb394829
 md"""
@@ -189,24 +206,43 @@ animate: $(@bind animate CheckBox())
 # ╔═╡ b1de6876-b41d-4b00-ba88-e504a65e07dc
 begin
 	if max_steps >= 1 
-		shield, terminated_early, animation = make_shield(reachable_hit, reachable_nohit, grid, resolution, β1, β2, t, g, max_steps=max_steps, animate=animate)
+		shield, terminated_early, animation = make_shield(reachable_hit, reachable_nohit, grid, resolution, max_steps=max_steps, animate=animate)
 	else
 		shield, terminated_early, animation = grid, true, nothing
 	end
 	draw(shield, colors=shieldcolors, show_grid=true)
+	plot!(title="$(mechanics), \n G=$G, upto_t=$upto_t, resolution=$resolution", titlefontsize=7)
 end
 
-# ╔═╡ 1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
-md"""
-resolution = $(resolution), 
-G = $(G), 
-β1 = $(β1), 
-β2 = $(β2), 
-t = $(t), 
-g = $(g), 
-max\_steps = $(max_steps)
+# ╔═╡ 2057f2d9-9587-407d-a781-285170e88299
+begin
+	shield
+	if audio_alert
+		html"""
+		<div>
+			<b style="font-size:2em">🔊</b>
+		</div>
+		<video src="https://www.myinstants.com/media/sounds/zeldaitem.swf.mp3" autoplay="true" style="width:0px; height:0px"></video>
+		"""
+	else
+		html"""
+		<div>
+			<b style="font-size:2em">🔇</b>
+		</div>
+		"""
+	end
+end
 
-More steps: $(terminated_early)"""
+# ╔═╡ 5224520a-eb78-4220-b3b0-939c35617a69
+if terminated_early
+	md"""
+!!! warning
+
+	`max_steps` exceeded!
+
+	This means that the shield is still unfinished. To achieve a complete shield, increase `max_steps`, or adjust the mechanics of the ball.
+	"""
+end	
 
 # ╔═╡ ecd4cf78-21f2-4d1a-b621-986648211401
 animate ? md"""
@@ -221,25 +257,6 @@ md"""
 ## Inspect Shield
 """
 
-# ╔═╡ 1ee975f2-1369-4a8d-b8c1-5d1cdde0ab1c
-md"""
-### View transition of square v′, p′ overlaid the shield
-"""
-
-# ╔═╡ c366d4fa-7179-4de5-a154-4d97bc792354
-md"""
-`v′ = ` $(@bind v′ NumberField(v_min:G:v_max, default=4))
-`p′ = ` $(@bind p′ NumberField(p_min:G:p_max, default=4))
-"""
-
-# ╔═╡ f767940c-7f07-46b8-a511-815a0ac890f0
-begin
-	square′ = box(shield, v′, p′)
-	draw(shield, colors=shieldcolors, show_grid=true)
-	draw_barbaric_transition!(square′, resolution, β1, β2, t, g, "nohit")
-	draw_barbaric_transition!(square′, resolution, β1, β2, t, g, "hit")
-end
-
 # ╔═╡ 31118d17-e6cb-45c3-8362-1668c6add72a
 shield_action(shield, 5.5, 4.4, "nohit")
 
@@ -251,7 +268,7 @@ shielded_simulation = call(() -> begin
 	button_restart_shielded_simulation
 	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded loafer agent
 	v0, p0 = 0, rand(7:1:10)
-	vv, pp, tt = simulate_sequence(v0, p0, t, g, policy, β1=β1, β2=β2, 500)
+	vv, pp, tt = simulate_sequence(mechanics, v0, p0, policy, 500, unlucky=false)
 	vv, pp, tt
 end)
 
@@ -1194,34 +1211,34 @@ version = "0.9.1+5"
 # ╟─b32b5260-5e6e-4f10-8505-00d2b139e35d
 # ╟─75d68f84-5965-4174-be97-97e5a4c7247b
 # ╟─50d27ce0-5658-4227-9952-1fe593d55d3c
-# ╟─c4018e8a-bc73-4f37-bbc4-56fc1a1d7763
-# ╟─fab78e11-174b-431e-bb8f-901c24639972
+# ╟─53d29226-7839-4fa1-bc56-077d4355042f
+# ╟─df1371db-1c70-41cf-a32c-82dd89242ff1
 # ╟─190d3d5a-d225-4068-b924-a2dcf406c007
 # ╟─be37bad7-049d-49de-9b56-1e60126f675c
 # ╟─9e798144-4386-485b-99e9-682bf1535ff5
 # ╟─4461bf98-c33c-47b1-9b8b-055c928325e0
 # ╟─765f3756-7828-4da7-9471-b22c3b384878
 # ╟─66924f99-8783-47e7-9cb3-1cf10e099051
-# ╠═8e1c8e2e-5dad-4fe7-a8ed-9f552e78cb61
+# ╟─8e1c8e2e-5dad-4fe7-a8ed-9f552e78cb61
 # ╟─9227ef36-4df3-4ff1-be01-5289634e9ce3
-# ╠═f411721a-8442-4b3d-9d33-5e7b831031fc
 # ╟─3884c0af-f085-4e81-83c0-973d0d2bd6b7
-# ╠═901d0f5a-c7e5-478b-bd1a-60290c4d8b06
+# ╟─901d0f5a-c7e5-478b-bd1a-60290c4d8b06
 # ╟─3e12d7a7-4037-453d-b1e7-b3b5f66895d4
+# ╟─47ae7197-6e04-43fb-a457-52f5cccffa8d
+# ╟─2057f2d9-9587-407d-a781-285170e88299
+# ╠═f411721a-8442-4b3d-9d33-5e7b831031fc
 # ╟─5c86f796-5fdd-4be0-a0c6-f66e19613d66
 # ╟─1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
+# ╟─5224520a-eb78-4220-b3b0-939c35617a69
 # ╠═b1de6876-b41d-4b00-ba88-e504a65e07dc
 # ╟─3e486218-e716-4fcb-9f85-1a98cb394829
 # ╟─ecd4cf78-21f2-4d1a-b621-986648211401
 # ╟─0825be60-7bc0-472e-9140-a4313bcf1ef0
 # ╟─d4ddf358-6a8f-468c-bbc3-7b9b712f0d67
-# ╟─1ee975f2-1369-4a8d-b8c1-5d1cdde0ab1c
-# ╟─c366d4fa-7179-4de5-a154-4d97bc792354
-# ╠═f767940c-7f07-46b8-a511-815a0ac890f0
 # ╠═31118d17-e6cb-45c3-8362-1668c6add72a
 # ╟─5bc8a442-0628-463f-9de3-8ddc93b0ef88
-# ╠═4da5c6da-92de-446a-9af7-4485d943a5a0
-# ╠═3170d6d4-40e6-45d5-a29b-d4e9b746813c
+# ╟─4da5c6da-92de-446a-9af7-4485d943a5a0
+# ╟─3170d6d4-40e6-45d5-a29b-d4e9b746813c
 # ╟─396b0315-7ce3-403f-9859-825de63800a0
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
