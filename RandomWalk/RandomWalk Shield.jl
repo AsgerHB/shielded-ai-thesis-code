@@ -693,11 +693,11 @@ function stringdump(grid)
 		for ix in 1:grid.x_count
 			square_value = get_value(Square(grid, ix, it))
 			if square_value == BAD_SQUARE
-				result[ix + (it-1)*grid.y_count] = 'r'
+				result[ix + (it-1)*grid.x_count] = 'r'
 			elseif square_value == FAST_SQUARE
-				result[ix + (it-1)*grid.y_count] = 'b'
+				result[ix + (it-1)*grid.x_count] = 'b'
 			else
-				result[ix + (it-1)*grid.y_count] = 'w'
+				result[ix + (it-1)*grid.x_count] = 'w'
 			end
 		end
 	end
