@@ -130,13 +130,13 @@ md"""
 ### Configure grid
 `G = ` $(Child(NumberField(0.01:0.01:1, default=1)))
 
-`v_min = ` $(Child(NumberField(typemin(Int):typemax(Int), default=-10)))
+`v_min = ` $(Child(NumberField(typemin(Int):typemax(Int), default=-13)))
 
-`v_max = ` $(Child(NumberField(typemin(Int):typemax(Int), default=10)))
+`v_max = ` $(Child(NumberField(typemin(Int):typemax(Int), default=13)))
 
 `p_min = ` $(Child(NumberField(0:typemax(Int), default=0)))
 
-`p_max = ` $(Child(NumberField(0:typemax(Int), default=13))) 
+`p_max = ` $(Child(NumberField(0:typemax(Int), default=8))) 
 """
 	end)
 end
@@ -259,6 +259,8 @@ if  any([s != 0 for s in shield.array[:, shield.p_count]]) ||
 !!! warning
 
 	Shield has reached the edge of the grid. It is likely that the fixed point for these parameters extends outside the bounds of the grid.
+
+	This does not produce a valid shield.
 
 	Either increase the bounds of the grid, or change the parameters to something more optimistic.
 	"""
@@ -1338,7 +1340,7 @@ version = "0.9.1+5"
 # ╠═6c9b7406-f357-4c71-a4c3-af308ce3a0d7
 # ╟─7770aa27-7093-4d2b-a4e7-0df4afa9615a
 # ╟─5f454fc4-60ca-45f9-a24f-8ef15c0519b8
-# ╠═04e0b60c-b7a2-4bce-966a-331b15cbc635
+# ╟─04e0b60c-b7a2-4bce-966a-331b15cbc635
 # ╟─619bb3bd-3d8c-42c7-a8ef-1f120e0c3ee1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
