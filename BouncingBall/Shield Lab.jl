@@ -251,6 +251,19 @@ if terminated_early
 	"""
 end	
 
+# ╔═╡ 4dd7cc28-f245-4a95-b9c2-833e929fcbc5
+if  any([s != 0 for s in shield.array[:, shield.p_count]]) ||
+	any([s != 0 for s in shield.array[1, :]]) || 
+	any([s != 0 for s in shield.array[shield.v_count, :]])
+	md"""
+!!! warning
+
+	Shield has reached the edge of the grid. It is likely that the fixed point for these parameters extends outside the bounds of the grid.
+
+	Either increase the bounds of the grid, or change the parameters to something more optimistic.
+	"""
+end
+
 # ╔═╡ ecd4cf78-21f2-4d1a-b621-986648211401
 animate ? md"""
 `fps = ` $(@bind fps NumberField(1:100, default=2))
@@ -1308,8 +1321,9 @@ version = "0.9.1+5"
 # ╟─2057f2d9-9587-407d-a781-285170e88299
 # ╠═f411721a-8442-4b3d-9d33-5e7b831031fc
 # ╟─5c86f796-5fdd-4be0-a0c6-f66e19613d66
-# ╟─1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
+# ╠═1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
 # ╟─5224520a-eb78-4220-b3b0-939c35617a69
+# ╟─4dd7cc28-f245-4a95-b9c2-833e929fcbc5
 # ╠═b1de6876-b41d-4b00-ba88-e504a65e07dc
 # ╟─3e486218-e716-4fcb-9f85-1a98cb394829
 # ╟─ecd4cf78-21f2-4d1a-b621-986648211401
