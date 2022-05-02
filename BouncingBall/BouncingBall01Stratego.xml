@@ -138,7 +138,6 @@ x' == 10</label>
 		<transition id="id15">
 			<source ref="id12"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-382" y="-68">!shield_enabled || must_hit(v, p)</label>
 			<label kind="synchronisation" x="-161" y="-51">lhit!</label>
 			<label kind="assignment" x="-178" y="-34">++fired</label>
 			<nail x="-110" y="-76"/>
