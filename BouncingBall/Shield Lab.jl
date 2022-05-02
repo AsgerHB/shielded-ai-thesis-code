@@ -273,7 +273,7 @@ shield_action(shield, 5.5, 4.4, "nohit")
 # ╔═╡ 4da5c6da-92de-446a-9af7-4485d943a5a0
 shielded_simulation = call(() -> begin
 	button_restart_shielded_simulation
-	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded loafer agent
+	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded layabout agent
 	v0, p0 = 0, rand(7:1:10)
 	vv, pp, tt = simulate_sequence(mechanics, v0, p0, policy, 500, unlucky=false)
 	vv, pp, tt
@@ -292,6 +292,33 @@ call(() -> begin
 	plot(tt, pp,
 		color=colors.MIDNIGHT_BLUE
 	)
+end)
+
+# ╔═╡ 907b2f4a-6423-4cb7-adcc-75fa17f9054a
+function evaluate(	mechanics, 
+					policy, duration;
+					unlucky=false,
+					runs=1000,
+					cost_hit=1)
+	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+    costs = []
+	for run in 1:runs
+    	v, p = 0, rand(7:10)
+		cost = 0
+	    for i in 1:ceil(duration/t)
+	        action = policy(v, p)
+			cost += action == "hit" ? 1 : 0
+	        v, p = simulate_point(mechanics, v, p, action, unlucky=unlucky)
+	    end
+		push!(costs, cost)
+	end
+    sum(costs)/runs
+end
+
+# ╔═╡ 6c9b7406-f357-4c71-a4c3-af308ce3a0d7
+call(() -> begin
+	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded layabout agent
+	evaluate(mechanics, policy, 120, unlucky=false)
 end)
 
 # ╔═╡ 7770aa27-7093-4d2b-a4e7-0df4afa9615a
@@ -1290,9 +1317,11 @@ version = "0.9.1+5"
 # ╟─4da5c6da-92de-446a-9af7-4485d943a5a0
 # ╟─3170d6d4-40e6-45d5-a29b-d4e9b746813c
 # ╟─396b0315-7ce3-403f-9859-825de63800a0
+# ╠═907b2f4a-6423-4cb7-adcc-75fa17f9054a
+# ╠═6c9b7406-f357-4c71-a4c3-af308ce3a0d7
 # ╟─7770aa27-7093-4d2b-a4e7-0df4afa9615a
 # ╟─5f454fc4-60ca-45f9-a24f-8ef15c0519b8
-# ╟─04e0b60c-b7a2-4bce-966a-331b15cbc635
-# ╠═619bb3bd-3d8c-42c7-a8ef-1f120e0c3ee1
+# ╠═04e0b60c-b7a2-4bce-966a-331b15cbc635
+# ╟─619bb3bd-3d8c-42c7-a8ef-1f120e0c3ee1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
