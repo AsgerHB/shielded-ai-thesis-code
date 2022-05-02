@@ -1,0 +1,22 @@
+{"version":1.0,"type":"state->regressor","representation":"map","actions":{
+		"0":"LearnerPlayer._id12->LearnerPlayer._id11 { !shield_enabled || !must_hit(v, p), tau, 1 }",
+		"1":"LearnerPlayer._id12->LearnerPlayer._id11 { !shield_enabled || must_hit(v, p), lhit!, ++fired }",
+		"2":"WAIT"
+	},"statevars":[
+	],"pointvars":[
+		"p",
+		"v"
+	],"locationnames":{
+		"Ball.location":{
+			"0":"_id0",
+			"1":"I",
+			"2":"is_dead",
+			"3":"dead"
+		},
+		"LearnerPlayer.location":{
+			"0":"_id11",
+			"1":"_id12"
+		}
+	},"regressors":{
+	}
+}

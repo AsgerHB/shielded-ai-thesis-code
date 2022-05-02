@@ -18,14 +18,5 @@
 			"1":"_id12"
 		}
 	},"regressors":{
-		"(1)":
-			{"type":"act->point->val","representation":"simpletree","minimize":1,"regressor":
-				{
-					"1":
-						1,
-					"0":
-						0
-				}
-			}
 	}
 }
