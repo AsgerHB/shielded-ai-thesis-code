@@ -309,27 +309,6 @@ call(() -> begin
 	)
 end)
 
-# ╔═╡ 907b2f4a-6423-4cb7-adcc-75fa17f9054a
-function evaluate(	mechanics, 
-					policy, duration;
-					unlucky=false,
-					runs=1000,
-					cost_hit=1)
-	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
-    costs = []
-	for run in 1:runs
-    	v, p = 0, rand(7:10)
-		cost = 0
-	    for i in 1:ceil(duration/t)
-	        action = policy(v, p)
-			cost += action == "hit" ? 1 : 0
-	        v, p = simulate_point(mechanics, v, p, action, unlucky=unlucky)
-	    end
-		push!(costs, cost)
-	end
-    sum(costs)/runs
-end
-
 # ╔═╡ 6c9b7406-f357-4c71-a4c3-af308ce3a0d7
 call(() -> begin
 	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded layabout agent
@@ -1323,7 +1302,7 @@ version = "0.9.1+5"
 # ╟─2057f2d9-9587-407d-a781-285170e88299
 # ╠═f411721a-8442-4b3d-9d33-5e7b831031fc
 # ╟─5c86f796-5fdd-4be0-a0c6-f66e19613d66
-# ╠═1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
+# ╟─1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
 # ╟─5224520a-eb78-4220-b3b0-939c35617a69
 # ╟─4dd7cc28-f245-4a95-b9c2-833e929fcbc5
 # ╠═b1de6876-b41d-4b00-ba88-e504a65e07dc
@@ -1336,7 +1315,6 @@ version = "0.9.1+5"
 # ╟─4da5c6da-92de-446a-9af7-4485d943a5a0
 # ╟─3170d6d4-40e6-45d5-a29b-d4e9b746813c
 # ╟─396b0315-7ce3-403f-9859-825de63800a0
-# ╠═907b2f4a-6423-4cb7-adcc-75fa17f9054a
 # ╠═6c9b7406-f357-4c71-a4c3-af308ce3a0d7
 # ╟─7770aa27-7093-4d2b-a4e7-0df4afa9615a
 # ╟─5f454fc4-60ca-45f9-a24f-8ef15c0519b8

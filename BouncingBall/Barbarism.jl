@@ -152,6 +152,27 @@ function simulate_sequence(mechanics, v0, p0,
     velocities, positions, times
 end
 
+# ╔═╡ 3cd49dec-bfb6-4885-85ed-456997dfdde1
+function evaluate(	mechanics, 
+					policy, duration;
+					unlucky=false,
+					runs=1000,
+					cost_hit=1)
+	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+    costs = []
+	for run in 1:runs
+    	v, p = 0, rand(7:10)
+		cost = 0
+	    for i in 1:ceil(duration/t)
+	        action = policy(v, p)
+			cost += action == "hit" ? 1 : 0
+	        v, p = simulate_point(mechanics, v, p, action, unlucky=unlucky)
+	    end
+		push!(costs, cost)
+	end
+    sum(costs)/runs
+end
+
 # ╔═╡ fdeb89e9-4cc1-403d-b7c0-5e91429bc696
 @bind mechanics PlutoUI.combine() do Child
 md"""
@@ -1644,6 +1665,7 @@ version = "0.9.1+5"
 # ╠═6adbbdb5-7ab5-4e4f-96c7-eaf6d79ab6a0
 # ╠═2b81ff1e-d32f-4fd2-a805-f30b6815c3bf
 # ╠═95dd69fb-14c1-4745-ae1d-e5596b37581d
+# ╟─3cd49dec-bfb6-4885-85ed-456997dfdde1
 # ╟─fdeb89e9-4cc1-403d-b7c0-5e91429bc696
 # ╟─63be82ea-dbc1-4fcc-a97a-791d803e1f2e
 # ╟─5948f3dd-103d-43c0-978c-6f92d714a043

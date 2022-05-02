@@ -58,6 +58,26 @@ function simulate_sequence(mechanics, v0, p0,
     velocities, positions, times
 end
 
+function evaluate(	mechanics, 
+    policy, duration;
+    unlucky=false,
+    runs=1000,
+    cost_hit=1)
+t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+costs = []
+for run in 1:runs
+v, p = 0, rand(7:10)
+cost = 0
+for i in 1:ceil(duration/t)
+action = policy(v, p)
+cost += action == "hit" ? 1 : 0
+v, p = simulate_point(mechanics, v, p, action, unlucky=unlucky)
+end
+push!(costs, cost)
+end
+sum(costs)/runs
+end
+
 e_kin(g, v) = 0.5*abs(g)*v^2
 e_pot(g, p) = abs(g)*p
 e_mek(g, v, p) = e_kin(g, v) + e_pot(g, p)
