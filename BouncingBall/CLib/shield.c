@@ -39,7 +39,7 @@ int box_p(double  p)
     return (int) ((p - y_min)/G);
 }
 
-char get_value(char grid[], double v, double p)
+char get_value(double v, double p)
 {
     int iv = box_v(v);
     int ip = box_p(p);
@@ -53,7 +53,7 @@ char get_value(char grid[], double v, double p)
 // True if the shield requires going fast, false otherwise.
 bool must_hit(double v, double p)
 {
-    char color = get_value(grid, v, p);
+    char color = get_value(v, p);
     if (color == 'b' || color == 'r')
     {
         return true;
@@ -77,7 +77,7 @@ int main()
         printf("\n");
     }
     printf("box(0.1, 0.9): %i, %i\n", box_v(0.1), box_p(0.9));
-    printf("get_value(0.1, 0.9): %c\n", get_value(grid, 0.1, 0.9));
+    printf("get_value(0.1, 0.9): %c\n", get_value(0.1, 0.9));
     printf("Must go fast (0.1, 0.9): %i\n", must_hit(0.1, 0.9));
     printf("Must go fast (1.0, 0.0): %i\n", must_hit(1.0, 0.0));
     return 0;
