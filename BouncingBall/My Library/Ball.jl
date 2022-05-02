@@ -7,9 +7,9 @@ function simulate_point(mechanics, v, p, action; min_v_on_impact=1, unlucky=fals
             v0 = min(v, v_hit)
         else
 			if unlucky
-            	v0 = -(β2 - ϵ2)*v - 4
+            	v0 = -(β2 - ϵ2)*v + v_hit
 			else
-				v0 = -rand(β2 - ϵ2:0.01:β2 + ϵ2)*v - 4
+				v0 = -rand(β2 - ϵ2:0.01:β2 + ϵ2)*v + v_hit
 			end
         end
     end
