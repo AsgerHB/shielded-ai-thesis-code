@@ -355,7 +355,10 @@ function get_c_library_header(grid)
     const float x_min = $(grid.v_min);
     const float x_max = $(grid.v_max);
     const float y_min = $(grid.p_min);
-	const float y_max = $(grid.p_max);"""
+	const float y_max = $(grid.p_max);
+	// Mechanics: $mechanics
+	// Additional parameters: upto_t=$upto_t, resolution=$resolution
+	"""
 end
 
 # ╔═╡ 619bb3bd-3d8c-42c7-a8ef-1f120e0c3ee1
