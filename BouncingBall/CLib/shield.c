@@ -22,36 +22,36 @@ const int x_count = (x_max - x_min)/G;
 const int y_count = (y_max - y_min)/G;
 
 
-char get_index(char grid[], int ix, int iy)
+char get_index(char grid[], int iv, int ip)
 {
-    return grid[ix + iy*x_count];
+    return grid[iv + ip*x_count];
 }
 
-int box_x(double  x)
+int box_v(double  v)
 {
-    return (int) ((x - x_min)/G);
+    return (int) ((v - x_min)/G);
 }
 
-int box_y(double  y)
+int box_p(double  p)
 {
-    return (int) ((y - y_min)/G);
+    return (int) ((p - y_min)/G);
 }
 
-char get_value(char grid[], double x, double y)
+char get_value(char grid[], double v, double p)
 {
-    int ix = box_x(x);
-    int iy = box_y(y);
-    if (ix >= x_count || iy >= y_count)
+    int iv = box_v(v);
+    int ip = box_p(p);
+    if (iv >= x_count || ip >= y_count)
     {
         return '?';
     }
-    return get_index(grid, ix, iy);
+    return get_index(grid, iv, ip);
 }
 
 // True if the shield requires going fast, false otherwise.
-bool must_go_fast(double x, double t)
+bool must_hit(double v, double p)
 {
-    char color = get_value(grid, x, t);
+    char color = get_value(grid, v, p);
     if (color == 'b' || color == 'r')
     {
         return true;
@@ -65,18 +65,18 @@ bool must_go_fast(double x, double t)
 int main()
 {
     // Print imported shield
-    int ix, it;
+    int iv, it;
     for (it=y_count; it>=0; it--)
     {
-        for (ix=0; ix<x_count; ix++)
+        for (iv=0; iv<x_count; iv++)
         {
-            printf("%c", get_index(grid, ix, it));
+            printf("%c", get_index(grid, iv, it));
         }
         printf("\n");
     }
-    printf("box(0.1, 0.9): %i, %i\n", box_x(0.1), box_y(0.9));
+    printf("box(0.1, 0.9): %i, %i\n", box_v(0.1), box_p(0.9));
     printf("get_value(0.1, 0.9): %c\n", get_value(grid, 0.1, 0.9));
-    printf("Must go fast (0.1, 0.9): %i\n", must_go_fast(0.1, 0.9));
-    printf("Must go fast (1.0, 0.0): %i\n", must_go_fast(1.0, 0.0));
+    printf("Must go fast (0.1, 0.9): %i\n", must_hit(0.1, 0.9));
+    printf("Must go fast (1.0, 0.0): %i\n", must_hit(1.0, 0.0));
     return 0;
 }
