@@ -10524,11 +10524,9 @@ Mean estimate of displayed sample: 14.417 ± 0.3198 (95% CI)</comment>
 			</result>
 		</query>
 		<query>
-			<formula>saveStrategy("/home/rgc/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/GoFast.json",GoFast)
+			<formula>saveStrategy("/home/rgc/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/GoFast.strategy.json",GoFast)
 	    </formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2022-04-19 15:14:36 +0200">
-			</result>
 		</query>
 		<query>
 			<formula>E[#&lt;=30;100] (max: (t&gt;=1.0)*15.0 + counterSlow + counterFast*3) under GoFast</formula>

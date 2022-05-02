@@ -1,3 +1,5 @@
+### Added Automatically at Creation (?) ###
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -123,8 +125,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+### Added Manually ###
+
 *.gif
 
-GoFast.json
+*.strategy.json
 
 *.o
+
+*.~lock*
