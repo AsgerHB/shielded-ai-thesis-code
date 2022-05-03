@@ -31,10 +31,10 @@ end
 
 
 function box(grid::Grid, x, y)::Square
-	if x < grid.x_min || x > grid.x_max
+	if x < grid.x_min || x >= grid.x_max
 		error("x value out of bounds.")
 	end
-	if y < grid.y_min || y > grid.y_max
+	if y < grid.y_min || y >= grid.y_max
 		error("x value out of bounds.")
 	end
 

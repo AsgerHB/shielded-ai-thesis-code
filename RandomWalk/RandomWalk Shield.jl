@@ -200,10 +200,10 @@ init_func(Ixl, Ixu, Itl, Itu) = Itu > 1 ? BAD_SQUARE : NEUTRAL_SQUARE
 
 # ╔═╡ 895b0abb-4ee6-4a70-b638-262583c5c8ab
 function box(grid::Grid, x, y)::Square
-	if x < grid.x_min || x > grid.x_max
+	if x < grid.x_min || x >= grid.x_max
 		error("x value out of bounds.")
 	end
-	if y < grid.y_min || y > grid.y_max
+	if y < grid.y_min || y >= grid.y_max
 		error("x value out of bounds.")
 	end
 
@@ -634,7 +634,7 @@ animation != nothing ? gif(animation, "shield.gif", fps=fps) : nothing
 
 # ╔═╡ 397ca36e-bd4a-45da-9f26-573c10a938fa
 function shield_action(shield, x, t, action)
-	if x < shield.x_min || x > shield.x_max || t < shield.y_min || t > shield.y_max
+	if x < shield.x_min || x >= shield.x_max || t < shield.y_min || t >= shield.y_max
 		return action
 	end
     square_value = get_value(box(shield, x, t))

@@ -219,7 +219,7 @@ end
 
 
 function shield_action(shield:: Grid, v, p, action)
-	if v < shield.v_min || v > shield.v_max || p < shield.p_min || p > shield.p_max
+	if v < shield.v_min || v >= shield.v_max || p < shield.p_min || p >= shield.p_max
 		return action
 	end
 	square = box(shield, v, p)

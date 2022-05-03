@@ -168,7 +168,7 @@ end
 
 
 function shield_action(shield, x, t, action)
-	if x < shield.x_min || x > shield.x_max || t < shield.y_min || t > shield.y_max
+	if x < shield.x_min || x >= shield.x_max || t < shield.y_min || t >= shield.y_max
 		return action
 	end
     square_value = get_value(box(shield, x, t))

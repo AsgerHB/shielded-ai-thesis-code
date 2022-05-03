@@ -27,10 +27,10 @@ Base.show(io::IO, ::MIME"text/plain", square::Square) = println(io, "Square(_, $
 
 
 function box(grid::Grid, v, p)::Square
-	if v < grid.v_min || v > grid.v_max
+	if v < grid.v_min || v >= grid.v_max
 		error("v value out of bounds.")
 	end
-	if p < grid.p_min || p > grid.p_max
+	if p < grid.p_min || p >= grid.p_max
 		error("v value out of bounds.")
 	end
 
