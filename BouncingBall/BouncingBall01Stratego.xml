@@ -165,13 +165,13 @@ x' == 10</label>
 		<transition id="id16">
 			<source ref="id12"/>
 			<target ref="id13"/>
-			<label kind="assignment" x="59" y="-272">next_action = shield(HIT)</label>
+			<label kind="assignment" x="68" y="-272">next_action = shield(HIT)</label>
 			<nail x="51" y="-272"/>
 		</transition>
 		<transition id="id17">
 			<source ref="id12"/>
 			<target ref="id13"/>
-			<label kind="assignment" x="-280" y="-272">next_action = shield(NOHIT)</label>
+			<label kind="assignment" x="-289" y="-272">next_action = shield(NOHIT)</label>
 			<nail x="-51" y="-272"/>
 		</transition>
 		<transition id="id18" controllable="false">
@@ -196,19 +196,7 @@ x' == 10</label>
 			<comment/>
 		</query>
 		<query>
-			<formula>strategy Layabout = minE (LearnerPlayer.fired) [&lt;=120] {} -&gt; {p, v}: &lt;&gt; time &gt;= 120</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
 			<formula>simulate  1[&lt;=20] {v, p, interventions, bad_interventions} under HitWell</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>simulate  1[&lt;=20] {v, p, interventions, bad_interventions} under Layabout</formula>
 			<comment/>
 		</query>
 		<query>
@@ -216,15 +204,7 @@ x' == 10</label>
 			<comment/>
 		</query>
 		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
 			<formula>E[&lt;=120;1000] (max:LearnerPlayer.fired + number_deaths*1000) under HitWell</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>E[&lt;=120;1000] (max:LearnerPlayer.fired + number_deaths*1000) under Layabout</formula>
 			<comment/>
 		</query>
 		<query>
@@ -232,15 +212,7 @@ x' == 10</label>
 			<comment/>
 		</query>
 		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
 			<formula>E[&lt;=120;1000] (max:number_deaths) under HitWell</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>E[&lt;=120;1000] (max:number_deaths) under Layabout</formula>
 			<comment/>
 		</query>
 		<query>
@@ -248,15 +220,11 @@ x' == 10</label>
 			<comment/>
 		</query>
 		<query>
-			<formula/>
+			<formula>E[&lt;=120;1000] (max:interventions) under HitWell</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/BouncingBall/Layabout.strategy.json", Layabout)</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>strategy Layabout = loadStrategy {} -&gt; {p, v} ("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/BouncingBall/Layabout.strategy.json")</formula>
+			<formula>E[&lt;=120;1000] (max:interventions)</formula>
 			<comment/>
 		</query>
 		<query>
