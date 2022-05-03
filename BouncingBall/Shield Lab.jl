@@ -31,9 +31,9 @@ call(f) = f()
 
 # ╔═╡ a2e22de8-5aed-4c70-a691-44e0f700ec49
 begin
-	NEUTRAL_SQUARE = 1	# Either action allowable
-	FAST_SQUARE = 2		# Must take the :fast action
-	BAD_SQUARE = 3		# Risk of safety violation
+	NEUTRAL_SQUARE = 0	# Either action allowable
+	FAST_SQUARE = 1		# Must take the :fast action
+	BAD_SQUARE = 2		# Risk of safety violation
 	nothing
 end
 
@@ -211,14 +211,12 @@ animate: $(@bind animate CheckBox())
 """
 
 # ╔═╡ b1de6876-b41d-4b00-ba88-e504a65e07dc
-begin
-	if max_steps >= 1 
-		shield, terminated_early, animation = make_shield(reachable_hit, reachable_nohit, grid, resolution, max_steps=max_steps, animate=animate)
-	else
-		shield, terminated_early, animation = grid, true, nothing
-	end
-	draw(shield, colors=shieldcolors, show_grid=true)
-	plot!(title="$(mechanics), \n G=$G, upto_t=$upto_t, resolution=$resolution", titlefontsize=7)
+if max_steps >= 1 
+	shield, terminated_early, animation = make_shield(reachable_hit, reachable_nohit, grid, resolution, max_steps=max_steps, animate=animate)
+	(;shield, terminated_early, animation)
+else
+	shield, terminated_early, animation = grid, true, nothing
+	(;shield, terminated_early, animation)
 end
 
 # ╔═╡ 2057f2d9-9587-407d-a781-285170e88299
@@ -264,6 +262,12 @@ if  any([s != 0 for s in shield.array[:, shield.p_count]]) ||
 
 	Either increase the bounds of the grid, or change the parameters to something more optimistic.
 	"""
+end
+
+# ╔═╡ 0fb7db88-9eec-4895-bc16-5acbbe58082a
+begin
+	draw(shield, colors=shieldcolors, show_grid=true)
+	plot!(title="$(mechanics), \n G=$G, upto_t=$upto_t, resolution=$resolution", titlefontsize=7)
 end
 
 # ╔═╡ ecd4cf78-21f2-4d1a-b621-986648211401
@@ -1290,7 +1294,7 @@ version = "0.9.1+5"
 # ╟─53d29226-7839-4fa1-bc56-077d4355042f
 # ╟─df1371db-1c70-41cf-a32c-82dd89242ff1
 # ╟─190d3d5a-d225-4068-b924-a2dcf406c007
-# ╠═9e798144-4386-485b-99e9-682bf1535ff5
+# ╟─9e798144-4386-485b-99e9-682bf1535ff5
 # ╟─4461bf98-c33c-47b1-9b8b-055c928325e0
 # ╟─765f3756-7828-4da7-9471-b22c3b384878
 # ╟─66924f99-8783-47e7-9cb3-1cf10e099051
@@ -1305,6 +1309,7 @@ version = "0.9.1+5"
 # ╟─1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
 # ╟─5224520a-eb78-4220-b3b0-939c35617a69
 # ╟─4dd7cc28-f245-4a95-b9c2-833e929fcbc5
+# ╠═0fb7db88-9eec-4895-bc16-5acbbe58082a
 # ╠═b1de6876-b41d-4b00-ba88-e504a65e07dc
 # ╟─3e486218-e716-4fcb-9f85-1a98cb394829
 # ╟─ecd4cf78-21f2-4d1a-b621-986648211401
@@ -1314,10 +1319,10 @@ version = "0.9.1+5"
 # ╟─5bc8a442-0628-463f-9de3-8ddc93b0ef88
 # ╟─4da5c6da-92de-446a-9af7-4485d943a5a0
 # ╟─3170d6d4-40e6-45d5-a29b-d4e9b746813c
-# ╟─396b0315-7ce3-403f-9859-825de63800a0
+# ╠═396b0315-7ce3-403f-9859-825de63800a0
 # ╠═6c9b7406-f357-4c71-a4c3-af308ce3a0d7
 # ╟─7770aa27-7093-4d2b-a4e7-0df4afa9615a
-# ╟─5f454fc4-60ca-45f9-a24f-8ef15c0519b8
+# ╠═5f454fc4-60ca-45f9-a24f-8ef15c0519b8
 # ╟─04e0b60c-b7a2-4bce-966a-331b15cbc635
 # ╟─619bb3bd-3d8c-42c7-a8ef-1f120e0c3ee1
 # ╟─00000000-0000-0000-0000-000000000001
