@@ -4,20 +4,59 @@
 	<declaration>import "/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/BouncingBall/CLib/libshield.so"
 {
     bool must_hit(double v, double p);
+    int get_value(double v, double p);
 };
-
-/* Constrol shielding */
-
-bool shield_enabled = true;
 
 /* Simulation specific stuff */
 urgent broadcast chan bounce;
-broadcast chan ehit, uhit, lhit;
+broadcast chan hit;
 clock time;
 clock p, v;
 int c = 0;
 int number_deaths = 0;
-</declaration>
+
+
+/* Shielding */
+
+// You can toggle the shield here:
+const bool shield_enabled = true;
+
+const int NOHIT = 0;
+const int HIT = 1;
+
+const int RED = 114;   // ASCII value small letter 'r'
+const int BLUE = 98;   // ... 'b' 
+const int WHITE = 119; // etc.
+
+int next_action = NOHIT;    // (potentially) shielded action 
+
+int interventions = 0; // Total number of times the shield intervened
+int bad_interventions = 0; // Number of times where this was due to touching the red part
+
+// If the shield is enabled, returns the shielded action.
+// Otherwise, action is simply returned unaltered.
+// Counts how many times the shield differed from the proposed action.
+int shield(int action) {
+    if (!shield_enabled) {
+        return action;
+    } else if (v &lt; -4 || p &lt; 4) {    // Do not force useless hits
+        return action;
+    } else {
+        int color = get_value(v, p);
+        if (action == HIT) {
+            return action;
+        } else if (color == RED) {
+            ++interventions; 
+            ++bad_interventions;
+            return HIT;
+        } else if (color == BLUE) {
+            ++interventions;
+            return HIT;
+        } else {
+            return action;
+        }
+    }
+}</declaration>
 	<template>
 		<name x="5" y="5">Ball</name>
 		<declaration>// Place local declarations here.
@@ -64,7 +103,7 @@ v=0, p=0</label>
 			<source ref="id0"/>
 			<target ref="id0"/>
 			<label kind="guard" x="467" y="-117">p &gt;= 4 &amp;&amp; v &gt;= 0</label>
-			<label kind="synchronisation" x="467" y="-101">lhit?</label>
+			<label kind="synchronisation" x="467" y="-101">hit?</label>
 			<label kind="assignment" x="467" y="-85">v = -4 - (0.95 - 0.05 + random(2*0.05))*v,
 c = c + 1</label>
 			<nail x="459" y="-117"/>
@@ -73,8 +112,8 @@ c = c + 1</label>
 		<transition id="id8">
 			<source ref="id0"/>
 			<target ref="id0"/>
-			<label kind="guard" x="467" y="-16">p &gt;= 4 &amp;&amp; v &gt;= 4 &amp;&amp; v &lt; 0</label>
-			<label kind="synchronisation" x="467" y="0">lhit?</label>
+			<label kind="guard" x="467" y="-16">p &gt;= 4 &amp;&amp; v &gt;= -4 &amp;&amp; v &lt; 0</label>
+			<label kind="synchronisation" x="467" y="0">hit?</label>
 			<label kind="assignment" x="467" y="16">v = -4.0, 
 c = c + 1</label>
 			<nail x="459" y="51"/>
@@ -102,31 +141,44 @@ int fired;</declaration>
 			<label kind="invariant" x="-8" y="25">x &lt;= 1 &amp;&amp;
 x' == 10</label>
 		</location>
-		<location id="id12" x="0" y="-76">
+		<location id="id12" x="0" y="-93">
+			<committed/>
+		</location>
+		<location id="id13" x="0" y="-272">
 			<committed/>
 		</location>
 		<init ref="id11"/>
-		<transition id="id13" controllable="false">
+		<transition id="id14" controllable="false">
+			<source ref="id13"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-289" y="-8">next_action != HIT</label>
+			<nail x="-119" y="8"/>
+		</transition>
+		<transition id="id15" controllable="false">
+			<source ref="id13"/>
+			<target ref="id11"/>
+			<label kind="guard" x="127" y="-8">next_action == HIT</label>
+			<label kind="synchronisation" x="127" y="-42">hit!</label>
+			<label kind="assignment" x="127" y="-25">++fired</label>
+			<nail x="119" y="8"/>
+		</transition>
+		<transition id="id16">
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="assignment" x="59" y="-272">next_action = shield(HIT)</label>
+			<nail x="51" y="-272"/>
+		</transition>
+		<transition id="id17">
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="assignment" x="-280" y="-272">next_action = shield(NOHIT)</label>
+			<nail x="-51" y="-272"/>
+		</transition>
+		<transition id="id18" controllable="false">
 			<source ref="id11"/>
 			<target ref="id12"/>
-			<label kind="guard" x="8" y="-34">x == 1</label>
-			<label kind="assignment" x="8" y="-51">x = 0</label>
-		</transition>
-		<transition id="id14">
-			<source ref="id12"/>
-			<target ref="id11"/>
-			<label kind="guard" x="110" y="-76">!shield_enabled || !must_hit(v, p)</label>
-			<nail x="102" y="-76"/>
-			<nail x="102" y="8"/>
-		</transition>
-		<transition id="id15">
-			<source ref="id12"/>
-			<target ref="id11"/>
-			<label kind="guard" x="-382" y="-68">!shield_enabled || must_hit(v, p)</label>
-			<label kind="synchronisation" x="-161" y="-51">lhit!</label>
-			<label kind="assignment" x="-178" y="-34">++fired</label>
-			<nail x="-110" y="-76"/>
-			<nail x="-110" y="8"/>
+			<label kind="guard" x="8" y="-51">x == 1</label>
+			<label kind="assignment" x="8" y="-68">x = 0</label>
 		</transition>
 	</template>
 	<system>system Ball, LearnerPlayer;</system>
@@ -152,15 +204,15 @@ x' == 10</label>
 			<comment/>
 		</query>
 		<query>
-			<formula>simulate  1[&lt;=50] {p, number_deaths} under HitWell</formula>
+			<formula>simulate  1[&lt;=20] {v, p, interventions, bad_interventions} under HitWell</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>simulate  1[&lt;=50] {p, number_deaths} under Layabout</formula>
+			<formula>simulate  1[&lt;=20] {v, p, interventions, bad_interventions} under Layabout</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>simulate  1[&lt;=50] {p, number_deaths}</formula>
+			<formula>simulate  1[&lt;=20] {v, p, interventions, bad_interventions}</formula>
 			<comment/>
 		</query>
 		<query>
@@ -169,7 +221,7 @@ x' == 10</label>
 		</query>
 		<query>
 			<formula>E[&lt;=120;1000] (max:LearnerPlayer.fired + number_deaths*1000) under HitWell</formula>
-			<comment>3</comment>
+			<comment/>
 		</query>
 		<query>
 			<formula>E[&lt;=120;1000] (max:LearnerPlayer.fired + number_deaths*1000) under Layabout</formula>
@@ -177,7 +229,7 @@ x' == 10</label>
 		</query>
 		<query>
 			<formula>E[&lt;=120;1000] (max:LearnerPlayer.fired + number_deaths*1000)</formula>
-			<comment>4</comment>
+			<comment/>
 		</query>
 		<query>
 			<formula/>
