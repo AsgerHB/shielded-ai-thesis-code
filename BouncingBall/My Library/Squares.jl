@@ -23,7 +23,7 @@ struct Square
     ip::Int
 end
 
-Base.show(io::IO, ::MIME"text/plain", square::Square) = println(io, "Square(_, $(square.iv), $(square.ip))")
+Base.show(io::IO, ::MIME"text/plain", grid::Grid) = println(io, "Grid($(grid.G), $(grid.v_min), $(grid.v_max), $(grid.p_min), $(grid.p_max))")
 
 
 function box(grid::Grid, v, p)::Square
