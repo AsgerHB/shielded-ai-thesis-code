@@ -41,12 +41,12 @@ int box_p(double  p)
 
 char get_value(double v, double p)
 {
-    int iv = box_v(v);
-    int ip = box_p(p);
-    if (iv >= x_count || ip >= y_count)
+    if (v < x_min || v >= x_max || p < y_min || p >= y_max)
     {
         return '?';
     }
+    int iv = box_v(v);
+    int ip = box_p(p);
     return get_index(grid, iv, ip);
 }
 
@@ -67,23 +67,28 @@ bool must_hit(double v, double p)
 int main()
 {
     // Print imported shield
-    int iv, it;
-    for (it=y_count; it>=0; it--)
+    if (x_count < 256)
     {
-        for (iv=0; iv<x_count; iv++)
+        int iv, it;
+        for (it=y_count; it>=0; it--)
         {
-            printf("%c", get_index(grid, iv, it));
+            for (iv=0; iv<x_count; iv++)
+            {
+                printf("%c", get_index(grid, iv, it));
+            }
+            printf("\n");
         }
-        printf("\n");
     }
     printf("x_count: %i\n", x_count);
     printf("y_count: %i\n", y_count);
     printf("box(0.1, 0.9): %i, %i\n", box_v(0.1), box_p(0.9));
     printf("box(0.0, 10.0): %i, %i\n", box_v(0.0), box_p(10.0));
     printf("box(12.0, 0.0): %i, %i\n", box_v(12.0), box_p(0.0));
+    printf("box(-99.0, 0.0): %i, %i\n", box_v(-99.0), box_p(0.0));
     printf("get_value(0.1, 0.9): %c\n", get_value(0.1, 0.9));
     printf("get_value(0.0, 10.0): %c\n", get_value(0.0, 10.0));
     printf("get_value(12.0, 0.0): %c\n", get_value(12.0, 0.0));
+    printf("get_value(-99.0, 0.0): %c\n", get_value(-99.0, 0.0));
     printf("Must hit (0.1, 0.9): %i\n", must_hit(0.1, 0.9));
     printf("Must hit (0.0, 10.0): %i\n", must_hit(0.0, 10.0));
     printf("Must hit (12.0, 0.0): %i\n", must_hit(12.0, 0.0));

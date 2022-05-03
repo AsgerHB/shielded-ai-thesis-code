@@ -39,12 +39,12 @@ int box_y(double  y)
 
 char get_value(char grid[], double x, double y)
 {
-    int ix = box_x(x);
-    int iy = box_y(y);
-    if (ix >= x_count || iy >= y_count)
+    if (x < x_min || x >= x_max || y < y_min || y >= y_max)
     {
         return '?';
     }
+    int ix = box_x(x);
+    int iy = box_y(y);
     return get_index(grid, ix, iy);
 }
 
