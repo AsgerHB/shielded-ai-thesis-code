@@ -6,13 +6,21 @@
     bool must_go_fast(double x, double t);
     int get_value(double x, double t);
 };
+const int SINUS_X = 0, PARABOLA_X = 1;
+
+/* Config */
+
+const int selected_cost_function = SINUS_X;
+const bool shield_enabled = false;
+const bool layabout = false;
+const bool unlucky = false;
+
+/* Cost functions */
 
 const int SLOW = 0;
 const int FAST = 1;
 
-/* Cost functions */
-
-const double pi = 3.14159;
+const double pi = 3.141592653589;
 
 double sinus_x(double x, double t, int action) {
     double a, b;
@@ -28,6 +36,7 @@ double sinus_x(double x, double t, int action) {
 
 double parabola_x(double x, double t, int action) {
     double a, b;
+    x = x - 0.5;
     if (action == FAST) {
         a = 5.0;
         b = 0.7;
@@ -40,7 +49,13 @@ double parabola_x(double x, double t, int action) {
 
 // Change the cost function here.
 double cost_function(double x, double t, int action) {
-    return parabola_x(x, t, action);
+    if (selected_cost_function == SINUS_X) {
+        return sinus_x(x, t, action);
+    } else if (selected_cost_function == PARABOLA_X) {
+        return parabola_x(x, t, action);
+    } else {
+        return 0;
+    }
 }
 
 /* Simulation-specific stuff */
@@ -62,22 +77,29 @@ int counterFast = 0;
 double total_cost = 0.0; 
 
 void updateFast() {
-    x = x + delta_fast - epsilon + random(2*epsilon);
-    t = t + tau_fast - epsilon + random(2*epsilon);
+    if (unlucky) {
+        x = x + delta_fast - epsilon;
+        t = t + tau_fast + epsilon;
+    } else {
+        x = x + delta_fast - epsilon + random(2*epsilon);
+        t = t + tau_fast - epsilon + random(2*epsilon);
+    }
     total_cost = total_cost + cost_function(x, t, FAST);
 }
 
 
 void updateSlow() {
-    x = x + delta_slow - epsilon + random(2*epsilon); 
-    t = t + tau_slow - epsilon + random(2*epsilon);
+    if (unlucky) {
+        x = x + delta_slow - epsilon; 
+        t = t + tau_slow + epsilon;
+    } else {
+        x = x + delta_slow - epsilon + random(2*epsilon); 
+        t = t + tau_slow - epsilon + random(2*epsilon);
+    }
     total_cost = total_cost + cost_function(x, t, SLOW);
 }
 
 /* Shielding */
-
-// Use this to toggle shield
-const bool shield_enabled = true;
 
 const int RED = 114;   // ASCII value small letter 'r'
 const int BLUE = 98;   // ... 'b' 
@@ -129,13 +151,13 @@ int shield(int action) {
 		<transition id="id4">
 			<source ref="id0"/>
 			<target ref="id3"/>
+			<label kind="guard" x="127" y="-102">!layabout</label>
 			<label kind="assignment" x="127" y="-85">next_action = shield(FAST)</label>
 			<nail x="110" y="-76"/>
 		</transition>
 		<transition id="id5">
 			<source ref="id0"/>
 			<target ref="id3"/>
-			<label kind="guard" x="-178" y="-102">false</label>
 			<label kind="assignment" x="-348" y="-85">next_action = shield(SLOW)</label>
 			<nail x="-127" y="-76"/>
 		</transition>
@@ -174,36 +196,32 @@ system Process;
 </system>
 	<queries>
 		<query>
-			<formula>strategy GoFast = minE (total_cost) [#&lt;=30] {} -&gt; {x, t} : &lt;&gt; x&gt;=1 or t&gt;=1</formula>
+			<formula>strategy LowCost = minE (total_cost + (t&gt;1)*1000) [#&lt;=30] {} -&gt; {x, t} : &lt;&gt; x&gt;=1 or t&gt;=1</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>Pr[#&lt;=30](&lt;&gt; x&gt;=1) under GoFast</formula>
+			<formula>Pr[#&lt;=30](&lt;&gt; t&gt;=1) under LowCost</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>Pr[#&lt;=300](&lt;&gt; x&gt;=1) </formula>
+			<formula>Pr[#&lt;=30](&lt;&gt; t&gt;=1) </formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>simulate 100 [#&lt;=30] { x,t, counterSlow, counterFast } under GoFast</formula>
+			<formula>E[#&lt;=30;100] (max:total_cost + (t&gt;1)*1000) under LowCost</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>simulate 10[#&lt;=30] { x,t, counterSlow, counterFast }</formula>
+			<formula>E[#&lt;=30;100] (max:total_cost + (t&gt;1)*1000)</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>E[#&lt;=30;100] (max:total_cost) under GoFast</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>E[#&lt;=30;100] (max:total_cost)</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>saveStrategy("/home/rgc/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/GoFast.strategy.json",GoFast)
+			<formula>saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/RandomWalk/LowCost.strategy.json", LowCost)
 	    </formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>strategy LowCost = loadStrategy {} -&gt; {x, t} ("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/RandomWalk/LowCost.strategy.json")</formula>
 			<comment/>
 		</query>
 	</queries>

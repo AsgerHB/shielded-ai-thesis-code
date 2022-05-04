@@ -15,6 +15,7 @@ const double x_min = 0.0;
 const double x_max = 1.2;
 const double y_min = 0.0;
 const double y_max = 1.2;
+// Mechanics: (ϵ = 0.04, δ_fast = 0.17, δ_slow = 0.1, τ_fast = 0.05, τ_slow = 0.12)
 /***************** end copy-pasta area *****************/
 
 
@@ -22,7 +23,7 @@ const int x_count = (x_max - x_min)/G;
 const int y_count = (y_max - y_min)/G;
 
 
-char get_index(char grid[], int ix, int iy)
+char get_index(const char grid[], int ix, int iy)
 {
     return grid[ix + iy*x_count];
 }
@@ -37,7 +38,7 @@ int box_y(double  y)
     return (int) ((y - y_min)/G);
 }
 
-char get_value(char grid[], double x, double y)
+char get_value(double x, double y)
 {
     if (x < x_min || x >= x_max || y < y_min || y >= y_max)
     {
@@ -51,7 +52,7 @@ char get_value(char grid[], double x, double y)
 // True if the shield requires going fast, false otherwise.
 bool must_go_fast(double x, double t)
 {
-    char color = get_value(grid, x, t);
+    char color = get_value(x, t);
     if (color == 'b' || color == 'r')
     {
         return true;
@@ -74,8 +75,9 @@ int main()
         }
         printf("\n");
     }
+    printf("x_count: %i,   y_count: %i,   total: %i\n", x_count, y_count, x_count*y_count);
     printf("box(0.1, 0.9): %i, %i\n", box_x(0.1), box_y(0.9));
-    printf("get_value(0.1, 0.9): %c\n", get_value(grid, 0.1, 0.9));
+    printf("get_value(0.1, 0.9): %c\n", get_value(0.1, 0.9));
     printf("Must go fast (0.1, 0.9): %i\n", must_go_fast(0.1, 0.9));
     printf("Must go fast (1.0, 0.0): %i\n", must_go_fast(1.0, 0.0));
     return 0;
