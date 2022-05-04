@@ -7,7 +7,7 @@
     int get_value(double v, double p);
 };
 
-/* Simulation specific stuff */
+/* Simulation-specific stuff */
 urgent broadcast chan bounce;
 broadcast chan hit;
 clock time;
@@ -18,7 +18,7 @@ int number_deaths = 0;
 
 /* Shielding */
 
-// You can toggle the shield here:
+// Use this to toggle shield
 const bool shield_enabled = true;
 
 const int NOHIT = 0;
@@ -228,11 +228,15 @@ x' == 10</label>
 			<comment/>
 		</query>
 		<query>
+			<formula/>
+			<comment/>
+		</query>
+		<query>
 			<formula>saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/BouncingBall/HitWell.strategy.json", HitWell)</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>strategy HitWell = loadStrategy {} -&gt; {p, v} ("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/BouncingBall/Layabout.strategy.json")</formula>
+			<formula>strategy HitWell = loadStrategy {} -&gt; {p, v} ("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/BouncingBall/HitWell.strategy.json")</formula>
 			<comment/>
 		</query>
 	</queries>

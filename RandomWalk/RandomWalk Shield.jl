@@ -130,11 +130,11 @@ end
 
 # ╔═╡ 6034243b-4e9a-4720-8354-24b669bf4882
 function parabola_x(x, t, action)
-	x = x/x_lim - 0.5# Same cost no matter scaling
-	a = action == :fast ? 0 : 0
-	b = action == :fast ? 5 : -4
-	c = action == :fast ? 0.7 : 1
-	a*x + b*x^2 + c
+	x = x/x_lim # Same cost no matter scaling
+	x = x - 0.5/x_lim
+	a = action == :fast ? 5 : -4
+	b = action == :fast ? 0.7 : 1
+	a*x^2 + b
 end
 
 # ╔═╡ 6bfed0ff-56eb-4eed-9de7-bbd425a4978c
@@ -1665,11 +1665,11 @@ version = "0.9.1+5"
 # ╠═e27afbfe-a90d-4c60-b82a-9bfc007c39fb
 # ╠═739c0741-d35d-4fc8-b93d-678371142411
 # ╠═6034243b-4e9a-4720-8354-24b669bf4882
-# ╠═6bfed0ff-56eb-4eed-9de7-bbd425a4978c
+# ╟─6bfed0ff-56eb-4eed-9de7-bbd425a4978c
 # ╟─53fa5c41-a5fb-4571-92ee-090ededa5cc1
 # ╟─55b4643a-68fb-439f-b9d7-cdcf2a432589
 # ╟─be817e03-90a1-45ec-b5dd-04ab4ca2aaa9
-# ╟─5a1e9619-b64a-443d-8649-8cce928ae983
+# ╠═5a1e9619-b64a-443d-8649-8cce928ae983
 # ╟─1d555d13-9b81-48e7-a74c-8e2ee388bfc2
 # ╟─4165c794-4c2f-4d37-8a85-d1c86a32fd6c
 # ╠═f8607cc8-30e5-454e-acec-6d0050a48904
@@ -1713,7 +1713,7 @@ version = "0.9.1+5"
 # ╠═6387760b-9c16-4ab0-8229-07f084d2b050
 # ╟─7c911e4c-e132-473e-a579-c47c0b348e6c
 # ╟─4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
-# ╠═45aabb2b-6a8f-462c-b082-7d7675676d64
+# ╟─45aabb2b-6a8f-462c-b082-7d7675676d64
 # ╟─b0f5055d-36fe-4593-bdfa-f6968dbb8242
 # ╟─aa8a34cb-fd4e-4afc-87a3-7d92d12a25a1
 # ╟─c020277d-2dea-4879-90f7-85f7f85d1e3b

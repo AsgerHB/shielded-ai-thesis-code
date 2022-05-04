@@ -4,11 +4,46 @@
 	<declaration>import "/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/RandomWalk/CLib/libshield.so"
 {
     bool must_go_fast(double x, double t);
-    int testytest(double ix, double it);
+    int get_value(double x, double t);
 };
 
-// Use this to toggle shield
-const bool disable_shield = false;
+const int SLOW = 0;
+const int FAST = 1;
+
+/* Cost functions */
+
+const double pi = 3.14159;
+
+double sinus_x(double x, double t, int action) {
+    double a, b;
+    if (action == FAST) {
+        a = 3;
+        b = 0;
+    } else {
+        a = 1;
+        b = pi;
+    }
+	return 1.5 + a + sin(b + x*pi*4)*1.5;
+}
+
+double parabola_x(double x, double t, int action) {
+    double a, b;
+    if (action == FAST) {
+        a = 5.0;
+        b = 0.7;
+    } else {
+        a = -4;
+        b = 1.0;
+    }
+    return a*x*x + b;
+}
+
+// Change the cost function here.
+double cost_function(double x, double t, int action) {
+    return parabola_x(x, t, action);
+}
+
+/* Simulation-specific stuff */
 
 broadcast chan fast, slow;
 
@@ -16,38 +51,70 @@ clock cl;
 
 double x=0.0;
 double t=0.0;
-double epsilon = 0.04;
-double delta_fast = 0.17; 
-double tau_fast = 0.05;
-double delta_slow = 0.1;
-double tau_slow = 0.12;
+const double epsilon = 0.04;
+const double delta_fast = 0.17; 
+const double tau_fast = 0.05;
+const double delta_slow = 0.1;
+const double tau_slow = 0.12;
 
+int counterSlow = 0;
+int counterFast = 0;
+double total_cost = 0.0; 
 
-int counterSlow, counterFast;
-void updateFast()
-{
-    if (x&lt;=1 and t &lt;=1)
-    {
-        x = x + delta_fast - epsilon + random(2*epsilon); 
-        t = t + tau_fast - epsilon + random(2*epsilon);
-    }
+void updateFast() {
+    x = x + delta_fast - epsilon + random(2*epsilon);
+    t = t + tau_fast - epsilon + random(2*epsilon);
+    total_cost = total_cost + cost_function(x, t, FAST);
 }
 
 
-void updateSlow()
-{
+void updateSlow() {
+    x = x + delta_slow - epsilon + random(2*epsilon); 
+    t = t + tau_slow - epsilon + random(2*epsilon);
+    total_cost = total_cost + cost_function(x, t, SLOW);
+}
 
-    if (x&lt;=1 and t &lt;=1)
-    {
-        x = x + delta_slow - epsilon + random(2*epsilon); 
-        t = t + tau_slow - epsilon + random(2*epsilon);
+/* Shielding */
+
+// Use this to toggle shield
+const bool shield_enabled = true;
+
+const int RED = 114;   // ASCII value small letter 'r'
+const int BLUE = 98;   // ... 'b' 
+const int WHITE = 119; // etc.
+
+int next_action = SLOW;
+
+int interventions = 0; // Total number of times the shield intervened
+int bad_interventions = 0; // Number of times where this was due to touching the red part
+
+// If the shield is enabled, returns the shielded action.
+// Otherwise, action is simply returned unaltered.
+// Counts how many times the shield differed from the proposed action.
+int shield(int action) {
+    if (!shield_enabled) {
+        return action;
+    } else {
+        int color = get_value(x, t);
+        if (action == FAST) {
+            return action;
+        } else if (color == RED) {
+            ++interventions; 
+            ++bad_interventions;
+            return FAST;
+        } else if (color == BLUE) {
+            ++interventions;
+            return FAST;
+        } else {
+            return action;
+        }
     }
 }</declaration>
 	<template>
 		<name x="5" y="5">Template</name>
 		<declaration>// Place local declarations here.
 </declaration>
-		<location id="id0" x="-8" y="-93">
+		<location id="id0" x="-8" y="34">
 			<committed/>
 		</location>
 		<location id="id1" x="0" y="255">
@@ -55,34 +122,49 @@ void updateSlow()
 		</location>
 		<location id="id2" x="102" y="340">
 		</location>
+		<location id="id3" x="-8" y="-76">
+			<committed/>
+		</location>
 		<init ref="id0"/>
-		<transition id="id3" controllable="false">
+		<transition id="id4">
+			<source ref="id0"/>
+			<target ref="id3"/>
+			<label kind="assignment" x="127" y="-85">next_action = shield(FAST)</label>
+			<nail x="110" y="-76"/>
+		</transition>
+		<transition id="id5">
+			<source ref="id0"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-178" y="-102">false</label>
+			<label kind="assignment" x="-348" y="-85">next_action = shield(SLOW)</label>
+			<nail x="-127" y="-76"/>
+		</transition>
+		<transition id="id6" controllable="false">
 			<source ref="id1"/>
 			<target ref="id2"/>
 			<label kind="guard" x="-59" y="348">t &gt; 1 || x &gt; 1</label>
 			<nail x="-68" y="340"/>
 		</transition>
-		<transition id="id4" controllable="false">
+		<transition id="id7" controllable="false">
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-76" y="-8">t &lt;= 1 &amp;&amp; x &lt;= 1</label>
+			<label kind="guard" x="-68" y="110">t &lt;= 1 &amp;&amp; x &lt;= 1</label>
 		</transition>
-		<transition id="id5">
-			<source ref="id0"/>
+		<transition id="id8" controllable="false">
+			<source ref="id3"/>
 			<target ref="id1"/>
-			<label kind="guard" x="-467" y="-51">disable_shield || !must_go_fast(x, t)</label>
-			<label kind="synchronisation" x="-212" y="-25">slow!</label>
-			<label kind="assignment" x="-391" y="0">updateSlow(), counterSlow++</label>
-			<nail x="-153" y="-93"/>
-			<nail x="-153" y="76"/>
+			<label kind="guard" x="-348" y="59">next_action != FAST</label>
+			<label kind="synchronisation" x="-348" y="42">slow!</label>
+			<label kind="assignment" x="-348" y="76">updateSlow(), ++counterSlow</label>
+			<nail x="-119" y="85"/>
 		</transition>
-		<transition id="id6">
-			<source ref="id0"/>
+		<transition id="id9" controllable="false">
+			<source ref="id3"/>
 			<target ref="id1"/>
-			<label kind="synchronisation" x="170" y="-25">fast!</label>
-			<label kind="assignment" x="170" y="0">updateFast(), counterFast ++</label>
-			<nail x="153" y="-93"/>
-			<nail x="153" y="85"/>
+			<label kind="guard" x="119" y="59">next_action == FAST</label>
+			<label kind="synchronisation" x="119" y="42">fast!</label>
+			<label kind="assignment" x="119" y="76">updateFast(), ++counterFast</label>
+			<nail x="110" y="85"/>
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
@@ -92,7 +174,7 @@ system Process;
 </system>
 	<queries>
 		<query>
-			<formula>strategy GoFast = minE ((t&gt;=1.0)*15.0 + counterSlow + counterFast*3) [#&lt;=30] {} -&gt; {x, t} : &lt;&gt; x&gt;=1 or t&gt;=1</formula>
+			<formula>strategy GoFast = minE (total_cost) [#&lt;=30] {} -&gt; {x, t} : &lt;&gt; x&gt;=1 or t&gt;=1</formula>
 			<comment/>
 		</query>
 		<query>
@@ -100,32 +182,28 @@ system Process;
 			<comment/>
 		</query>
 		<query>
-			<formula>Pr[#&lt;=30](&lt;&gt; x&gt;=1) </formula>
+			<formula>Pr[#&lt;=300](&lt;&gt; x&gt;=1) </formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>simulate 100 [#&lt;=30] {
-    x,t
-}</formula>
+			<formula>simulate 100 [#&lt;=30] { x,t, counterSlow, counterFast } under GoFast</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>simulate 100 [#&lt;=30] {
-    x,t, counterSlow, counterFast
-} under GoFast</formula>
+			<formula>simulate 10[#&lt;=30] { x,t, counterSlow, counterFast }</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[#&lt;=30;100] (max:total_cost) under GoFast</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[#&lt;=30;100] (max:total_cost)</formula>
 			<comment/>
 		</query>
 		<query>
 			<formula>saveStrategy("/home/rgc/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/GoFast.strategy.json",GoFast)
 	    </formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>E[#&lt;=30;100] (max: (t&gt;=1.0)*15.0 + counterSlow + counterFast*3) under GoFast</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>E[#&lt;=30;100] (max: (t&gt;=1.0)*15.0 + counterSlow + counterFast*3)</formula>
 			<comment/>
 		</query>
 	</queries>
