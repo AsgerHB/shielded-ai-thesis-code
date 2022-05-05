@@ -216,6 +216,14 @@ system Process;
 			<comment/>
 		</query>
 		<query>
+			<formula>E[#&lt;=30;100] (max:interventions) under LowCost</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[#&lt;=30;100] (max:interventions)</formula>
+			<comment/>
+		</query>
+		<query>
 			<formula>saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/RandomWalk/LowCost.strategy.json", LowCost)
 	    </formula>
 			<comment/>

@@ -16,10 +16,11 @@ int c = 0;
 int number_deaths = 0;
 
 
-/* Shielding */
-
-// Use this to toggle shield
+/* Config */
 const bool shield_enabled = true;
+const bool layabout = true;
+
+/* Shielding */
 
 const int NOHIT = 0;
 const int HIT = 1;
@@ -165,6 +166,7 @@ x' == 10</label>
 		<transition id="id16">
 			<source ref="id12"/>
 			<target ref="id13"/>
+			<label kind="guard" x="68" y="-289">!layabout</label>
 			<label kind="assignment" x="68" y="-272">next_action = shield(HIT)</label>
 			<nail x="51" y="-272"/>
 		</transition>
