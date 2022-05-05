@@ -701,8 +701,10 @@ end
 "max_steps reached: $(terminated_early)"
 
 # ╔═╡ a07a9512-bef9-4317-9f26-e1d143b85657
-function shield_action(shield:: Grid, v, p, action)
+function shield_action(shield:: Grid, mechanics, v, p, action)
 	if v < shield.v_min || v >= shield.v_max || p < shield.p_min || p >= shield.p_max
+		return action
+	elseif v < mechanics.v_hit || p < mechanics.p_hit
 		return action
 	end
 	square = box(shield, v, p)
@@ -716,7 +718,7 @@ end
 
 # ╔═╡ bbd43aa2-7aae-474f-826f-869cc6d8651b
 shielded_simulation = call(() -> begin
-	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded layabout agent
+	policy = (v, p) -> shield_action(shield, mechanics, v, p, "nohit") # Shielded layabout agent
 	v0, p0 = 0, 19# rand(7:1:10)
 	vv, pp, tt = simulate_sequence(mechanics, v0, p0, policy, 1000, unlucky=false)
 	vv, pp, tt

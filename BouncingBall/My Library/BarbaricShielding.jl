@@ -217,9 +217,10 @@ function make_shield(grid::Grid, resolution, mechanics;
 						max_steps=max_steps, animate=animate, colors=colors)
 end
 
-
-function shield_action(shield:: Grid, v, p, action)
+function shield_action(shield:: Grid, mechanics, v, p, action)
 	if v < shield.v_min || v >= shield.v_max || p < shield.p_min || p >= shield.p_max
+		return action
+	elseif v < mechanics.v_hit || p < mechanics.p_hit
 		return action
 	end
 	square = box(shield, v, p)

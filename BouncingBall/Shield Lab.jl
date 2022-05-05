@@ -283,16 +283,13 @@ md"""
 ## Inspect Shield
 """
 
-# ╔═╡ 31118d17-e6cb-45c3-8362-1668c6add72a
-shield_action(shield, 5.5, 4.4, "nohit")
-
 # ╔═╡ 5bc8a442-0628-463f-9de3-8ddc93b0ef88
 @bind button_restart_shielded_simulation Button("Throw ball again")
 
 # ╔═╡ 4da5c6da-92de-446a-9af7-4485d943a5a0
 shielded_simulation = call(() -> begin
 	button_restart_shielded_simulation
-	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded layabout agent
+	policy = (v, p) -> shield_action(shield, mechanics, v, p, "nohit") # Shielded layabout agent
 	v0, p0 = 0, rand(7:1:10)
 	vv, pp, tt = simulate_sequence(mechanics, v0, p0, policy, 500, unlucky=false)
 	vv, pp, tt
@@ -315,7 +312,7 @@ end)
 
 # ╔═╡ 6c9b7406-f357-4c71-a4c3-af308ce3a0d7
 call(() -> begin
-	policy = (v, p) -> shield_action(shield, v, p, "nohit") # Shielded layabout agent
+	policy = (v, p) -> shield_action(shield, mechanics, v, p, "nohit") # Shielded layabout agent
 	evaluate(mechanics, policy, 120, unlucky=false)
 end)
 
@@ -1315,7 +1312,6 @@ version = "0.9.1+5"
 # ╟─ecd4cf78-21f2-4d1a-b621-986648211401
 # ╟─0825be60-7bc0-472e-9140-a4313bcf1ef0
 # ╟─d4ddf358-6a8f-468c-bbc3-7b9b712f0d67
-# ╠═31118d17-e6cb-45c3-8362-1668c6add72a
 # ╟─5bc8a442-0628-463f-9de3-8ddc93b0ef88
 # ╟─4da5c6da-92de-446a-9af7-4485d943a5a0
 # ╟─3170d6d4-40e6-45d5-a29b-d4e9b746813c
