@@ -72,11 +72,9 @@ p' == v</label>
 			<urgent/>
 		</location>
 		<location id="id2" x="297" y="272">
-			<name x="314" y="263">is_dead</name>
 			<committed/>
 		</location>
 		<location id="id3" x="0" y="272">
-			<name x="-10" y="238">dead</name>
 			<label kind="invariant" x="-34" y="289">v' == 0 &amp;&amp;
 p' == 0</label>
 			<committed/>

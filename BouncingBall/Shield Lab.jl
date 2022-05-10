@@ -120,7 +120,7 @@ end
 # ╔═╡ 9e798144-4386-485b-99e9-682bf1535ff5
 call( () -> begin
 	vv, pp, tt = simulate_sequence(mechanics, simulation.v0, simulation.p0, (v, p)->"nohit", 10, unlucky=simulation.unlucky)
-	plot(tt, pp)
+	plot(tt, pp, color=colors.WET_ASPHALT, xlabel="t", ylabel="p")
 end)
 
 # ╔═╡ 4461bf98-c33c-47b1-9b8b-055c928325e0
