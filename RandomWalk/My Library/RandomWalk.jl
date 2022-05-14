@@ -54,6 +54,7 @@ function draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow,
 		return draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, x, t, :slow, colors=colors)
 	end
 	color = a == :fast ? colors.fast : colors.slow
+	linestyle = a == :fast ? :solid : :dash
 	scatter!([x], [t], 
 		markersize=3, 
 		markerstrokewidth=0,
@@ -66,7 +67,7 @@ function draw_next_step!(ϵ, δ_fast, δ_slow, τ_fast, τ_slow,
 			opacity=0.8,
 			linewidth=0,
 			legend=nothing)
-	plot!([x, δ], [t, τ], linestyle=:dot, linewidth=2, linecolor=colors.line)
+	plot!([x, δ], [t, τ], linestyle=linestyle, linewidth=1, linecolor=color)
 end
 
 
