@@ -22,10 +22,16 @@ begin
 	include("My Library/RandomWalk.jl");
 end
 
-# ╔═╡ 6fc2d7ee-ae97-11ec-1e57-a16e01431e37
-ingredients = include("My Library/Ingredients.jl")
+# ╔═╡ b0b79789-e1b9-46f6-a19a-fcee9d5a5be2
+md"""
+# Random Walk Shielding
+
+
+This is a [Pluto Notebook](https://github.com/fonsp/Pluto.jl) which can generate a shield for the **Random Walk** game. (The game is available as another notebook.)
+"""
 
 # ╔═╡ 3611edfd-a4cb-4632-9d94-2fe71e2195ae
+# This simple function is used in some code cells to prevent variables from entering the global scope.
 call(f) = f()
 
 # ╔═╡ 3a43b3fe-ff43-4bf0-8bcb-6ae1781dfc41
@@ -73,7 +79,11 @@ rwcolors = (slow=colors.PUMPKIN, fast=colors.BELIZE_HOLE, line=colors.MIDNIGHT_B
 shieldcolors=[colorant"#ffffff", colorant"#a1eaff", colorant"#ff9178"]
 
 # ╔═╡ 5229f8dd-ca19-4ed0-a9d2-da1691f79089
-md"""### Configure random walk game"""
+md"""
+## Set the Mechanics
+
+Below are options to change the `mechanics` of the game. The value ϵ controls the degree of randomness, δ the average change in time (for a given action) and τ the average change in time.
+"""
 
 # ╔═╡ 2c05e965-545f-43c1-b0b0-0a81e08c6293
 
@@ -94,15 +104,21 @@ end
 # ╔═╡ 6ad63c50-77eb-4fd7-8669-085adebc0ddc
 mechanics = (;_mechanics.ϵ, _mechanics.δ_fast, _mechanics.δ_slow, _mechanics.τ_fast, _mechanics.τ_slow);
 
-# ╔═╡ 715d0acd-a271-438c-a3ed-8712b024603f
+# ╔═╡ 34b55cb2-e084-46af-a129-f848deacf557
 md"""
-t\_lim = $(@bind t_lim NumberField(0:0.1:10000, default=1))
-x\_lim = $(@bind x_lim NumberField(0:0.1:10000, default=1))
+The following figure illustrates the effects of the mechanics chosen above. 
+
+The two colored areas show the possible outcomes of taking an action from the initial point.
+
+The two lines show the worst-case run for each type of action. If the line's slope is greater than 1, it means that there is a risk that by only taking this action, the game is lost. 
 """
 
-# ╔═╡ 4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
+# ╔═╡ 715d0acd-a271-438c-a3ed-8712b024603f
 md"""
-cost\_loss = $(@bind cost_loss NumberField(0:1:10000, default=1000))
+The following inputs can be used to set different limits for winning/losing the game:
+
+t\_lim = $(@bind t_lim NumberField(0:0.1:10000, default=1))
+x\_lim = $(@bind x_lim NumberField(0:0.1:10000, default=1))
 """
 
 # ╔═╡ e27afbfe-a90d-4c60-b82a-9bfc007c39fb
@@ -110,7 +126,7 @@ function fixed_cost(x, t, action)
 	if action == :fast
 		1
 	else
-		3
+		2
 	end
 end
 
@@ -131,9 +147,36 @@ function parabola_x(x, t, action)
 	a*x^2 + b
 end
 
-# ╔═╡ 6bfed0ff-56eb-4eed-9de7-bbd425a4978c
+# ╔═╡ 06b064b9-047b-40b8-944b-ee499e1a99a1
 md"""
+### Costs
+
+Several cost functions can be used to evaluate the performance of a policy. Choose a cost function below, and scroll down to see their definitions.
+
 `cost_function`: $(@bind cost_function Select([sinus_x, parabola_x, fixed_cost]))
+
+Regardless of the cost function, the cost of losing the game can be set with the following input:
+
+cost\_loss = $(@bind cost_loss NumberField(0:1:10000, default=1000))
+"""
+
+# ╔═╡ a831bacb-9f95-4c94-b6ea-6e84351da678
+call(() -> begin
+	plot_with_size(x_lim, t_lim)
+	draw_next_step!(mechanics..., 0.25, 0.25, :both, colors=rwcolors)
+	wost_case_slow = take_walk(	fixed_cost, cost_loss, x_lim, t_lim, mechanics..., 
+		 		(_, _) -> :slow, unlucky=true)
+	wost_case_fast = take_walk(	fixed_cost, cost_loss, x_lim, t_lim, mechanics..., 
+		 		(_, _) -> :fast, unlucky=true)
+	draw_walk!(wost_case_slow.xs, wost_case_slow.ts, wost_case_slow.actions, colors=rwcolors)
+	draw_walk!(wost_case_fast.xs, wost_case_fast.ts, wost_case_fast.actions, colors=rwcolors)
+end)
+
+# ╔═╡ f086c778-9493-4b37-baab-a95cfbf7d2e7
+md"""
+### Being a Cheapskate
+
+It might be interesting to see if simply picking the cheapest option is enough to get a good score.
 """
 
 # ╔═╡ 55b4643a-68fb-439f-b9d7-cdcf2a432589
@@ -147,6 +190,44 @@ end
 
 # ╔═╡ 5a1e9619-b64a-443d-8649-8cce928ae983
 evaluate(cost_function, cost_loss, x_lim, t_lim, mechanics..., cheapskate)
+
+# ╔═╡ 22ef4711-9771-4084-8157-00f817459370
+md"""
+## The Grid
+"""
+
+# ╔═╡ 779f0f70-ce94-4a9e-af26-3b06406aa036
+md"""
+### Configure grid
+`G = ` $(@bind G NumberField(0.01:0.01:2, default=0.2))
+
+`x_min:` $(@bind x_min NumberField(-100:0.1:100, default=0))
+	   `x_max:`
+		$(@bind x_max NumberField(-100:0.1:100, default=1.2))
+
+`y_min:` $(@bind y_min NumberField(-100:0.1:100, default=0))
+	   `y_max:`
+		$(@bind y_max NumberField(-100:0.1:100, default=1.2))
+"""
+
+# ╔═╡ 53fa5c41-a5fb-4571-92ee-090ededa5cc1
+call(() -> begin
+	G = 0.01
+	xs = [0:G:x_max;]
+	fast_costs = []
+	slow_costs = []
+	for x in xs
+		push!(fast_costs, cost_function(x, 0, :fast))
+		push!(slow_costs, cost_function(x, 0, :slow))
+	end
+	plot(xs, fast_costs, label="fast action", c=rwcolors.fast, width=2)
+	plot!(xs, slow_costs, label="slow action", c=rwcolors.slow, width=2, linestyle=:dash)
+	hline!([0], label=nothing, c=:gray)
+	vline!([x_lim], label=nothing, c=:gray)
+	title!("Selected: $cost_function")
+	xlabel!("x")
+	ylabel!("cost")
+end)
 
 # ╔═╡ f8607cc8-30e5-454e-acec-6d0050a48904
 begin
@@ -171,15 +252,18 @@ begin
 	Base.show(io::IO, ::MIME"text/plain", grid::Grid) = println(io, "Grid($(grid.G), $(grid.x_min), $(grid.x_max), $(grid.y_min), $(grid.y_max))")
 end
 
+# ╔═╡ 1d555d13-9b81-48e7-a74c-8e2ee388bfc2
+grid = Grid(G, x_min, x_max, y_min, y_max)
+
+# ╔═╡ 4165c794-4c2f-4d37-8a85-d1c86a32fd6c
+"($(length(grid.array)) squares)"
+
 # ╔═╡ d14ff7c8-742b-4eb2-aa04-5b1e88213f71
 struct Square
     grid::Grid
     ix::Int
     iy::Int
 end
-
-# ╔═╡ d92581e2-3691-4bc8-9862-aff23a75fdcc
-md"""### Symbolic Transition"""
 
 # ╔═╡ c0490360-9d91-431c-8997-583c3c06b609
 begin
@@ -205,6 +289,9 @@ function box(grid::Grid, x, y)::Square
 	iy = floor(Int, (y - grid.y_min)/grid.G) + 1
 	Square(grid, ix, iy)
 end
+
+# ╔═╡ 3a9bff13-e75e-4400-aefb-6ac004ca9d2e
+square = box(grid, 0.5, 0.5)
 
 # ╔═╡ d9867d36-908e-4e5e-b013-0cc0c9475982
 function bounds(square::Square)
@@ -247,21 +334,46 @@ function initialize!(grid::Grid, value_function=
 	end
 end
 
+# ╔═╡ 2cc179a4-8848-4345-a634-bf9adca525be
+initialize!(grid, init_func)
+
+# ╔═╡ 69d9e42e-4769-46e8-8177-706d150571d8
+### !! Temporary Copy-pasta !! ### 
+function plot_with_size!(x_max, t_max; figure_width=600, figure_height=600)
+	plot!(	xlim=[0, x_max],
+			ylim=[0, t_max], 
+			aspectratio=:equal, 
+			xlabel="x",
+			ylabel="t",
+			size=(figure_width, figure_height))
+	hline!([x_lim], c=:gray, label=nothing)
+	vline!([t_lim], c=:gray, label=nothing)
+end
+
 # ╔═╡ d4e0a0aa-b34e-4801-9819-ea51f5b9df2a
 function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 	colors = cgrad(colors, length(colors), categorical=true)
 	x_tics = grid.x_min:grid.G:grid.x_max
 	y_tics = grid.y_min:grid.G:grid.y_max
 	
-	hm = heatmap(x_tics, y_tics, permutedims(grid.array, (2, 1)), c=colors, colorbar=nothing, aspect_ratio=:equal, clim=(1, length(colors)))
+	hm = heatmap( 	x_tics, y_tics, 
+					permutedims(grid.array, (2, 1)), 
+					c=colors, 
+					colorbar=nothing,
+					legend=nothing,
+					aspect_ratio=:equal, 
+					clim=(1, length(colors)))
 
-	if show_grid && length(grid.x_min:grid.G:grid.x_max) < 100
+	if show_grid && length(grid.x_min:grid.G:grid.x_max) < 100 || true
 		vline!(grid.x_min:grid.G:grid.y_max, color="#afafaf", label=nothing)
 		hline!(grid.y_min:grid.G:grid.y_max, color="#afafaf", label=nothing)
 	end
 
 	return hm
 end
+
+# ╔═╡ d92581e2-3691-4bc8-9862-aff23a75fdcc
+md"""### Symbolic Transition"""
 
 # ╔═╡ a2e85767-6f31-4c1a-a174-3bc60faf0d1b
 function cover(grid, x_lower, x_upper, y_lower, y_upper)
@@ -368,15 +480,16 @@ function get_transitions(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid)
 	fast, slow
 end
 
+# ╔═╡ 4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
+fast, slow = get_transitions(mechanics..., grid);
+
 # ╔═╡ 7abee61b-36bc-488b-893e-d42b5ca8665d
 mechanics
 
 # ╔═╡ 795c5353-fdeb-41c6-8502-2aa70689dcc4
-# TODO: This assumes an ordering of actions where if one action does not lead to a bad state, neither does the ones after it
-"""Compute the new value of a single square.
-
-NOTE: Requires pre-baked transition matrices. Get these by calling `get_transitions`. 
-"""
+#Compute the new value of a single square.
+#
+#NOTE: Requires pre-baked transition matrices. Get these by calling `get_transitions`.
 function get_new_value(fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, square)
 	value = get_value(square)
 
@@ -423,9 +536,33 @@ end
 # ╔═╡ 340dcc48-3787-4894-85aa-0d13873d19db
 (;NEUTRAL_SQUARE, FAST_SQUARE, BAD_SQUARE)
 
+# ╔═╡ c2add912-1322-4f34-b9d5-e2284f631b3c
+get_new_value(fast, slow, square)
+
+# ╔═╡ c96bd5bc-6f4a-43db-a3d0-892b0f960cc4
+begin
+	# Check if a bad square is reachable while going slow.
+	slow_bad = false
+	for (ix, iy) in slow[square.ix, square.iy]
+		if get_value(Square(square.grid, ix, iy)) == BAD_SQUARE
+			slow_bad = true
+			break
+		end
+	end
+	
+	# Check if bad squares can be avoided by going fast.
+	fast_bad = false
+	for (ix, iy) in fast[square.ix, square.iy]
+		if get_value(Square(square.grid, ix, iy)) == BAD_SQUARE
+			fast_bad = true
+			break
+		end
+	end
+	(;slow_bad, fast_bad)
+end
+
 # ╔═╡ f9b7b12f-5193-48ec-b61c-ba22f4a1fb4c
-"""Take a single step in the fixed point compuation.
-"""
+# Take a single step in the fixed point compuation.
 function shield_step(fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, grid)
 	grid′ = Grid(grid.G, grid.x_min, grid.x_max, grid.y_min, grid.y_max)
 	
@@ -437,42 +574,6 @@ function shield_step(fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, grid)
 	grid′
 end
 
-# ╔═╡ e7c8c0fe-8008-4ae0-abc8-c2cb3eb711d9
-"""Generate shield. 
-
-Gixen some initial grid, returns a tuple `(shield, terminated_early)`. 
-
-`shield` is a new grid containing the fixed point for the gixen values. 
-
-`terminted_early` is a boolean value indicating if `max_steps` were exceeded before the fixed point could be reached.
-"""
-function make_shield(	fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, grid; 
-					 	max_steps=1000,
-					  	animate=false,
-						colors=[:white, :blue, :red])
-	animation = nothing
-	if animate
-		animation = Animation()
-		draw(grid, colors=colors)
-		frame(animation)
-	end
-	i = max_steps
-	grid′ = nothing
-	while i > 0
-		grid′ = shield_step(fast, slow, grid)
-		if grid′.array == grid.array
-			break
-		end
-		grid = grid′
-		i -= 1
-		if animate
-			draw(grid, colors=colors)
-			frame(animation)
-		end
-	end
-	(grid=grid′, terminated_early=i==0, animation)
-end
-
 # ╔═╡ 6c7b61f9-98d5-4f7b-b88d-8f74ca1bbcb3
 function make_shield(   ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid;
 					    max_steps=1000, 
@@ -481,51 +582,6 @@ function make_shield(   ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid;
 	
 	return make_shield(transitions..., grid, max_steps=max_steps, animate=animate)
 end
-
-# ╔═╡ 779f0f70-ce94-4a9e-af26-3b06406aa036
-md"""
-### Configure grid
-`G = ` $(@bind G NumberField(0.01:0.01:2, default=0.2))
-
-`x ∈  [ ` $(@bind x_min NumberField(-100:0.1:100, default=0))
-	   `;`
-		$(@bind x_max NumberField(-100:0.1:100, default=1.2)) `]`
-
-`y ∈  [` $(@bind y_min NumberField(-100:0.1:100, default=0))
-	   `;`
-		$(@bind y_max NumberField(-100:0.1:100, default=1.2)) `]`
-"""
-
-# ╔═╡ 53fa5c41-a5fb-4571-92ee-090ededa5cc1
-call(() -> begin
-	G = 0.01
-	xs = [0:G:x_max;]
-	fast_costs = []
-	slow_costs = []
-	for x in xs
-		push!(fast_costs, cost_function(x, 0, :fast))
-		push!(slow_costs, cost_function(x, 0, :slow))
-	end
-	plot(xs, fast_costs, label="fast action", c=rwcolors.fast, width=2)
-	plot!(xs, slow_costs, label="slow action", c=rwcolors.slow, width=2, linestyle=:dash)
-	hline!([0], label=nothing, c=:gray)
-	vline!([x_lim], label=nothing, c=:gray)
-	title!("$cost_function")
-	xlabel!("x")
-	ylabel!("cost")
-end)
-
-# ╔═╡ 1d555d13-9b81-48e7-a74c-8e2ee388bfc2
-grid = Grid(G, x_min, x_max, y_min, y_max)
-
-# ╔═╡ 4165c794-4c2f-4d37-8a85-d1c86a32fd6c
-"($(length(grid.array)) squares)"
-
-# ╔═╡ 2cc179a4-8848-4345-a634-bf9adca525be
-initialize!(grid, init_func)
-
-# ╔═╡ 4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
-fast, slow = get_transitions(mechanics..., grid);
 
 # ╔═╡ 18b843fd-2ab8-4380-a700-240115dd23da
 md"""
@@ -553,70 +609,109 @@ begin
 	gif(cheapskate_animation, "cheapskate.gif", fps=fps)
 end
 
-# ╔═╡ b00bbbb7-6587-4664-ae82-82c081f66f37
-#### Make the shield! ###
-begin
-	initialize!(grid, init_func)
-	if max_steps == 0
-		shield, finished_early, animation = grid, true, nothing
-	else
-		shield, finished_early, animation = 
-			make_shield(fast, slow, grid, max_steps=max_steps, colors=colors, animate=animate)
-	end
-	"Stopped before completion: $finished_early"
-end
-
 # ╔═╡ fc2dafd2-aea5-49c9-92d3-f7b478be3be0
 md"""
 show step: $(@bind show_step CheckBox(default=true))
 """
 
 # ╔═╡ be4a5a08-79b8-4ac9-8396-db5d62eb3f97
+if show_step 
 md"""
 #### Example values for x and t
 
 `x = ` $(@bind x NumberField(0.01:0.01:4))
 `t = ` $(@bind t NumberField(0.01:0.01:4))
 """
-
-# ╔═╡ a831bacb-9f95-4c94-b6ea-6e84351da678
-begin
-	plot_with_size(x_max, y_max)
-	draw_next_step!(mechanics..., x, t, :both, colors=rwcolors)
 end
 
-# ╔═╡ 3a9bff13-e75e-4400-aefb-6ac004ca9d2e
-square = box(grid, x, t)
+# ╔═╡ f1e3d59d-4a15-43c1-8717-b736c90e127c
+# Remember to set a plot size first, otherwise it don't work
+function show_legend!(;colors)
+	scatter!([-100],[-100], color=shieldcolors[1], markersize=5, markershape=:circle, legend=:topleft, labels="{slow, fast}")
+	scatter!([-100],[-100], color=shieldcolors[2], markersize=5, markershape=:circle, legend=:topleft, labels="{fast}")
+	scatter!([-100],[-100], color=shieldcolors[3], markersize=5, markershape=:circle, legend=:topleft, labels="∅")
+end
 
-# ╔═╡ c2add912-1322-4f34-b9d5-e2284f631b3c
-get_new_value(fast, slow, square)
+# ╔═╡ f09c6e8a-b1b9-4832-a632-bd2c4e60d8aa
+call(() -> begin
+	grid = Grid(G, x_min, x_max, y_min, y_max)
+	initialize!(grid, init_func)
+	draw(grid, colors=shieldcolors, show_grid=true)
+	plot_with_size!(x_max, y_max)
+	show_legend!(colors=shieldcolors)
+end)
 
-# ╔═╡ c96bd5bc-6f4a-43db-a3d0-892b0f960cc4
+# ╔═╡ e7c8c0fe-8008-4ae0-abc8-c2cb3eb711d9
+#Generate shield. 
+#
+#Gixen some initial grid, returns a tuple `(shield, terminated_early)`. 
+#
+#`shield` is a new grid containing the fixed point for the gixen values. 
+#
+#`terminted_early` is a boolean value indicating if `max_steps` were exceeded before #the fixed point could be reached.
+#
+function make_shield(	fast::Matrix{Vector{Any}}, slow::Matrix{Vector{Any}}, grid; 
+					 	max_steps=1000,
+					  	animate=false,
+						colors=[:white, :blue, :red])
+	animation = nothing
+	if animate
+		animation = Animation()
+		draw(grid, colors=colors, show_grid=true)
+		plot_with_size!(x_max, y_max)
+		show_legend!(colors=colors)
+		frame(animation)
+	end
+	i = max_steps
+	grid′ = nothing
+	while i > 0
+		grid′ = shield_step(fast, slow, grid)
+		if grid′.array == grid.array
+			break
+		end
+		grid = grid′
+		i -= 1
+		if animate
+			draw(grid, colors=colors, show_grid=true)
+			plot_with_size!(x_max, y_max)
+			show_legend!(colors=colors)
+			frame(animation)
+		end
+	end
+	(grid=grid′, terminated_early=i==0, animation)
+end
+
+# ╔═╡ b00bbbb7-6587-4664-ae82-82c081f66f37
 begin
-	# Check if a bad square is reachable while going slow.
-	slow_bad = false
-	for (ix, iy) in slow[square.ix, square.iy]
-		if get_value(Square(square.grid, ix, iy)) == BAD_SQUARE
-			slow_bad = true
-			break
-		end
+	initialize!(grid, init_func)
+	if max_steps == 0
+		shield, finished_early, animation = grid, true, nothing
+	else
+		
+		#### Make the shield! ###
+		shield, finished_early, animation = 
+			make_shield(fast, slow, grid, max_steps=max_steps, colors=shieldcolors, animate=animate)
+		
 	end
-	
-	# Check if bad squares can be avoided by going fast.
-	fast_bad = false
-	for (ix, iy) in fast[square.ix, square.iy]
-		if get_value(Square(square.grid, ix, iy)) == BAD_SQUARE
-			fast_bad = true
-			break
-		end
-	end
-	(;slow_bad, fast_bad)
+end
+
+# ╔═╡ 8a027b31-a064-46f3-8a76-ce3184eade26
+if finished_early
+Markdown.parse("""
+!!! warning
+
+	Shield not done!
+	Computation terminated before a fixed point was reached. 
+
+	Increase `max_steps` further if you wish to see the finished shield.
+""")
 end
 
 # ╔═╡ cb460b6d-aa08-4472-bab9-737c89e2224f
 begin
 	shieldplot = draw(shield, colors=shieldcolors, show_grid=true)
 	plot_with_size!(x_max, y_max)
+	show_legend!(colors=shieldcolors)
 	if show_step
 		draw_next_step!(mechanics..., x, t, :both, colors=rwcolors)
 	end
@@ -655,7 +750,7 @@ begin
 end
 
 # ╔═╡ 4175fe77-c75f-4c2e-a23f-3c37ac8c2f1d
-evaluate(cost_function, cost_loss, x_lim, t_lim, mechanics..., shielded_layabout, iterations=100000)
+evaluate(cost_function, cost_loss, x_lim, t_lim, mechanics..., shielded_layabout, iterations=1000)
 
 # ╔═╡ 45aabb2b-6a8f-462c-b082-7d7675676d64
 begin
@@ -1643,7 +1738,7 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
-# ╠═6fc2d7ee-ae97-11ec-1e57-a16e01431e37
+# ╟─b0b79789-e1b9-46f6-a19a-fcee9d5a5be2
 # ╠═78969e37-9895-4077-bdae-ff4857174c6b
 # ╠═3611edfd-a4cb-4632-9d94-2fe71e2195ae
 # ╟─3a43b3fe-ff43-4bf0-8bcb-6ae1781dfc41
@@ -1652,34 +1747,39 @@ version = "0.9.1+5"
 # ╟─baee33de-c4b8-47a9-b231-8c7215d4b651
 # ╟─5229f8dd-ca19-4ed0-a9d2-da1691f79089
 # ╟─2c05e965-545f-43c1-b0b0-0a81e08c6293
-# ╠═6ad63c50-77eb-4fd7-8669-085adebc0ddc
-# ╠═a831bacb-9f95-4c94-b6ea-6e84351da678
+# ╟─6ad63c50-77eb-4fd7-8669-085adebc0ddc
+# ╟─34b55cb2-e084-46af-a129-f848deacf557
+# ╟─a831bacb-9f95-4c94-b6ea-6e84351da678
 # ╟─715d0acd-a271-438c-a3ed-8712b024603f
-# ╟─4ac2cfda-c07b-46b8-9dcf-56f249e9ce9e
+# ╟─06b064b9-047b-40b8-944b-ee499e1a99a1
+# ╟─53fa5c41-a5fb-4571-92ee-090ededa5cc1
 # ╠═e27afbfe-a90d-4c60-b82a-9bfc007c39fb
 # ╠═739c0741-d35d-4fc8-b93d-678371142411
 # ╠═6034243b-4e9a-4720-8354-24b669bf4882
-# ╟─6bfed0ff-56eb-4eed-9de7-bbd425a4978c
-# ╟─53fa5c41-a5fb-4571-92ee-090ededa5cc1
+# ╟─f086c778-9493-4b37-baab-a95cfbf7d2e7
 # ╟─55b4643a-68fb-439f-b9d7-cdcf2a432589
 # ╟─be817e03-90a1-45ec-b5dd-04ab4ca2aaa9
 # ╠═5a1e9619-b64a-443d-8649-8cce928ae983
-# ╟─1d555d13-9b81-48e7-a74c-8e2ee388bfc2
+# ╟─22ef4711-9771-4084-8157-00f817459370
+# ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
+# ╠═1d555d13-9b81-48e7-a74c-8e2ee388bfc2
 # ╟─4165c794-4c2f-4d37-8a85-d1c86a32fd6c
 # ╠═f8607cc8-30e5-454e-acec-6d0050a48904
-# ╟─d14ff7c8-742b-4eb2-aa04-5b1e88213f71
+# ╠═d14ff7c8-742b-4eb2-aa04-5b1e88213f71
 # ╠═3a9bff13-e75e-4400-aefb-6ac004ca9d2e
-# ╟─d92581e2-3691-4bc8-9862-aff23a75fdcc
 # ╠═c0490360-9d91-431c-8997-583c3c06b609
 # ╠═b06918de-37de-471f-8c6e-f5af3edcf024
 # ╠═2cc179a4-8848-4345-a634-bf9adca525be
-# ╠═895b0abb-4ee6-4a70-b638-262583c5c8ab
+# ╠═f09c6e8a-b1b9-4832-a632-bd2c4e60d8aa
+# ╟─895b0abb-4ee6-4a70-b638-262583c5c8ab
 # ╟─d9867d36-908e-4e5e-b013-0cc0c9475982
 # ╟─e1fd73cf-9651-4f94-85f9-882fd68a4ea0
 # ╟─cc2f97bb-57d5-4b30-bdde-fa5e2b372c12
 # ╟─d85de62a-c308-4c46-9a49-5ceb37a586ba
 # ╟─fe6341e8-2a52-4142-8532-52c118358c5e
+# ╟─69d9e42e-4769-46e8-8177-706d150571d8
 # ╠═d4e0a0aa-b34e-4801-9819-ea51f5b9df2a
+# ╟─d92581e2-3691-4bc8-9862-aff23a75fdcc
 # ╠═886e8c1f-83d1-4aed-beb8-d0d73460348f
 # ╠═a2e85767-6f31-4c1a-a174-3bc60faf0d1b
 # ╟─9a0c0fbe-c450-4b42-a320-5868756a2f3d
@@ -1688,18 +1788,19 @@ version = "0.9.1+5"
 # ╟─3633ff5e-19a1-4272-8c7c-5c1a3f00cc72
 # ╠═4fa89f9a-7aa7-441c-99a5-4be7b1055bbe
 # ╠═7abee61b-36bc-488b-893e-d42b5ca8665d
-# ╟─795c5353-fdeb-41c6-8502-2aa70689dcc4
+# ╠═795c5353-fdeb-41c6-8502-2aa70689dcc4
 # ╟─340dcc48-3787-4894-85aa-0d13873d19db
 # ╠═c2add912-1322-4f34-b9d5-e2284f631b3c
 # ╠═c96bd5bc-6f4a-43db-a3d0-892b0f960cc4
-# ╟─f9b7b12f-5193-48ec-b61c-ba22f4a1fb4c
+# ╠═f9b7b12f-5193-48ec-b61c-ba22f4a1fb4c
 # ╠═e7c8c0fe-8008-4ae0-abc8-c2cb3eb711d9
 # ╠═6c7b61f9-98d5-4f7b-b88d-8f74ca1bbcb3
-# ╟─779f0f70-ce94-4a9e-af26-3b06406aa036
 # ╟─18b843fd-2ab8-4380-a700-240115dd23da
 # ╠═b00bbbb7-6587-4664-ae82-82c081f66f37
+# ╟─8a027b31-a064-46f3-8a76-ce3184eade26
 # ╟─fc2dafd2-aea5-49c9-92d3-f7b478be3be0
 # ╟─be4a5a08-79b8-4ac9-8396-db5d62eb3f97
+# ╟─f1e3d59d-4a15-43c1-8717-b736c90e127c
 # ╟─cb460b6d-aa08-4472-bab9-737c89e2224f
 # ╟─896993db-f8d4-492b-bff1-463658587a83
 # ╠═397ca36e-bd4a-45da-9f26-573c10a938fa

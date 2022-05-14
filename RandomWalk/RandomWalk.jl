@@ -21,6 +21,17 @@ begin
 	using Plots
 end
 
+# ╔═╡ 7d5fdfd7-c56b-4ef7-8b73-069588250417
+md"""
+# Random Walk
+
+This is a [Pluto Notebook](https://github.com/fonsp/Pluto.jl) describing a single-player, finite-horizon game with two actions. 
+
+Scroll down to the **Try it Out!** header below to get an idea of how the game works.
+
+The player can choose to either go *:fast* or *:slow*, and each action will use up a bit of time *t* in return for progress *x*. The outcome is random within some bounds, and the goal is to reach the state *x=1* without reaching *t=1*.
+"""
+
 # ╔═╡ 53f82db0-b7eb-4af3-8b43-eb5c087bb409
 call(f) = f()
 
@@ -64,6 +75,13 @@ end
 # ╔═╡ 94bee469-9e4f-4bb1-b6b9-25bc7e11ad9a
 rwcolors = (slow=colors.PUMPKIN, fast=colors.BELIZE_HOLE, line=colors.MIDNIGHT_BLUE)
 
+# ╔═╡ 64806ac3-16af-440c-b771-6be5b257ef71
+md"""
+## Set the Mechanics
+
+Below are options to change the `mechanics` of the game. The value ϵ controls the degree of randomness, δ the average change in progress (for a given action) and τ the average change in time.
+"""
+
 # ╔═╡ 06ba8aa1-7664-47d9-b0c3-432cb3f29c05
 
 @bind _mechanics PlutoUI.combine() do Child
@@ -89,34 +107,40 @@ t\_lim = $(@bind t_lim NumberField(0:0.1:10000, default=1))
 x\_lim = $(@bind x_lim NumberField(0:0.1:10000, default=1))
 """
 
+# ╔═╡ 6111c7ea-3cb8-4ff9-b26f-f8691d16a9ca
+md"""
+The following figure illustrates the effects of the mechanics chosen above. 
+
+The two colored areas show the possible outcomes of taking an action from the initial point.
+
+The two lines show the worst-case run for each type of action. If the line's slope is greater than 1, it means that there is a risk that by only taking this action, the game is lost. 
+"""
+
 # ╔═╡ 57478173-1f1c-43f3-a727-c776b2e6135e
 md"""
+### Costs
+
+The cost of losing a game can be set using the following input:
+
 cost\_loss = $(@bind cost_loss NumberField(0:1:100, default=15))
+
+The cost of taking an action is given by a cost function. For this notebook, the cost is always the same, as given by `fixed\_cost`.
 """
-
-# ╔═╡ 58d066e2-45df-44e0-8473-9ce30a121016
-
-@bind _costs PlutoUI.combine() do Child
-
-md"""
-cost\_slow = $(Child("cost_slow", NumberField(0:1:100, default=1)))
-cost\_fast = $(Child("cost_fast", NumberField(0:1:100, default=3)))
-"""
-	
-end
 
 # ╔═╡ 35be6f4d-2397-4012-8034-5582aba63648
 function fixed_cost(x, t, action)
 	if action == :fast
-		_costs.cost_fast
+		2
 	else
-		_costs.cost_slow
+		1
 	end
 end
 
-# ╔═╡ c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
+# ╔═╡ 97482284-2760-486f-afe7-0e695d2b123a
 md"""
-unlucky $(@bind unlucky CheckBox())
+## Random Walk Game
+
+The game itself is defined by the `step` function. It also uses plotting functions, which have been collapsed here to save screen-space. Feel free to open them up and have a look. 
 """
 
 # ╔═╡ f4389c7a-4220-4612-a27d-095da4bacfaf
@@ -154,8 +178,8 @@ function plot_with_size(x_max, t_max; figure_width=600, figure_height=600)
 			xlabel="x",
 			ylabel="t",
 			size=(figure_width, figure_height))
-	hline!([x_lim], c=:gray)
-	vline!([t_lim], c=:gray)
+	hline!([x_lim], c=:gray, label=nothing)
+	vline!([t_lim], c=:gray, label=nothing)
 end
 
 # ╔═╡ 9177fb93-4785-496d-99ea-0c273fc3b3f1
@@ -166,8 +190,8 @@ function plot_with_size!(x_max, t_max; figure_width=600, figure_height=600)
 			xlabel="x",
 			ylabel="t",
 			size=(figure_width, figure_height))
-	hline!([x_lim], c=:gray)
-	vline!([t_lim], c=:gray)
+	hline!([x_lim], c=:gray, label=nothing)
+	vline!([t_lim], c=:gray, label=nothing)
 end
 
 # ╔═╡ c1db0440-9bc8-4a05-9cb2-2702da002917
@@ -213,6 +237,20 @@ function draw_walk!(xs, ts, actions;
 		legend=nothing)
 end
 
+# ╔═╡ c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
+md"""
+Check this variable to enable worst-case behaviour. You can see the semantics of this defined in the `step` function's `unlucky` argument.
+
+unlucky $(@bind unlucky CheckBox())
+"""
+
+# ╔═╡ ac6c5b58-d7f1-4537-8a6c-79602c92de8e
+md"""
+## Try it out!
+
+Press the buttons below to try the game. The buttons use Pluto's reactivity, so each time they are pressed, code runs in one of the folded cells below.
+"""
+
 # ╔═╡ 50b97718-9f0d-49e0-b930-e519405955f1
 @bind reset Button("Reset")
 
@@ -224,6 +262,7 @@ $(@bind slow Button("Slow"))
 
 # ╔═╡ 42990e88-4926-48f4-bf08-9b1142c47ff7
 begin
+	# x-values, t-values, actions, costs
 	xs, ts, actions, cs = [0.], [0.], [:slow], [0]
  	unlucky
 	reset
@@ -277,29 +316,30 @@ end
 begin
 	fast, slow
 	if last(ts) >= t_lim
-md"""
-## You lose		
-cost: $(sum(cs))
-"""
+Markdown.parse("""
+!!! danger "You lose"
+
+    cost: $(cost_loss + sum(cs))
+""")
 	elseif last(xs) >= x_lim
+Markdown.parse("""
+!!! success "Winner!"
+
+    cost: $(sum(cs))
+""")
+	end
+end
+
+# ╔═╡ d5871433-c149-410b-875d-37e8cdca615d
 md"""
-## Winner!
-cost: $(sum(cs))
+## Defining and evaluating a Policy
+
+Using the functions `take_walk` and `evaluate`, it is possible to evaluate a policy. 
+
+This policy could be learned or synthesized, but in this case a simple heuristic policy. 
+
+You can try altering the code below, and seeing the outcome.
 """
-	end
-end
-
-# ╔═╡ 098905f0-781a-49f2-89d5-a447841da77a
-function policy(x, t)
-	if x < .30 || t > .50
-		:fast
-	else
-		:slow
-	end
-end
-
-# ╔═╡ b47ba5a9-00e8-41ee-a156-c8642e537224
-@bind walk_again Button("Walk again")
 
 # ╔═╡ 87856447-dfd7-4569-93b3-eb1a1da10987
 function take_walk(	cost_function, cost_of_losing,
@@ -342,29 +382,6 @@ call(() -> begin
 	draw_walk!(wost_case_fast.xs, wost_case_fast.ts, wost_case_fast.actions, colors=rwcolors)
 end)
 
-# ╔═╡ d2d20a03-6740-4b55-b971-0240156b6aa2
-begin
-	walk_again
-	xs′, ts′, actions′, total_cost′, winner′ = 
-		take_walk(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., policy, unlucky=unlucky)
-	plot_with_size(x_lim, t_lim)
-	draw_walk!(xs′, ts′, actions′, colors=rwcolors)
-end
-
-# ╔═╡ 58eaad4b-68e9-438d-beea-5c416a9fd2ae
-begin
-	if winner′
-md"""## Winner!
-cost: $(total_cost′)
-"""
-	else
-md"""
-## You lose
-cost: $(total_cost′)
-"""
-	end
-end
-
 # ╔═╡ 92f18efe-cacc-4a4c-98f6-0965db071e36
 function evaluate(	cost_function, cost_of_losing, 
 					x_max, t_max, 
@@ -388,8 +405,50 @@ function evaluate(	cost_function, cost_of_losing,
 	(;perfect, average_wins, average_cost)
 end
 
+# ╔═╡ 098905f0-781a-49f2-89d5-a447841da77a
+function policy(x, t)
+	if x < .30 || t > .50
+		:fast
+	else
+		:slow
+	end
+end
+
+# ╔═╡ b47ba5a9-00e8-41ee-a156-c8642e537224
+md"""
+Press this button to see another outcome:
+
+$(@bind walk_again Button("Walk again"))
+"""
+
+# ╔═╡ d2d20a03-6740-4b55-b971-0240156b6aa2
+begin
+	walk_again
+	xs′, ts′, actions′, total_cost′, winner′ = 
+		take_walk(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., policy, unlucky=unlucky)
+	plot_with_size(x_lim, t_lim)
+	draw_walk!(xs′, ts′, actions′, colors=rwcolors)
+end
+
+# ╔═╡ 58eaad4b-68e9-438d-beea-5c416a9fd2ae
+begin
+	if winner′
+Markdown.parse("""
+!!! success "Winner!"
+
+    cost: $(total_cost′)
+""")
+	else
+Markdown.parse("""
+!!! danger "You lose"
+
+    cost: $(total_cost′)
+""")
+	end
+end
+
 # ╔═╡ 2d4d0a0c-be8a-4d65-96c9-f702d562865b
-a, b, c = evaluate(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., policy, iterations=10000)
+evaluate(fixed_cost, cost_loss, x_lim, t_lim, mechanics..., policy, iterations=1000)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1310,25 +1369,29 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
+# ╟─7d5fdfd7-c56b-4ef7-8b73-069588250417
 # ╠═31af0db2-ab6b-11ec-3677-6d36ee7e97df
 # ╠═53f82db0-b7eb-4af3-8b43-eb5c087bb409
 # ╟─414ca11f-d52a-46f8-99b6-f10039455d29
 # ╟─a36e3fdb-e704-442d-b605-fae715e5139c
 # ╟─94bee469-9e4f-4bb1-b6b9-25bc7e11ad9a
+# ╟─64806ac3-16af-440c-b771-6be5b257ef71
 # ╟─06ba8aa1-7664-47d9-b0c3-432cb3f29c05
 # ╟─53da05d1-f776-4994-8aac-b252fdec89aa
 # ╟─d333c8c3-175f-473d-b5c4-0b38735ce1c6
+# ╟─6111c7ea-3cb8-4ff9-b26f-f8691d16a9ca
 # ╟─94c1ec5f-ffbc-4f12-983b-6c1459ea7e4d
 # ╟─57478173-1f1c-43f3-a727-c776b2e6135e
-# ╟─58d066e2-45df-44e0-8473-9ce30a121016
 # ╠═35be6f4d-2397-4012-8034-5582aba63648
-# ╟─c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
-# ╟─f4389c7a-4220-4612-a27d-095da4bacfaf
+# ╟─97482284-2760-486f-afe7-0e695d2b123a
+# ╠═f4389c7a-4220-4612-a27d-095da4bacfaf
 # ╠═ac704811-f1b1-455c-991d-4ede5671c39e
 # ╟─1854dc96-144a-4465-914e-5316263d8240
 # ╟─9177fb93-4785-496d-99ea-0c273fc3b3f1
 # ╟─c1db0440-9bc8-4a05-9cb2-2702da002917
 # ╟─b9668aa9-fcc7-4ca4-8603-33ec8aeafe93
+# ╟─c79bb558-4dc7-4801-9bc0-0abbd5c09cb5
+# ╟─ac6c5b58-d7f1-4537-8a6c-79602c92de8e
 # ╟─50b97718-9f0d-49e0-b930-e519405955f1
 # ╟─2a7ffe34-3c60-47f4-9be2-8638303d68eb
 # ╟─42990e88-4926-48f4-bf08-9b1142c47ff7
@@ -1336,12 +1399,13 @@ version = "0.9.1+5"
 # ╟─e1811cbc-a8c4-46f7-a362-fdbf8ab89cc2
 # ╟─3250b0a5-606a-4aab-bc23-2ee69c1593bf
 # ╟─cb14c520-ef2b-4f77-ae02-029415bbc049
-# ╟─098905f0-781a-49f2-89d5-a447841da77a
-# ╟─b47ba5a9-00e8-41ee-a156-c8642e537224
+# ╟─d5871433-c149-410b-875d-37e8cdca615d
 # ╟─87856447-dfd7-4569-93b3-eb1a1da10987
+# ╟─92f18efe-cacc-4a4c-98f6-0965db071e36
+# ╠═098905f0-781a-49f2-89d5-a447841da77a
+# ╟─b47ba5a9-00e8-41ee-a156-c8642e537224
 # ╟─d2d20a03-6740-4b55-b971-0240156b6aa2
 # ╟─58eaad4b-68e9-438d-beea-5c416a9fd2ae
-# ╠═92f18efe-cacc-4a4c-98f6-0965db071e36
-# ╟─2d4d0a0c-be8a-4d65-96c9-f702d562865b
+# ╠═2d4d0a0c-be8a-4d65-96c9-f702d562865b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
