@@ -60,10 +60,6 @@ double cost_function(double x, double t, int action) {
 
 /* Simulation-specific stuff */
 
-broadcast chan fast, slow;
-
-clock cl;
-
 double x=0.0;
 double t=0.0;
 const double epsilon = 0.04;
@@ -72,8 +68,6 @@ const double tau_fast = 0.05;
 const double delta_slow = 0.1;
 const double tau_slow = 0.12;
 
-int counterSlow = 0;
-int counterFast = 0;
 double total_cost = 0.0; 
 
 void updateFast() {
@@ -176,16 +170,14 @@ int shield(int action) {
 			<source ref="id3"/>
 			<target ref="id1"/>
 			<label kind="guard" x="-348" y="59">next_action != FAST</label>
-			<label kind="synchronisation" x="-348" y="42">slow!</label>
-			<label kind="assignment" x="-348" y="76">updateSlow(), ++counterSlow</label>
+			<label kind="assignment" x="-348" y="76">updateSlow()</label>
 			<nail x="-119" y="85"/>
 		</transition>
 		<transition id="id9" controllable="false">
 			<source ref="id3"/>
 			<target ref="id1"/>
 			<label kind="guard" x="119" y="59">next_action == FAST</label>
-			<label kind="synchronisation" x="119" y="42">fast!</label>
-			<label kind="assignment" x="119" y="76">updateFast(), ++counterFast</label>
+			<label kind="assignment" x="119" y="76">updateFast()</label>
 			<nail x="110" y="85"/>
 		</transition>
 	</template>
