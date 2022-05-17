@@ -91,7 +91,7 @@ md"""
 
 # ╔═╡ 412a16e6-a059-11ec-2a22-f557508307c3
 function simulate_point(mechanics, v, p, action; min_v_on_impact=1, unlucky=false)
-	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
     v0, p0 = v, p
     
     if action=="hit" && p >= p_hit # Hitting the ball changes the velocity
@@ -106,12 +106,12 @@ function simulate_point(mechanics, v, p, action; min_v_on_impact=1, unlucky=fals
         end
     end
     
-    new_v = g * t + v0
-    new_p = 0.5 * g * t^2 + v0*t + p0
+    new_v = g * Δt + v0
+    new_p = 0.5 * g * Δt^2 + v0*Δt + p0
     
     if new_p <= 0 # It went through the floor, meaning that a bounce occurs
         t_impact = (-v0 - sqrt(v0^2 - 2*g*p0))/g 
-        t_remaining = t - t_impact       # Time left this timestep after bounce occurs
+        t_remaining = Δt - t_impact      # Time left this timestep after bounce occurs
         new_v = g * t_impact + v0        # Gravity pull before impact
 		# Impact
 		if unlucky
@@ -121,8 +121,9 @@ function simulate_point(mechanics, v, p, action; min_v_on_impact=1, unlucky=fals
 		end
 		new_p = 0
 
+		mechanics′ = (Δt=t_remaining, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
 		if new_v >= min_v_on_impact
-	        new_v, new_p = simulate_point(mechanics, new_v, new_p, action, min_v_on_impact=min_v_on_impact, unlucky=unlucky)
+	        new_v, new_p = simulate_point(mechanics′, new_v, new_p, action, min_v_on_impact=min_v_on_impact, unlucky=unlucky)
 		else
 			new_v, new_p = 0, 0
 		end
@@ -135,19 +136,19 @@ end
 function simulate_sequence(mechanics, v0, p0, 
 						   policy, duration; 
 						   unlucky=false)
-	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
 	randomize_β1 = β1 == :random
 	randomize_β2 = β2 == :random
     velocities::Array{Real}, positions::Array{Real}, times::Array{Real} = [v0], [p0], [0.0]
     v, p = v0, p0
-    for i in 1:ceil(duration/t)
+    for i in 1:ceil(duration/Δt)
 		β1 = randomize_β1 ? rand(0.85:0.01:0.97) : β1
 		β2 = randomize_β2 ? rand(0.90:0.01:1.00) : β2
         action = policy(v, p)
         v, p = simulate_point(mechanics, v, p, action, unlucky=unlucky)
         push!(velocities, v)
         push!(positions, p)
-        push!(times, i*t)
+        push!(times, i*Δt)
     end
     velocities, positions, times
 end
@@ -158,12 +159,12 @@ function evaluate(	mechanics,
 					unlucky=false,
 					runs=1000,
 					cost_hit=1)
-	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
     costs = []
 	for run in 1:runs
     	v, p = 0, rand(7:10)
 		cost = 0
-	    for i in 1:ceil(duration/t)
+	    for i in 1:ceil(duration/Δt)
 	        action = policy(v, p)
 			cost += action == "hit" ? 1 : 0
 	        v, p = simulate_point(mechanics, v, p, action, unlucky=unlucky)
@@ -178,7 +179,7 @@ end
 md"""
 ### Configure parameters controlling the ball
 
-`t = ` $(Child("t", NumberField(-100:0.01:100, default=0.10)))
+`Δt = ` $(Child("Δt", NumberField(-100:0.01:100, default=0.10)))
 
 `g = ` $(Child("g", NumberField(-100:0.01:100, default=-9.81)))
 
@@ -193,19 +194,6 @@ md"""
 """
 end
 
-# ╔═╡ 6adbbdb5-7ab5-4e4f-96c7-eaf6d79ab6a0
--mechanics.β1 + mechanics.ϵ1
-
-# ╔═╡ 2b81ff1e-d32f-4fd2-a805-f30b6815c3bf
-rand(-mechanics.β1 - mechanics.ϵ1:0.01:-mechanics.β1 + mechanics.ϵ1)
-
-# ╔═╡ 63be82ea-dbc1-4fcc-a97a-791d803e1f2e
-md"""
-Bounce best case: $(mechanics.β1 - mechanics.ϵ1). Worst case: $(mechanics.β1 + mechanics.ϵ1)
-
-Hit best case: $(mechanics.β2 - mechanics.ϵ2). Worst case: $(mechanics.β2 + mechanics.ϵ2)
-"""
-
 # ╔═╡ 5948f3dd-103d-43c0-978c-6f92d714a043
 md"""
 Example values 
@@ -216,23 +204,34 @@ Example values
 # ╔═╡ 8bd60185-b7a4-437c-9b1c-77aa24b9f068
 begin
 	vv, pp, tt = simulate_sequence(mechanics, v, p, (v, p)->"nohit", 10, unlucky=false)
-	plot(tt, pp)
+	plot(tt, pp, color=colors.WET_ASPHALT, linewidth=2)
 end
 
+# ╔═╡ 3dc3509e-76c0-49f7-a944-6ff56fb069c9
+call(() -> begin
+	_, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	plot(title="Size of the time-step does not alter the model")
+	mechanics = 0.01, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit
+	vv, pp, tt = simulate_sequence(mechanics, v, p, (v, p)->"nohit", 5, unlucky=true)
+	plot!(tt, pp, 
+		color=colors.WET_ASPHALT, 
+		linewidth=2,
+		label="Δt=0.01")
+	for (i, Δt) in enumerate(0.1:0.3:1.01)
+		mechanics = Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit
+		vv, pp, tt = simulate_sequence(mechanics, v, p, (v, p)->"nohit", 5, unlucky=true)
+		plot!(tt, pp, 
+			label="Δt=$Δt", 
+			color=colors[i],
+			markershape=:circle, 
+			markerstrokewidth=0,
+			markersize=4)
+	end
+	plot!(xlabel="t", ylabel="p")
+end)
+
 # ╔═╡ 533b6eb7-c32c-432d-9e64-2b23e15677a5
-plot(vv, pp)
-
-# ╔═╡ 19b49458-3b8c-4e14-88cb-bdf01f242322
-e_kin(g, v) = 0.5*abs(mechanics.g)*v^2
-
-# ╔═╡ 708acd2e-2d8d-4282-b8e1-75b0b21984a4
-e_pot(g, p) = abs(g)*p
-
-# ╔═╡ e6e78566-99e0-4e71-8695-dd94c93f14bc
-e_mek(g, v, p) = e_kin(g, v) + e_pot(g, p)
-
-# ╔═╡ 2ca38f3f-272b-4226-91e2-8424f6e0dd99
-e_mek(mechanics.g, 0, 4)
+plot(vv, pp, color=colors.WET_ASPHALT, linewidth=2)
 
 # ╔═╡ 15992982-642a-4ec4-84ec-fad542e783c3
 md"""
@@ -339,15 +338,6 @@ function get_value(square::Square)
 	square.grid.array[square.iv, square.ip]
 end
 
-# ╔═╡ 18f87faf-b3c8-46ee-9d38-00b30fb94137
-function clear(grid::Grid)
-	for iv in 1:grid.v_count
-		for ip in 1:grid.p_count
-			grid.array[iv, ip] = 0
-		end
-	end
-end
-
 # ╔═╡ 47a14ed7-e795-4e05-9d01-c7510c2c13bb
 function initialize!(grid::Grid, value_function=
 								(Ivl, Ivu, Ipl, Ipu) -> Ivl == 0 && Ipl == 0 ? 2 : 1)
@@ -405,14 +395,14 @@ md"""
 # ╔═╡ 2716a75b-db77-4de2-87fe-8460dfa4a8ad
 """Update current plot with an illustration of the barbaric way in which transitions are computed.
 
-A set of `resolution` × `resolution` evenly spaced points is drawn inside the given square, and the same points are drawn again after time `t` has elapsed."""
+A set of `resolution` × `resolution` evenly spaced points is drawn inside the given square, and the same points are drawn again after time `Δt` has elapsed."""
 function draw_barbaric_transition!(square::Square, resolution, mechanics, action; upto_t=false, colors=(start=:black, _end=:gray), legend=false)
-	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	step = square.grid.G/resolution
 	v_start, p_start = [], []
 	v_end, p_end = [], []
-	t_values = !upto_t ? [t] : (t/resolution:t/resolution:t)
+	t_values = !upto_t ? [Δt] : (Δt/resolution:Δt/resolution:Δt)
 	# Start positions
 	for v in Ivl:step:(Ivu)
 		for p in Ipl:step:(Ipu)
@@ -421,10 +411,11 @@ function draw_barbaric_transition!(square::Square, resolution, mechanics, action
 		end
 	end
 	# End positions
-	for t′ in t_values
+	for Δt′ in t_values
 		for v in Ivl:step:(Ivu)
 			for p in Ipl:step:(Ipu)
-				w, q = simulate_point(mechanics, v, p, action, unlucky=true)
+				mechanics′ = (Δt=Δt′, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
+				w, q = simulate_point(mechanics′, v, p, action, unlucky=true)
 				push!(v_end, w)
 				push!(p_end, q)
 			end
@@ -451,18 +442,20 @@ I could have used proper squares for this, but I want to save that extra bit of 
 """
 function get_reachable_area(square::Square, resolution, mechanics, action; 
 							upto_t=false)
-	t, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	result = []
 	
 	step = square.grid.G/resolution # Distance between (v,p)-points
-	t_values = !upto_t ? [t] : (t/resolution:t/resolution:t)
-	for t′ in t_values
+	t_values = !upto_t ? [Δt] : (Δt/resolution:Δt/resolution:Δt)
+	for Δt′ in t_values
 		for v in Ivl:step:(Ivu)
 			for p in Ipl:step:(Ipu)
-				w, q = simulate_point(mechanics, v, p, action, unlucky=true)
+				mechanics′ = (Δt=Δt′, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
+				w, q = simulate_point(mechanics′, v, p, action, unlucky=true)
 				
-				if !(square.grid.v_min <= w <= square.grid.v_max) || !(square.grid.p_min <= q <= square.grid.p_max)
+				if !(square.grid.v_min <= w <= square.grid.v_max) ||
+				   !(square.grid.p_min <= q <= square.grid.p_max)
 					continue
 				end
 				
@@ -529,7 +522,7 @@ end
 
 # ╔═╡ 02893fb2-58ce-46f9-b609-3b2cb13e67b0
 call(() -> begin
-	mechanics = merge(mechanics, (t = 0.32,))
+	mechanics = merge(mechanics, (Δt = 0.32,))
 	grid = Grid(1, -10, 10, 0, 10)
 	square = box(grid, 2, 5)
 	set_value!(square, 1)
@@ -590,7 +583,7 @@ end
 
 # ╔═╡ 04b99556-60d4-46a8-8714-e3f349df9e1a
 call(() -> begin
-	mechanics = merge(mechanics, (t=0.15,))
+	mechanics = merge(mechanics, (Δt=0.15,))
 	grid = Grid(1, -10, 10, 0, 10)
 	initialize!(grid, 
 		(Ivl, Ivu, Ipl, Ipu) -> e_mek(mechanics.g, Ivl, Ipl) < 50 ? 2 : 0)
@@ -728,7 +721,7 @@ end)
 call(() -> begin
 	vv, pp, tt = shielded_simulation
 	draw(shield, colors=shieldcolors)
-	plot!(vv, pp, color=:black)
+	plot!(vv, pp, color=colors.WET_ASPHALT, linewidth=2)
 	title!("Example run of layabout policy under shield")
 end)
 
@@ -1664,32 +1657,25 @@ version = "0.9.1+5"
 # ╟─89cee980-3094-43eb-99e5-fdc6f6ca4d6a
 # ╟─c5942a34-159f-412a-bfd5-0518115afedf
 # ╠═412a16e6-a059-11ec-2a22-f557508307c3
-# ╠═6adbbdb5-7ab5-4e4f-96c7-eaf6d79ab6a0
-# ╠═2b81ff1e-d32f-4fd2-a805-f30b6815c3bf
 # ╠═95dd69fb-14c1-4745-ae1d-e5596b37581d
 # ╟─3cd49dec-bfb6-4885-85ed-456997dfdde1
 # ╟─fdeb89e9-4cc1-403d-b7c0-5e91429bc696
-# ╟─63be82ea-dbc1-4fcc-a97a-791d803e1f2e
 # ╟─5948f3dd-103d-43c0-978c-6f92d714a043
-# ╠═8bd60185-b7a4-437c-9b1c-77aa24b9f068
-# ╠═533b6eb7-c32c-432d-9e64-2b23e15677a5
-# ╠═e6e78566-99e0-4e71-8695-dd94c93f14bc
-# ╠═2ca38f3f-272b-4226-91e2-8424f6e0dd99
-# ╠═19b49458-3b8c-4e14-88cb-bdf01f242322
-# ╠═708acd2e-2d8d-4282-b8e1-75b0b21984a4
+# ╟─8bd60185-b7a4-437c-9b1c-77aa24b9f068
+# ╟─3dc3509e-76c0-49f7-a944-6ff56fb069c9
+# ╟─533b6eb7-c32c-432d-9e64-2b23e15677a5
 # ╟─15992982-642a-4ec4-84ec-fad542e783c3
 # ╠═05653eb5-f871-4119-8b9d-7df86fd6561a
 # ╟─caf7fe7c-defe-4e92-a258-484090873dda
 # ╠═d45b4d74-26e8-43e3-be07-b864424e2c4f
 # ╠═b225581f-819b-410b-81c7-1d6232b2fb03
+# ╠═fa5f8515-8f89-4ea2-8264-212687cc621d
 # ╟─ce05cd68-38cd-4990-998b-56ae65752dfa
 # ╠═72e60c01-cbe9-48dc-807a-28fcaac493fa
-# ╠═fa5f8515-8f89-4ea2-8264-212687cc621d
 # ╠═a5b084ae-b4e7-431c-ab89-a239e9481000
 # ╠═2a7e7dfe-ba87-4104-9456-34580f4f36f2
 # ╠═d0f21ea3-573f-4f4e-af01-f520bca74323
 # ╠═20f6e0cd-767f-4de5-b7ee-cf77f01126a7
-# ╠═18f87faf-b3c8-46ee-9d38-00b30fb94137
 # ╠═47a14ed7-e795-4e05-9d01-c7510c2c13bb
 # ╟─a9870679-d2dd-48f7-9193-050996ff9ff8
 # ╠═f10b185d-212b-4882-b64e-6dc67d88f5e9
