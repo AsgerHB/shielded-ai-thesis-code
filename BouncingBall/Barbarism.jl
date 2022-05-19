@@ -201,34 +201,49 @@ Example values
 # ╔═╡ 8bd60185-b7a4-437c-9b1c-77aa24b9f068
 begin
 	vv, pp, tt = simulate_sequence(mechanics, v, p, (v, p)->"nohit", 10, unlucky=false)
-	plot(tt, pp, color=colors.WET_ASPHALT, linewidth=2)
+	plot(tt, pp, 
+		color=colors.WET_ASPHALT, 
+		linewidth=2, 
+		label=nothing,
+		xlabel="t",
+		ylabel="p")
+	hline!([0], color=:black, linewidth=2, label=nothing)
+end
+
+# ╔═╡ 533b6eb7-c32c-432d-9e64-2b23e15677a5
+begin
+	plot(vv, pp,
+		color=colors.WET_ASPHALT, 
+		linewidth=2, 
+		label=nothing,
+		xlabel="v",
+		ylabel="p")
+	hline!([0], color=:black, linewidth=2, label=nothing)
 end
 
 # ╔═╡ 3dc3509e-76c0-49f7-a944-6ff56fb069c9
 call(() -> begin
 	_, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
-	plot(title="Size of the time-step does not alter the model")
-	mechanics = 0.01, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit
-	vv, pp, tt = simulate_sequence(mechanics, v, p, (v, p)->"nohit", 5, unlucky=true)
+	plot(title="Simulations using different t_hit values")
+	mechanics = (t_hit=0.001, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
+	vv, pp, tt = simulate_sequence(mechanics, v, p, (v, p)->"nohit", 6, unlucky=true)
 	plot!(tt, pp, 
 		color=colors.WET_ASPHALT, 
 		linewidth=2,
-		label="Δt=0.01")
-	for (i, Δt) in enumerate(0.1:0.3:1.01)
-		mechanics = Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit
-		vv, pp, tt = simulate_sequence(mechanics, v, p, (v, p)->"nohit", 5, unlucky=true)
+		label="t_hit=$(mechanics.t_hit)")
+	for (i, t_hit) in enumerate([0.1, 0.5, 1.0, 2.0])
+		mechanics = t_hit, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit
+		vv, pp, tt = simulate_sequence(mechanics, v, p, (v, p)->"nohit", 6, unlucky=true)
 		plot!(tt, pp, 
-			label="Δt=$Δt", 
+			label="t_hit=$t_hit", 
 			color=colors[i],
 			markershape=:circle, 
 			markerstrokewidth=0,
 			markersize=4)
 	end
 	plot!(xlabel="t", ylabel="p")
+	hline!([0], color=:black, linewidth=2, label=nothing)
 end)
-
-# ╔═╡ 533b6eb7-c32c-432d-9e64-2b23e15677a5
-plot(vv, pp, color=colors.WET_ASPHALT, linewidth=2)
 
 # ╔═╡ 15992982-642a-4ec4-84ec-fad542e783c3
 md"""
@@ -497,9 +512,11 @@ end
 
 # ╔═╡ 02893fb2-58ce-46f9-b609-3b2cb13e67b0
 call(() -> begin
+	resolution = 2
 	mechanics = merge(mechanics, (Δt = 0.32,))
-	grid = Grid(1, -10, 10, 0, 10)
-	square = box(grid, 2, 5)
+	grid = Grid(1, -12, 5, 0, 10)
+	v0, p0 = 3, 5
+	square = box(grid, v0, p0)
 	set_value!(square, 1)
 	reachable_hit, reachable_nohit = get_transitions(grid, resolution, mechanics, upto_t=upto_t)
 	
@@ -513,8 +530,20 @@ call(() -> begin
 	end
 	
 	draw(grid, show_grid=true, colors=transition_background_colors)
-	draw_barbaric_transition!(square, resolution, mechanics, "hit", upto_t=upto_t, colors=transition_colors, legend=true)
+	plot!(xlabel="v", ylabel="p")
+	draw_barbaric_transition!(square, resolution, mechanics, "hit", upto_t=upto_t, colors=transition_colors)
 	draw_barbaric_transition!(square, resolution, mechanics, "nohit", upto_t=upto_t, colors=transition_colors)
+	
+	vl, vu, pl, pu = bounds(square)
+	v_middle, p_middle = (vl+grid.G/2), (pl+grid.G/2)
+	
+	# Solid line hit
+	vs, ps, ts = simulate_sequence(merge(mechanics, (Δt = 0.001,)), v_middle, p_middle, (_, _)->"hit", mechanics.Δt, unlucky=true)
+	plot!(vs, ps, color=colors.NEPHRITIS, linewidth=2, linestyle=:solid, label="hit", legend=:topright)
+
+	# Dashed line nohit
+	vs, ps, ts = simulate_sequence(merge(mechanics, (Δt = 0.001,)), v_middle, p_middle, (_, _)->"nohit", mechanics.Δt, unlucky=true)
+	plot!(vs, ps, color=colors.NEPHRITIS, linewidth=2, linestyle=:dash, label="nohit", legend=:topright)
 end)
 
 # ╔═╡ 8ee09119-9eba-4dfd-ad25-5496e714892c
@@ -561,7 +590,7 @@ call(() -> begin
 	mechanics = merge(mechanics, (Δt=0.15,))
 	grid = Grid(1, -10, 10, 0, 10)
 	initialize!(grid, 
-		(Ivl, Ivu, Ipl, Ipu) -> e_mek(mechanics.g, Ivl, Ipl) < 50 ? 2 : 0)
+		(Ivl, Ivu, Ipl, Ipu) -> -1 <= Ivl < 0 ? 2 : 0)
 	square = box(grid, 1, 5)
 	reachable_hit, reachable_nohit = get_transitions(grid, resolution, mechanics)
 	new_value = get_new_value(reachable_hit, reachable_nohit, square, grid)
@@ -1637,8 +1666,8 @@ version = "0.9.1+5"
 # ╟─fdeb89e9-4cc1-403d-b7c0-5e91429bc696
 # ╟─5948f3dd-103d-43c0-978c-6f92d714a043
 # ╟─8bd60185-b7a4-437c-9b1c-77aa24b9f068
-# ╟─3dc3509e-76c0-49f7-a944-6ff56fb069c9
 # ╟─533b6eb7-c32c-432d-9e64-2b23e15677a5
+# ╟─3dc3509e-76c0-49f7-a944-6ff56fb069c9
 # ╟─15992982-642a-4ec4-84ec-fad542e783c3
 # ╠═05653eb5-f871-4119-8b9d-7df86fd6561a
 # ╟─caf7fe7c-defe-4e92-a258-484090873dda
@@ -1655,11 +1684,10 @@ version = "0.9.1+5"
 # ╠═f10b185d-212b-4882-b64e-6dc67d88f5e9
 # ╟─d8eb0ab7-b335-4191-adc5-586ad4dab074
 # ╟─21cbae28-9e2a-4a45-8157-d2ef2a0189e9
-# ╠═2716a75b-db77-4de2-87fe-8460dfa4a8ad
-# ╠═14fadc22-1218-43c1-8e7b-7b58256594d1
-# ╠═7fff10bd-8d93-41fa-ba2b-73756a73ffeb
+# ╟─2716a75b-db77-4de2-87fe-8460dfa4a8ad
+# ╟─14fadc22-1218-43c1-8e7b-7b58256594d1
+# ╟─7fff10bd-8d93-41fa-ba2b-73756a73ffeb
 # ╟─869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
-# ╠═869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 # ╠═d2b82214-239b-4a5c-9654-49006caaa295
 # ╠═02893fb2-58ce-46f9-b609-3b2cb13e67b0
 # ╠═8ee09119-9eba-4dfd-ad25-5496e714892c

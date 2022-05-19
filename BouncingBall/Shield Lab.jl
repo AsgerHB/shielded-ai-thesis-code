@@ -140,22 +140,20 @@ begin
 	nothing
 end
 
-# ╔═╡ 66924f99-8783-47e7-9cb3-1cf10e099051
-begin
-	grid = Grid(G, v_min, v_max, p_min, p_max)
-	md"""
-	Grid($G, $v_min, $v_max, $p_min, $p_max) 
-	
-	Size: $(length(grid.array))
-	"""
-end
-
 # ╔═╡ 9227ef36-4df3-4ff1-be01-5289634e9ce3
 md"""
 `resolution = ` $(@bind resolution confirm(NumberField(1:100, default=3)))
 
 `upto_t = ` $(@bind upto_t CheckBox())
 """
+
+# ╔═╡ 82f5d19b-bc65-4e72-be3e-eb9a9d395af8
+# Remember to set a plot size first, otherwise it don't work
+function show_legend!(;colors)
+	scatter!([-100],[-100], color=shieldcolors[1], markersize=5, markershape=:circle, legend=:topleft, labels="{nohit, hit}")
+	scatter!([-100],[-100], color=shieldcolors[2], markersize=5, markershape=:circle, legend=:topleft, labels="{hit}")
+	scatter!([-100],[-100], color=shieldcolors[3], markersize=5, markershape=:circle, legend=:topleft, labels="∅")
+end
 
 # ╔═╡ 3884c0af-f085-4e81-83c0-973d0d2bd6b7
 md"""
@@ -164,9 +162,22 @@ md"""
 
 # ╔═╡ 901d0f5a-c7e5-478b-bd1a-60290c4d8b06
 begin
+	grid = Grid(G, v_min, v_max, p_min, p_max)
+	
 	initial_value(Ivl, Ivu, Ipl, Ipu) = Ipl == 0 && 0 <= Ivl < 1 ? 2 : 0
 	initialize!(grid, initial_value)
+	
 	draw(grid, colors=shieldcolors)
+	plot!(xlabel="v", ylabel="p", label="Initial values of the grid")
+end
+
+# ╔═╡ 66924f99-8783-47e7-9cb3-1cf10e099051
+begin
+	md"""
+	Grid($G, $v_min, $v_max, $p_min, $p_max) 
+	
+	Size: $(length(grid.array))
+	"""
 end
 
 # ╔═╡ 3e12d7a7-4037-453d-b1e7-b3b5f66895d4
@@ -205,7 +216,12 @@ animate: $(@bind animate CheckBox())
 
 # ╔═╡ b1de6876-b41d-4b00-ba88-e504a65e07dc
 if max_steps >= 1 
-	shield, terminated_early, animation = make_shield(reachable_hit, reachable_nohit, grid, resolution, max_steps=max_steps, animate=animate)
+	shield, terminated_early, animation = 
+		make_shield(reachable_hit, reachable_nohit, 
+					grid, 
+					resolution, 
+					max_steps=max_steps, 
+					animate=animate)
 	(;shield, terminated_early, animation)
 else
 	shield, terminated_early, animation = grid, true, nothing
@@ -293,6 +309,23 @@ call(() -> begin
 	vv, pp, tt = shielded_simulation
 	draw(shield, colors=shieldcolors, show_grid=true)
 	plot!(vv, pp, color=colors.MIDNIGHT_BLUE)
+end)
+
+# ╔═╡ 5cbe7ce4-8e11-47e1-84ca-46223acdda9e
+call(() -> begin
+	square = box(shield, 2, 5.2)
+	draw(shield, colors=shieldcolors, show_grid=true)
+	draw_barbaric_transition!(square, resolution, mechanics, "nohit")
+	draw_barbaric_transition!(square, resolution, mechanics, "hit")
+	plot!(xlim=[-7,7], ylim=[0, 8])
+end)
+
+# ╔═╡ dec6e90b-c143-44c7-a8c7-e3f2af0edf0b
+call(() -> begin
+	square = box(shield, -5.0, 5.7)
+	draw(shield, colors=shieldcolors, show_grid=true)
+	draw_barbaric_transition!(square, resolution, mechanics, "nohit")
+	plot!(xlim=[-7,0], ylim=[0, 8])
 end)
 
 # ╔═╡ 396b0315-7ce3-403f-9859-825de63800a0
@@ -1288,8 +1321,9 @@ version = "0.9.1+5"
 # ╟─765f3756-7828-4da7-9471-b22c3b384878
 # ╟─66924f99-8783-47e7-9cb3-1cf10e099051
 # ╟─9227ef36-4df3-4ff1-be01-5289634e9ce3
+# ╟─82f5d19b-bc65-4e72-be3e-eb9a9d395af8
 # ╟─3884c0af-f085-4e81-83c0-973d0d2bd6b7
-# ╟─901d0f5a-c7e5-478b-bd1a-60290c4d8b06
+# ╠═901d0f5a-c7e5-478b-bd1a-60290c4d8b06
 # ╟─3e12d7a7-4037-453d-b1e7-b3b5f66895d4
 # ╟─47ae7197-6e04-43fb-a457-52f5cccffa8d
 # ╟─2057f2d9-9587-407d-a781-285170e88299
@@ -1298,7 +1332,7 @@ version = "0.9.1+5"
 # ╟─1ea0d7dd-6cdd-42f1-b91e-e362f0c00100
 # ╟─5224520a-eb78-4220-b3b0-939c35617a69
 # ╟─4dd7cc28-f245-4a95-b9c2-833e929fcbc5
-# ╠═0fb7db88-9eec-4895-bc16-5acbbe58082a
+# ╟─0fb7db88-9eec-4895-bc16-5acbbe58082a
 # ╠═b1de6876-b41d-4b00-ba88-e504a65e07dc
 # ╟─3e486218-e716-4fcb-9f85-1a98cb394829
 # ╟─ecd4cf78-21f2-4d1a-b621-986648211401
@@ -1307,8 +1341,10 @@ version = "0.9.1+5"
 # ╟─5bc8a442-0628-463f-9de3-8ddc93b0ef88
 # ╟─4da5c6da-92de-446a-9af7-4485d943a5a0
 # ╟─3170d6d4-40e6-45d5-a29b-d4e9b746813c
-# ╠═396b0315-7ce3-403f-9859-825de63800a0
-# ╠═6c9b7406-f357-4c71-a4c3-af308ce3a0d7
+# ╠═5cbe7ce4-8e11-47e1-84ca-46223acdda9e
+# ╠═dec6e90b-c143-44c7-a8c7-e3f2af0edf0b
+# ╟─396b0315-7ce3-403f-9859-825de63800a0
+# ╟─6c9b7406-f357-4c71-a4c3-af308ce3a0d7
 # ╟─7770aa27-7093-4d2b-a4e7-0df4afa9615a
 # ╠═5f454fc4-60ca-45f9-a24f-8ef15c0519b8
 # ╟─04e0b60c-b7a2-4bce-966a-331b15cbc635
