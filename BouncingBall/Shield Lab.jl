@@ -97,13 +97,6 @@ md"""
 """
 end
 
-# ╔═╡ df1371db-1c70-41cf-a32c-82dd89242ff1
-md"""
-Bounce worst case: $(mechanics.β1 - mechanics.ϵ1). Best case: $(mechanics.β1 + mechanics.ϵ1)
-
-Hit worst case: $(mechanics.β2 - mechanics.ϵ2). Best case: $(mechanics.β2 + mechanics.ϵ2)
-"""
-
 # ╔═╡ 190d3d5a-d225-4068-b924-a2dcf406c007
 @bind simulation PlutoUI.combine() do Child
 md"""
@@ -1289,7 +1282,6 @@ version = "0.9.1+5"
 # ╟─75d68f84-5965-4174-be97-97e5a4c7247b
 # ╟─50d27ce0-5658-4227-9952-1fe593d55d3c
 # ╟─53d29226-7839-4fa1-bc56-077d4355042f
-# ╟─df1371db-1c70-41cf-a32c-82dd89242ff1
 # ╟─190d3d5a-d225-4068-b924-a2dcf406c007
 # ╟─9e798144-4386-485b-99e9-682bf1535ff5
 # ╟─4461bf98-c33c-47b1-9b8b-055c928325e0

@@ -137,18 +137,15 @@ function simulate_sequence(mechanics, v0, p0,
 						   policy, duration; 
 						   unlucky=false)
 	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
-	randomize_β1 = β1 == :random
-	randomize_β2 = β2 == :random
-    velocities::Array{Real}, positions::Array{Real}, times::Array{Real} = [v0], [p0], [0.0]
-    v, p = v0, p0
-    for i in 1:ceil(duration/Δt)
-		β1 = randomize_β1 ? rand(0.85:0.01:0.97) : β1
-		β2 = randomize_β2 ? rand(0.90:0.01:1.00) : β2
+    velocities::Vector{Real}, positions::Vector{Real}, times = [v0], [p0], [0.0]
+    v, p, t = v0, p0, 0
+    while times[end] <= duration - Δt
         action = policy(v, p)
         v, p = simulate_point(mechanics, v, p, action, unlucky=unlucky)
+		t += Δt
         push!(velocities, v)
         push!(positions, p)
-        push!(times, i*Δt)
+        push!(times, t)
     end
     velocities, positions, times
 end
@@ -339,8 +336,8 @@ function get_value(square::Square)
 end
 
 # ╔═╡ 47a14ed7-e795-4e05-9d01-c7510c2c13bb
-function initialize!(grid::Grid, value_function=
-								(Ivl, Ivu, Ipl, Ipu) -> Ivl == 0 && Ipl == 0 ? 2 : 1)
+function initialize!(grid::Grid, 
+			value_function=(Ivl, Ivu, Ipl, Ipu) -> Ivl == 0 && Ipl == 0 ? 2 : 1)
 	for iv in 1:grid.v_count
 		for ip in 1:grid.p_count
 			square = Square(grid, iv, ip)
@@ -349,20 +346,17 @@ function initialize!(grid::Grid, value_function=
 	end
 end
 
-# ╔═╡ a9870679-d2dd-48f7-9193-050996ff9ff8
-md"""
-## The draw function
-
-Test it by changing v and p in the input boxes above. The square containing v,p will be highlighted, and the v,p-plot from above is drawn over it. 
-"""
-
 # ╔═╡ f10b185d-212b-4882-b64e-6dc67d88f5e9
 function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 	colors = cgrad(colors, length(colors), categorical=true)
 	x_tics = grid.v_min:grid.G:grid.v_max
 	y_tics = grid.p_min:grid.G:grid.p_max
 	
-	hm = heatmap(x_tics, y_tics, transpose(grid.array), c=colors)
+	hm = heatmap(x_tics, y_tics, 
+					transpose(grid.array), 
+					c=colors,
+					colorbar=nothing,
+					legend=nothing)
 
 	if show_grid && length(grid.v_min:grid.G:grid.v_max) < 100
 		vline!(grid.v_min:grid.G:grid.v_max, color=:gray, label=nothing)
@@ -370,14 +364,6 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 	end
 
 	return hm
-end
-
-# ╔═╡ bafefabb-50c2-421e-80b4-044c1488a24a
-begin
-	clear(grid)
-	set_value!(square, 1)
-	draw(grid, colors=[:white, colors.CONCRETE], show_grid=false)
-	plot!(vv, pp, color=colors.MIDNIGHT_BLUE, linewidth=2)
 end
 
 # ╔═╡ d8eb0ab7-b335-4191-adc5-586ad4dab074
@@ -479,17 +465,6 @@ function set_reachable_area!(square::Square, resolution, mechanics, action, valu
 		square.grid.array[iv, ip] = value
 	end
 end
-
-# ╔═╡ a8d9178b-fb85-4daa-ad1f-58d6b9a734ef
-call(() -> begin
-	t=0.5
-	grid = Grid(0.5, -6, 6, 0, 5)
-	square = box(grid, 1, 2)
-	set_reachable_area!(square, resolution, mechanics, "nohit", 2, upto_t=upto_t)
-	set_value!(square, 1)
-	draw(grid, show_grid=true, colors=transition_background_colors)
-	draw_barbaric_transition!(square, resolution, mechanics, "nohit", upto_t=upto_t, colors=transition_colors, legend=true)
-end)
 
 # ╔═╡ 869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 """Computes and returns the tuple `(hit, nohit)`.
@@ -1677,15 +1652,13 @@ version = "0.9.1+5"
 # ╠═d0f21ea3-573f-4f4e-af01-f520bca74323
 # ╠═20f6e0cd-767f-4de5-b7ee-cf77f01126a7
 # ╠═47a14ed7-e795-4e05-9d01-c7510c2c13bb
-# ╟─a9870679-d2dd-48f7-9193-050996ff9ff8
 # ╠═f10b185d-212b-4882-b64e-6dc67d88f5e9
-# ╠═bafefabb-50c2-421e-80b4-044c1488a24a
 # ╟─d8eb0ab7-b335-4191-adc5-586ad4dab074
 # ╟─21cbae28-9e2a-4a45-8157-d2ef2a0189e9
 # ╠═2716a75b-db77-4de2-87fe-8460dfa4a8ad
 # ╠═14fadc22-1218-43c1-8e7b-7b58256594d1
 # ╠═7fff10bd-8d93-41fa-ba2b-73756a73ffeb
-# ╠═a8d9178b-fb85-4daa-ad1f-58d6b9a734ef
+# ╟─869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 # ╠═869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 # ╠═d2b82214-239b-4a5c-9654-49006caaa295
 # ╠═02893fb2-58ce-46f9-b609-3b2cb13e67b0
