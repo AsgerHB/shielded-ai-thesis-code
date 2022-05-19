@@ -1,10 +1,10 @@
 function draw_barbaric_transition!(square::Square, resolution, mechanics, action; upto_t=false, colors=(start=:black, _end=:gray), legend=false)
-	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	t_hit, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	step = square.grid.G/resolution
 	v_start, p_start = [], []
 	v_end, p_end = [], []
-	t_values = !upto_t ? [Δt] : (Δt/resolution:Δt/resolution:Δt)
+	t_values = !upto_t ? [t_hit] : (t_hit/resolution:t_hit/resolution:t_hit)
 	# Start positions
 	for v in Ivl:step:(Ivu)
 		for p in Ipl:step:(Ipu)
@@ -16,7 +16,7 @@ function draw_barbaric_transition!(square::Square, resolution, mechanics, action
 	for Δt′ in t_values
 		for v in Ivl:step:(Ivu)
 			for p in Ipl:step:(Ipu)
-				mechanics′ = (Δt=Δt′, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
+				mechanics′ = (t_hit=Δt′, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
 				w, q = simulate_point(mechanics′, v, p, action, unlucky=true)
 				push!(v_end, w)
 				push!(p_end, q)
@@ -44,16 +44,16 @@ I could have used proper squares for this, but I want to save that extra bit of 
 """
 function get_reachable_area(square::Square, resolution, mechanics, action; 
 							upto_t=false)
-	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	t_hit, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	result = []
 	
 	step = square.grid.G/resolution # Distance between (v,p)-points
-	t_values = !upto_t ? [Δt] : (Δt/resolution:Δt/resolution:Δt)
+	t_values = !upto_t ? [t_hit] : (t_hit/resolution:t_hit/resolution:t_hit)
 	for Δt′ in t_values
 		for v in Ivl:step:(Ivu)
 			for p in Ipl:step:(Ipu)
-				mechanics′ = (Δt=Δt′, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
+				mechanics′ = (t_hit=Δt′, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
 				w, q = simulate_point(mechanics′, v, p, action, unlucky=true)
 				
 				if !(square.grid.v_min <= w <= square.grid.v_max) ||

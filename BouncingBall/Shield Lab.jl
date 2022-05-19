@@ -82,7 +82,7 @@ shieldcolors=[colorant"#ffffff", colorant"#a1eaff", colorant"#ff9178"]
 md"""
 ### Configure parameters controlling the ball
 
-`t = ` $(Child("t", NumberField(-100:0.01:100, default=0.10)))
+`t_hit = ` $(Child("t_hit", NumberField(-100:0.01:100, default=0.10)))
 
 `g = ` $(Child("g", NumberField(-100:0.01:100, default=-9.81)))
 

@@ -91,7 +91,7 @@ md"""
 
 # ╔═╡ 412a16e6-a059-11ec-2a22-f557508307c3
 function simulate_point(mechanics, v, p, action; min_v_on_impact=1, unlucky=false)
-	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	t_hit, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
     v0, p0 = v, p
     
     if action=="hit" && p >= p_hit # Hitting the ball changes the velocity
@@ -106,12 +106,12 @@ function simulate_point(mechanics, v, p, action; min_v_on_impact=1, unlucky=fals
         end
     end
     
-    new_v = g * Δt + v0
-    new_p = 0.5 * g * Δt^2 + v0*Δt + p0
+    new_v = g * t_hit + v0
+    new_p = 0.5 * g * t_hit^2 + v0*t_hit + p0
     
     if new_p <= 0 # It went through the floor, meaning that a bounce occurs
         t_impact = (-v0 - sqrt(v0^2 - 2*g*p0))/g 
-        t_remaining = Δt - t_impact      # Time left this timestep after bounce occurs
+        t_remaining = t_hit - t_impact      # Time left this timestep after bounce occurs
         new_v = g * t_impact + v0        # Gravity pull before impact
 		# Impact
 		if unlucky
@@ -121,7 +121,7 @@ function simulate_point(mechanics, v, p, action; min_v_on_impact=1, unlucky=fals
 		end
 		new_p = 0
 
-		mechanics′ = (Δt=t_remaining, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
+		mechanics′ = (t_hit=t_remaining, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
 		if new_v >= min_v_on_impact
 	        new_v, new_p = simulate_point(mechanics′, new_v, new_p, action, min_v_on_impact=min_v_on_impact, unlucky=unlucky)
 		else
@@ -136,13 +136,13 @@ end
 function simulate_sequence(mechanics, v0, p0, 
 						   policy, duration; 
 						   unlucky=false)
-	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	t_hit, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
     velocities::Vector{Real}, positions::Vector{Real}, times = [v0], [p0], [0.0]
     v, p, t = v0, p0, 0
-    while times[end] <= duration - Δt
+    while times[end] <= duration - t_hit
         action = policy(v, p)
         v, p = simulate_point(mechanics, v, p, action, unlucky=unlucky)
-		t += Δt
+		t += t_hit
         push!(velocities, v)
         push!(positions, p)
         push!(times, t)
@@ -156,12 +156,12 @@ function evaluate(	mechanics,
 					unlucky=false,
 					runs=1000,
 					cost_hit=1)
-	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	t_hit, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
     costs = []
 	for run in 1:runs
     	v, p = 0, rand(7:10)
 		cost = 0
-	    for i in 1:ceil(duration/Δt)
+	    for i in 1:ceil(duration/t_hit)
 	        action = policy(v, p)
 			cost += action == "hit" ? 1 : 0
 	        v, p = simulate_point(mechanics, v, p, action, unlucky=unlucky)
@@ -176,7 +176,7 @@ end
 md"""
 ### Configure parameters controlling the ball
 
-`Δt = ` $(Child("Δt", NumberField(-100:0.01:100, default=0.10)))
+`t_hit = ` $(Child("t_hit", NumberField(-100:0.01:100, default=0.10)))
 
 `g = ` $(Child("g", NumberField(-100:0.01:100, default=-9.81)))
 
@@ -396,14 +396,14 @@ md"""
 # ╔═╡ 2716a75b-db77-4de2-87fe-8460dfa4a8ad
 """Update current plot with an illustration of the barbaric way in which transitions are computed.
 
-A set of `resolution` × `resolution` evenly spaced points is drawn inside the given square, and the same points are drawn again after time `Δt` has elapsed."""
+A set of `resolution` × `resolution` evenly spaced points is drawn inside the given square, and the same points are drawn again after time `t_hit` has elapsed."""
 function draw_barbaric_transition!(square::Square, resolution, mechanics, action; upto_t=false, colors=(start=:black, _end=:gray), legend=false)
-	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	t_hit, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	step = square.grid.G/resolution
 	v_start, p_start = [], []
 	v_end, p_end = [], []
-	t_values = !upto_t ? [Δt] : (Δt/resolution:Δt/resolution:Δt)
+	t_values = !upto_t ? [t_hit] : (t_hit/resolution:t_hit/resolution:t_hit)
 	# Start positions
 	for v in Ivl:step:(Ivu)
 		for p in Ipl:step:(Ipu)
@@ -415,7 +415,7 @@ function draw_barbaric_transition!(square::Square, resolution, mechanics, action
 	for Δt′ in t_values
 		for v in Ivl:step:(Ivu)
 			for p in Ipl:step:(Ipu)
-				mechanics′ = (Δt=Δt′, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
+				mechanics′ = (t_hit=Δt′, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
 				w, q = simulate_point(mechanics′, v, p, action, unlucky=true)
 				push!(v_end, w)
 				push!(p_end, q)
@@ -443,16 +443,16 @@ I could have used proper squares for this, but I want to save that extra bit of 
 """
 function get_reachable_area(square::Square, resolution, mechanics, action; 
 							upto_t=false)
-	Δt, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
+	t_hit, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit  = mechanics
 	Ivl, Ivu, Ipl, Ipu = bounds(square)
 	result = []
 	
 	step = square.grid.G/resolution # Distance between (v,p)-points
-	t_values = !upto_t ? [Δt] : (Δt/resolution:Δt/resolution:Δt)
+	t_values = !upto_t ? [t_hit] : (t_hit/resolution:t_hit/resolution:t_hit)
 	for Δt′ in t_values
 		for v in Ivl:step:(Ivu)
 			for p in Ipl:step:(Ipu)
-				mechanics′ = (Δt=Δt′, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
+				mechanics′ = (t_hit=Δt′, g, β1, ϵ1, β2, ϵ2, v_hit, p_hit)
 				w, q = simulate_point(mechanics′, v, p, action, unlucky=true)
 				
 				if !(square.grid.v_min <= w <= square.grid.v_max) ||
@@ -513,7 +513,7 @@ end
 # ╔═╡ 02893fb2-58ce-46f9-b609-3b2cb13e67b0
 call(() -> begin
 	resolution = 2
-	mechanics = merge(mechanics, (Δt = 0.32,))
+	mechanics = merge(mechanics, (t_hit = 0.32,))
 	grid = Grid(1, -12, 5, 0, 10)
 	v0, p0 = 3, 5
 	square = box(grid, v0, p0)
@@ -538,11 +538,11 @@ call(() -> begin
 	v_middle, p_middle = (vl+grid.G/2), (pl+grid.G/2)
 	
 	# Solid line hit
-	vs, ps, ts = simulate_sequence(merge(mechanics, (Δt = 0.001,)), v_middle, p_middle, (_, _)->"hit", mechanics.Δt, unlucky=true)
+	vs, ps, ts = simulate_sequence(merge(mechanics, (t_hit = 0.001,)), v_middle, p_middle, (_, _)->"hit", mechanics.t_hit, unlucky=true)
 	plot!(vs, ps, color=colors.NEPHRITIS, linewidth=2, linestyle=:solid, label="hit", legend=:topright)
 
 	# Dashed line nohit
-	vs, ps, ts = simulate_sequence(merge(mechanics, (Δt = 0.001,)), v_middle, p_middle, (_, _)->"nohit", mechanics.Δt, unlucky=true)
+	vs, ps, ts = simulate_sequence(merge(mechanics, (t_hit = 0.001,)), v_middle, p_middle, (_, _)->"nohit", mechanics.t_hit, unlucky=true)
 	plot!(vs, ps, color=colors.NEPHRITIS, linewidth=2, linestyle=:dash, label="nohit", legend=:topright)
 end)
 
@@ -587,7 +587,7 @@ end
 
 # ╔═╡ 04b99556-60d4-46a8-8714-e3f349df9e1a
 call(() -> begin
-	mechanics = merge(mechanics, (Δt=0.15,))
+	mechanics = merge(mechanics, (t_hit=0.15,))
 	grid = Grid(1, -10, 10, 0, 10)
 	initialize!(grid, 
 		(Ivl, Ivu, Ipl, Ipu) -> -1 <= Ivl < 0 ? 2 : 0)
