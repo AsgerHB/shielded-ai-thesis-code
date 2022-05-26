@@ -164,7 +164,8 @@ md"""
 begin
 	grid = Grid(G, v_min, v_max, p_min, p_max)
 	
-	initial_value(Ivl, Ivu, Ipl, Ipu) = Ipl == 0 && 0 <= Ivl < 1 ? 2 : 0
+	initial_value(Ivl, Ivu, Ipl, Ipu) = 
+				  Ipl == 0 && (abs(Ivl) < 1 || abs(Ivu) < 1) ? 2 : 0
 	initialize!(grid, initial_value)
 	
 	draw(grid, colors=shieldcolors)
