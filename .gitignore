@@ -134,3 +134,6 @@ dmypy.json
 *.o
 
 *.~lock*
+BouncingBall/UppaalExperiment/Results/
+
+BouncingBall/UppaalExperiment/Results.csv

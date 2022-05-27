@@ -1,0 +1,150 @@
+//This file was generated from (Academic) UPPAAL 4.1.20-stratego-10-beta2 (rev. FC359288E59BAC4F), May 2022
+
+/* formula 1 */
+strategy DeathCosts1000 = minE (LearnerPlayer.fired + number_deaths*1000 ) [<=120] {} -> {p, v}: <> time >= 120
+
+/* formula 2 */
+saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/BouncingBall/UppaalExperiment/Strategies/DeathCosts1000.strategy.json", DeathCosts1000)
+
+/* formula 3 */
+E[<=120] (max:LearnerPlayer.fired) under DeathCosts1000
+
+/* formula 4 */
+Pr[<=120] (<> number_deaths > 0) under DeathCosts1000
+
+/* formula 5 */
+E[<=120] (max:interventions) under DeathCosts1000
+
+/* formula 6 */
+strategy DeathCosts100 = minE (LearnerPlayer.fired + number_deaths*100 ) [<=120] {} -> {p, v}: <> time >= 120
+
+/* formula 7 */
+saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/BouncingBall/UppaalExperiment/Strategies/DeathCosts100.strategy.json", DeathCosts100)
+
+/* formula 8 */
+E[<=120] (max:LearnerPlayer.fired) under DeathCosts100
+
+/* formula 9 */
+Pr[<=120] (<> number_deaths > 0) under DeathCosts100
+
+/* formula 10 */
+E[<=120] (max:interventions) under DeathCosts100
+
+/* formula 11 */
+strategy DeathCosts10 = minE (LearnerPlayer.fired + number_deaths*10 ) [<=120] {} -> {p, v}: <> time >= 120
+
+/* formula 12 */
+saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/BouncingBall/UppaalExperiment/Strategies/DeathCosts10.strategy.json", DeathCosts10)
+
+/* formula 13 */
+E[<=120] (max:LearnerPlayer.fired) under DeathCosts10
+
+/* formula 14 */
+Pr[<=120] (<> number_deaths > 0) under DeathCosts10
+
+/* formula 15 */
+E[<=120] (max:interventions) under DeathCosts10
+
+Options for the verification:
+  Generating no trace
+  Search order is breadth first
+  Using conservative space optimisation
+  Seed is 1653650970
+  State space representation uses minimal constraint systems with future testing
+  Using HashMap + Compress integers for discrete state storage
+[2K
+Verifying formula 1 at TrainSaveEvaluate.q:4
+ -- Throughput: 545855 runs/sec, Load: 4 runs[K -- Throughput: 678763 runs/sec, Load: 4 runs[K -- Throughput: 714880 runs/sec, Load: 4 runs[K[2K -- Formula is satisfied.
+(105 runs)
+Learning statistics for best strategy: 
+	Number of resets: 0
+	Number of iterations in last reset: 1
+	Number of iterations in total: 1
+
+
+[2K
+Verifying formula 2 at TrainSaveEvaluate.q:7
+[2K -- Formula is satisfied.
+$v_gameInfoCounterPlay
+
+[2K
+Verifying formula 3 at TrainSaveEvaluate.q:10
+[2K -- Formula is satisfied.
+(2 runs) E(max) = ≈ 0
+
+Values in [0,0] mean=0 steps=1: 2
+[2K
+Verifying formula 4 at TrainSaveEvaluate.q:13
+[2K -- Formula is satisfied.
+(72/72 runs) Pr(<> ...) in [0.950056,1] (95% CI)
+Values in [16.7532,25.6729] mean=21.1795 steps=0.991077: 4 6 9 13 11 13 5 5 6
+[2K
+Verifying formula 5 at TrainSaveEvaluate.q:16
+[2K -- Formula is satisfied.
+(2 runs) E(max) = ≈ 0
+
+Values in [0,0] mean=0 steps=1: 2
+[2K
+Verifying formula 6 at TrainSaveEvaluate.q:19
+ -- Throughput: 670603 runs/sec, Load: 4 runs[K -- Throughput: 725378 runs/sec, Load: 4 runs[K[2K -- Formula is satisfied.
+(105 runs)
+Learning statistics for best strategy: 
+	Number of resets: 0
+	Number of iterations in last reset: 1
+	Number of iterations in total: 1
+
+
+[2K
+Verifying formula 7 at TrainSaveEvaluate.q:22
+[2K -- Formula is satisfied.
+$v_gameInfoCounterPlay
+
+[2K
+Verifying formula 8 at TrainSaveEvaluate.q:25
+[2K -- Formula is satisfied.
+(2 runs) E(max) = ≈ 0
+
+Values in [0,0] mean=0 steps=1: 2
+[2K
+Verifying formula 9 at TrainSaveEvaluate.q:28
+[2K -- Formula is satisfied.
+(72/72 runs) Pr(<> ...) in [0.950056,1] (95% CI)
+Values in [16.5091,27.5197] mean=21.0762 steps=1.2234: 7 3 11 18 19 8 3 0 3
+[2K
+Verifying formula 10 at TrainSaveEvaluate.q:31
+[2K -- Formula is satisfied.
+(2 runs) E(max) = ≈ 0
+
+Values in [0,0] mean=0 steps=1: 2
+[2K
+Verifying formula 11 at TrainSaveEvaluate.q:34
+ -- Throughput: 699669 runs/sec, Load: 4 runs[K -- Throughput: 642591 runs/sec, Load: 4 runs[K[2K -- Formula is satisfied.
+(105 runs)
+Learning statistics for best strategy: 
+	Number of resets: 0
+	Number of iterations in last reset: 1
+	Number of iterations in total: 1
+
+
+[2K
+Verifying formula 12 at TrainSaveEvaluate.q:37
+[2K -- Formula is satisfied.
+$v_gameInfoCounterPlay
+
+[2K
+Verifying formula 13 at TrainSaveEvaluate.q:40
+[2K -- Formula is satisfied.
+(2 runs) E(max) = ≈ 0
+
+Values in [0,0] mean=0 steps=1: 2
+[2K
+Verifying formula 14 at TrainSaveEvaluate.q:43
+[2K -- Formula is satisfied.
+(72/72 runs) Pr(<> ...) in [0.950056,1] (95% CI)
+Values in [15.4983,28.8329] mean=20.8962 steps=1.48163: 6 8 11 14 18 8 6 0 1
+[2K
+Verifying formula 15 at TrainSaveEvaluate.q:46
+[2K -- Formula is satisfied.
+(2 runs) E(max) = ≈ 0
+
+Values in [0,0] mean=0 steps=1: 2
