@@ -187,6 +187,7 @@ Process = Template();
 system Process;
 </system>
 	<queries>
+		<option key="--epsilon" value="1.0E-4"/>
 		<query>
 			<formula>strategy LowCost = minE (total_cost + (t&gt;1)*1000) [#&lt;=30] {} -&gt; {x, t} : &lt;&gt; x&gt;=1 or t&gt;=1</formula>
 			<comment/>
