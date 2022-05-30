@@ -4,7 +4,7 @@
 E[<=120] (max:LearnerPlayer.fired)
 
 /* formula 3 */
-E[<=120] (max:number_deaths > 0)
+E[<=120] (max:number_deaths)
 
 /* formula 4 */
 E[<=120] (max:interventions)

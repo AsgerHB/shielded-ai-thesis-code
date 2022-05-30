@@ -10,7 +10,7 @@ saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code
 E[<=120] (max:LearnerPlayer.fired) under PreShielded
 
 /* formula 4 */
-E[<=120] (max:number_deaths > 0) under PreShielded
+E[<=120] (max:number_deaths) under PreShielded
 
 /* formula 5 */
 E[<=120] (max:interventions) under PreShielded

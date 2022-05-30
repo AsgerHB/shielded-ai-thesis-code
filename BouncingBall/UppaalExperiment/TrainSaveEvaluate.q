@@ -10,7 +10,7 @@ saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code
 E[<=120] (max:LearnerPlayer.fired) under DeathCosts1000
 
 /* formula 4 */
-E[<=120] (max:number_deaths > 0) under DeathCosts1000
+E[<=120] (max:number_deaths) under DeathCosts1000
 
 /* formula 5 */
 E[<=120] (max:interventions) under DeathCosts1000
@@ -25,7 +25,7 @@ saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code
 E[<=120] (max:LearnerPlayer.fired) under DeathCosts100
 
 /* formula 9 */
-E[<=120] (max:number_deaths > 0) under DeathCosts100
+E[<=120] (max:number_deaths) under DeathCosts100
 
 /* formula 10 */
 E[<=120] (max:interventions) under DeathCosts100
@@ -40,7 +40,7 @@ saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code
 E[<=120] (max:LearnerPlayer.fired) under DeathCosts10
 
 /* formula 14 */
-E[<=120] (max:number_deaths > 0) under DeathCosts10
+E[<=120] (max:number_deaths) under DeathCosts10
 
 /* formula 15 */
 E[<=120] (max:interventions) under DeathCosts10
