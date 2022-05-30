@@ -31,7 +31,7 @@ def run_experiment(experiment, model, queries, runs):
     os.system(f"mkdir -p {resultsdir}")
     
     # Command to run UPPAAL verifier
-    command = f"{uppaaldir}/bin/verifyta --max-iterations 1 --good-runs {runs} --total-runs {runs} --runs-pr-state {runs} {model} {queries}"
+    command = f"{uppaaldir}/bin/verifyta --epsilon 0.001 --max-iterations 1 --good-runs {runs} --total-runs {runs} --runs-pr-state {runs} {model} {queries}"
     print(f"        Running: {command}")
 
     queryresults = f"{resultsdir}/{experiment}.queryresults.txt"
@@ -69,7 +69,7 @@ if __name__ == "__main__":
                     runs = None)
 
     # The number of runs in it runs. The models they have more learning with more runs. Am tierd.
-    for runs in [200, 800, 1600]:
+    for runs in [1500, 3000, 6000]:
         run_experiment( experiment = "NoShield",
                         model = "BB__Unshielded.xml",    # shield_enabled = false
                         queries = "TrainSaveEvaluate.q", # Train a strategy, save it, then evaluate it.
