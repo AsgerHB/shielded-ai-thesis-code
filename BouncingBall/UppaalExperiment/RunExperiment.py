@@ -1,5 +1,6 @@
 import os
 import re
+from datetime import datetime
 
 uppaaldir = "/home/asger/Documents/Files/AAU/10.Semester/uppaal/uppaal-4.1.20-stratego-10-beta2-linux64"
 
@@ -32,7 +33,9 @@ def run_experiment(experiment, model, queries, runs):
     
     # Command to run UPPAAL verifier
     command = f"{uppaaldir}/bin/verifyta --epsilon 0.001 --max-iterations 1 --good-runs {runs} --total-runs {runs} --runs-pr-state {runs} {model} {queries}"
-    print(f"        Running: {command}")
+
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{timestamp}     Running: {command}")
 
     queryresults = f"{resultsdir}/{experiment}.queryresults.txt"
 
