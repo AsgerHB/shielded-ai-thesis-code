@@ -72,11 +72,13 @@ def cleanup_strategies(experiment, runs, iteration):
 
 
 if __name__ == "__main__":
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{timestamp}     Experiment started.")
     clear_results()
     os.system("rm -rd Results/*")
 
     # HARDCODED: The number of iterations it re-runs the experiment.
-    for i in range(2):
+    for i in range(5):
 
         # No learning occurs in the Layabout model, so it is only run once.
         run_experiment( experiment = "Layabout",
@@ -86,7 +88,7 @@ if __name__ == "__main__":
                         iteration = i)
 
         # HARDCODED: The number of runs in it runs. The models they have more learning with more runs. Am tierd.
-        for runs in  [2]: #[1500, 3000, 6000]:
+        for runs in  [1500, 3000, 6000]:
 
             run_experiment( experiment = "PreShielded",
                             model = "BB__Shielded.xml",      # shield_enabled = true
@@ -109,3 +111,7 @@ if __name__ == "__main__":
                             iteration = i)
 
             cleanup_strategies("NoShield", runs, i)
+
+
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"{timestamp}     All done.")
