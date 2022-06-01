@@ -7,18 +7,26 @@ uppaaldir = "/home/asger/Documents/Files/AAU/10.Semester/uppaal/uppaal-4.1.20-st
 
 
 def clear_results():
-    header = "Experiment;Runs;(Death costs 1000) Average cost;Probability of death;Expected Interventions;(Death costs 100) Average cost;Probability of death;Expected Interventions;(Death costs 10) Average cost;Probability of death;Expected Interventions"
+    header = "Experiment;Runs;Death Costs;Avg. Swings;Avg. Deaths;Avg. Interventions"
     print(header)
     os.system(f"echo '{header}' > Results.csv")
 
 
-
-def append_results(results_list):
+# As you can see in clear_results, a row consists of the experiment done, the number of runs, the cost of death and then the results: average swings, deaths and interventions.
+# A query file will either have a non-applicable cost of death, or it will spit out results for all three variations at once.
+# So if I get 9 values, that means its the results for the 3 tiers of what a death costs. 
+def append_results(experiment, runs, values, death_costs="-"):
     # Pad the list so that it has 11 elements
-    if len(results_list) < 11:
-        results_list += [''] * (11 - len(results_list))
+    if len(values) == 9:
+        append_results(experiment, runs, values[0:3], death_costs="1000")
+        append_results(experiment, runs, values[3:6], death_costs="100")
+        append_results(experiment, runs, values[6:9], death_costs="10")
+        return
+    elif len(values) != 3:
+        print("Unexpected number of values passed to append_results!")
     
-    results_csv = ";".join(results_list)
+    row = [experiment, runs, death_costs, *values]
+    results_csv = ";".join(row)
     print(results_csv)
     os.system(f"echo '{results_csv}' >> Results.csv")
 
@@ -45,17 +53,17 @@ def run_experiment(experiment, model, queries, runs):
     os.system(f"{command} >> {queryresults}")
 
     # Do regex on the queryresults and save the mean values using append_results.
-    csvline = [experiment, str(runs)]
+    extracted_queryresults = []
     with open(queryresults, "r") as f:
         for line in f:
-            csvline += pattern.findall(line)
-    append_results(csvline)
+            extracted_queryresults += pattern.findall(line)
+    append_results(experiment, str(runs), extracted_queryresults)
 
 
 
 # Move the strategies into ther correct folder. 
 # Can't be done in the run_experiment step since I need the unshielded strategies for the post-shielding experiment.
-def cleanup_strategies( experiment, model):
+def cleanup_strategies(experiment):
     resultsdir = f"Results/{experiment}/{runs}Runs"
     os.system(f"mv Results/*.strategy.json {resultsdir}")
 
@@ -72,22 +80,23 @@ if __name__ == "__main__":
                     runs = None)
 
     # The number of runs in it runs. The models they have more learning with more runs. Am tierd.
-    for runs in [1500, 3000, 6000]:
+    for runs in  [2]: #[1500, 3000, 6000]:
+
+        run_experiment( experiment = "PreShielded",
+                        model = "BB__Shielded.xml",      # shield_enabled = true
+                        queries = "TrainSaveEvaluateSingle.q", # Train a strategy, save it, then evaluate it.
+                        runs = runs)
+
+        cleanup_strategies( experiment = "PreShielded")
+        
         run_experiment( experiment = "NoShield",
                         model = "BB__Unshielded.xml",    # shield_enabled = false
                         queries = "TrainSaveEvaluate.q", # Train a strategy, save it, then evaluate it.
                         runs = runs)
 
-        run_experiment( experiment = "PreShielded",
+        run_experiment( experiment = "PostShielded",
                         model = "BB__Shielded.xml",      # shield_enabled = true
                         queries = "LoadEvaluate.q",      # Load the previous strategy, then evaluate it.
                         runs = runs)
 
         cleanup_strategies( experiment = "NoShield", model = "BB__Unshielded.xml")
-
-        run_experiment( experiment = "PostShielded",
-                        model = "BB__Shielded.xml",      # shield_enabled = true
-                        queries = "TrainSaveEvaluateSingle.q", # Train a strategy, save it, then evaluate it.
-                        runs = runs)
-
-        cleanup_strategies( experiment = "PostShielded", model = "BB__Shielded.xml")
