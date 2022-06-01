@@ -7,10 +7,10 @@ strategy PreShielded = minE (LearnerPlayer.fired + number_deaths*1000 ) [<=120] 
 saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/BouncingBall/UppaalExperiment/Results/PreShielded.strategy.json", PreShielded)
 
 /* formula 3 */
-E[<=120] (max:LearnerPlayer.fired) under PreShielded
+E[<=120;1000] (max:LearnerPlayer.fired) under PreShielded
 
 /* formula 4 */
-E[<=120] (max:number_deaths) under PreShielded
+E[<=120;1000] (max:number_deaths) under PreShielded
 
 /* formula 5 */
-E[<=120] (max:interventions) under PreShielded
+E[<=120;1000] (max:interventions) under PreShielded
