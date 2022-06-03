@@ -24,14 +24,16 @@ def append_results(experiment, runs, values, death_costs="-"):
         append_results(experiment, runs, values[6:9], death_costs="10")
         return
     elif len(values) != 3:
-        print("Unexpected number of values passed to append_results!")
+        print(f"DROPPED INCONSISTENT ROW: {','.join(row)}")
+        return
     
     row = [experiment, runs, death_costs, *values]
     results_csv = ";".join(row)
     print(results_csv)
     os.system(f"echo '{results_csv}' >> Results.csv")
 
-pattern = re.compile("mean=([\d.]+)")
+re_mean = re.compile("mean=([\d.]+)")
+re_timelocked = re.compile("time locked")
 
 def get_resultsdir(experiment, runs, iteration):
     return f"Results/{iteration}/{experiment}/{runs}Runs" if runs != None else f"Results/{experiment}"
@@ -55,11 +57,19 @@ def run_experiment(experiment, model, queries, runs, iteration):
     os.system(f"{command} >> {queryresults}")
 
     # Do regex on the queryresults and save the mean values using append_results.
+    # Some kind of time lock occurs which messes up the results. If a time lock happens, I have to discard that query
+    timelock = False
     extracted_queryresults = []
     with open(queryresults, "r") as f:
         for line in f:
-            extracted_queryresults += pattern.findall(line)
-    append_results(experiment, str(runs), extracted_queryresults)
+            extracted_queryresults += re_mean.findall(line)
+            if re.search(re_timelocked, line):
+                timelock = True
+                break
+    if not timelock:
+        append_results(experiment, str(runs), extracted_queryresults)
+    else:
+        print("DROPPED RESULTS BECAUSE OF THAT BLOODY TIME LOCK")
 
 
 
