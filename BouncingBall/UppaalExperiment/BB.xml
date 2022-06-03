@@ -62,14 +62,17 @@ int shield(int action) {
 		<declaration>// Place local declarations here.
 </declaration>
 		<location id="id0" x="297" y="-34">
+			<name x="314" y="42">Location2</name>
 			<label kind="invariant" x="263" y="-93">v' == -9.81 &amp;&amp;
 p' == v</label>
 			<label kind="exponentialrate" x="289" y="-110">1</label>
 		</location>
 		<location id="id1" x="-110" y="-34">
+			<name x="-120" y="-68">Location1</name>
 			<urgent/>
 		</location>
 		<location id="id2" x="-110" y="246">
+			<name x="-119" y="263">Location3</name>
 			<committed/>
 		</location>
 		<init ref="id1"/>
@@ -122,13 +125,16 @@ v=0, p=0</label>
 		<declaration>clock x;
 int fired;</declaration>
 		<location id="id9" x="0" y="8">
+			<name x="-8" y="68">Location6</name>
 			<label kind="invariant" x="-8" y="25">x &lt;= 1 &amp;&amp;
 x' == 10</label>
 		</location>
 		<location id="id10" x="0" y="-93">
+			<name x="93" y="-102">Location5</name>
 			<committed/>
 		</location>
 		<location id="id11" x="0" y="-272">
+			<name x="-10" y="-306">Location4</name>
 			<committed/>
 		</location>
 		<init ref="id9"/>
