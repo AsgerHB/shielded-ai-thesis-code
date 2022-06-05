@@ -8,9 +8,10 @@ uppaaldir = "/home/asger/Documents/Files/AAU/10.Semester/uppaal/uppaal-4.1.20-st
 
 
 def clear_results():
+    os.system("rm -rd Results/*") # Danger-zone.
     header = "Experiment;Runs;Death Costs;Avg. Swings;Avg. Deaths;Avg. Interventions"
     print(header)
-    os.system(f"echo '{header}' > Results.csv")
+    os.system(f"echo '{header}' > Results/Results.csv")
 
 
 # As you can see in clear_results, a row consists of the experiment done, the number of runs, the cost of death and then the results: average swings, deaths and interventions.
@@ -24,19 +25,19 @@ def append_results(experiment, runs, values, death_costs="-"):
         append_results(experiment, runs, values[6:9], death_costs="10")
         return
     elif len(values) != 3:
-        print(f"DROPPED INCONSISTENT ROW: {','.join(row)}")
+        print(f"DROPPED INCONSISTENT ROW: {','.join(values)}")
         return
     
     row = [experiment, runs, death_costs, *values]
     results_csv = ";".join(row)
     print(results_csv)
-    os.system(f"echo '{results_csv}' >> Results.csv")
+    os.system(f"echo '{results_csv}' >> Results/Results.csv")
 
 re_mean = re.compile("mean=([\d.]+)")
 re_timelocked = re.compile("time locked")
 
 def get_resultsdir(experiment, runs, iteration):
-    return f"Results/{iteration}/{experiment}/{runs}Runs" if runs != None else f"Results/{experiment}"
+    return f"Results/{iteration}/{experiment}/{runs}Runs" if runs != None else f"Results/{iteration}/{experiment}"
 
 def run_experiment(experiment, model, queries, runs, iteration):
     resultsdir = get_resultsdir(experiment, runs, iteration)
@@ -85,7 +86,6 @@ if __name__ == "__main__":
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"{timestamp}     Experiment started.")
     clear_results()
-    os.system("rm -rd Results/*")
 
     # HARDCODED: The number of iterations it re-runs the experiment.
     for i in range(10):
