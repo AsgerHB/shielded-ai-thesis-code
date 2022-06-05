@@ -88,7 +88,7 @@ if __name__ == "__main__":
     os.system("rm -rd Results/*")
 
     # HARDCODED: The number of iterations it re-runs the experiment.
-    for i in range(5):
+    for i in range(10):
 
         # No learning occurs in the Layabout model, so it is only run once.
         run_experiment( experiment = "Layabout",
@@ -98,7 +98,7 @@ if __name__ == "__main__":
                         iteration = i)
 
         # HARDCODED: The number of runs in it runs. The models they have more learning with more runs. Am tierd.
-        for runs in  [1500, 3000, 6000]:
+        for runs in  [1500, 3000, 6000, 12000]:
 
             run_experiment( experiment = "PreShielded",
                             model = "BB__Shielded.xml",      # shield_enabled = true
