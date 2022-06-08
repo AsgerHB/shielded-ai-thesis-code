@@ -152,9 +152,9 @@ end)
 
 # ╔═╡ d13faa16-897a-4d01-9b14-ff6d03f4a592
 md"""
-Marker Size: $(@bind marker_size NumberField(1:30, default=6))
+Marker Size: $(@bind marker_size NumberField(1:30, default=8))
 
-Line Width: $(@bind line_width NumberField(1:30, default=2))
+Line Width: $(@bind line_width NumberField(1:30, default=4))
 """
 
 # ╔═╡ d19884c3-a3c9-4df0-8220-7f1707cfe5ca
