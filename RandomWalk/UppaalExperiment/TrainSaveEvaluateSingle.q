@@ -13,4 +13,4 @@ E[#<=30;1000] (max:total_cost) under PreShielded
 E[#<=30;100000] (max:t>1) under PreShielded
 
 /* formula 5 */
-E[#<=30;1000] (max:interventions) under PreShielded
+E[#<=30;1000] (max:interventions/steps) under PreShielded

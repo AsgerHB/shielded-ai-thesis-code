@@ -10,7 +10,7 @@ E[#<=30;1000] (max:total_cost) under DeatCosts1000
 E[#<=30;100000] (max:t>1) under DeatCosts1000
 
 /* formula 4 */
-E[#<=30;1000] (max:interventions) under DeatCosts1000
+E[#<=30;1000] (max:interventions/steps) under DeatCosts1000
 
 /* formula 5 */
 strategy DeatCosts100 = loadStrategy {} -> {x, t}  ("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/RandomWalk/UppaalExperiment/Results/DeathCosts100.strategy.json")
@@ -22,7 +22,7 @@ E[#<=30;1000] (max:total_cost) under DeatCosts100
 E[#<=30;100000] (max:t>1) under DeatCosts100
 
 /* formula 8 */
-E[#<=30;1000] (max:interventions) under DeatCosts100
+E[#<=30;1000] (max:interventions/steps) under DeatCosts100
 
 /* formula 9 */
 strategy DeatCosts10 = loadStrategy {} -> {x, t}  ("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code/RandomWalk/UppaalExperiment/Results/DeathCosts10.strategy.json")
@@ -34,5 +34,5 @@ E[#<=30;1000] (max:total_cost) under DeatCosts10
 E[#<=30;100000] (max:t>1) under DeatCosts10
 
 /* formula 12 */
-E[#<=30;1000] (max:interventions) under DeatCosts10
+E[#<=30;1000] (max:interventions/steps) under DeatCosts10
 

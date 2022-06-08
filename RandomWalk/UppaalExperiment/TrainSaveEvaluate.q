@@ -14,7 +14,7 @@ E[#<=30;1000] (max:total_cost) under DeathCosts1000
 E[#<=30;100000] (max:t>1) under DeathCosts1000
 
 /* formula 5 */
-E[#<=30;1000] (max:interventions) under DeathCosts1000
+E[#<=30;1000] (max:interventions/steps) under DeathCosts1000
 
 /* formula 6 */
 strategy DeathCosts100 = minE (total_cost + (t>1)*100) [#<=30] {} -> {x, t} : <> x>=1 or t>=1
@@ -29,7 +29,7 @@ E[#<=30;1000] (max:total_cost) under DeathCosts100
 E[#<=30;100000] (max:t>1) under DeathCosts100
 
 /* formula 10 */
-E[#<=30;1000] (max:interventions) under DeathCosts100
+E[#<=30;1000] (max:interventions/steps) under DeathCosts100
 
 /* formula 11 */
 strategy DeathCosts10 = minE (total_cost + (t>1)*10) [#<=30] {} -> {x, t} : <> x>=1 or t>=1
@@ -44,5 +44,5 @@ E[#<=30;1000] (max:total_cost) under DeathCosts10
 E[#<=30;100000] (max:t>1) under DeathCosts10
 
 /* formula 15 */
-E[#<=30;1000] (max:interventions) under DeathCosts10
+E[#<=30;1000] (max:interventions/steps) under DeathCosts10
 
