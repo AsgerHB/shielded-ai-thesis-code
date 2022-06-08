@@ -110,7 +110,7 @@ begin
 		avg_interventions_description = "Average interventions per 120s"
 	else
 		avg_cost_description = "Average cost per run"
-		avg_deaths_description = "Percent of runs lost"
+		avg_deaths_description = "% runs lost"
 		avg_interventions_description = "Average interventions per run"
 	end
 	nothing
@@ -129,6 +129,11 @@ begin
 	cleandata = select(cleandata, [:Experiment, :Death_Costs, :Runs, :Avg_Cost, :Avg_Deaths, :Avg_Interventions])
 	cleandata = sort(cleandata, [:Experiment, :Death_Costs, :Runs])
 	cleandata = sort(cleandata, [:Experiment], by=experiment_order)
+
+	if problem == :RW
+		# Turn fraction died into percentages
+		cleandata = transform(cleandata, :Avg_Deaths => x -> x*100, renamecols=false)
+	end
 	cleandata
 end
 
@@ -186,11 +191,11 @@ call(() -> begin
 	transform!(df, :Runs => r -> string.(r), renamecols=false)
 	@df df plot!(:Runs, :Avg_Cost, 
 		group=:Experiment,
-		markershape=:circle,
+		markershape=:star,
 		markerstrokewidth=1,
 		markerstrokecolor=:white,
 		linewidth=line_width,
-		markersize=marker_size+2,
+		markersize=marker_size+4,
 		color=colortheme[1],)
 	
 	## Layabout ##
@@ -239,6 +244,7 @@ call(() -> begin
 		#yscale=:log,
 		xlabel="d",
 		bar_width=0.7,
+		ylims=lims,
 		ylabel=avg_deaths_description)
 end)
 
@@ -280,7 +286,8 @@ call(() -> begin
 		bar_width=0.2,
 		xlabel="d",
 		ylims=lims,
-		ylabel=avg_interventions_description)
+		ylabel=avg_interventions_description,
+		legend=:none)
 end)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
