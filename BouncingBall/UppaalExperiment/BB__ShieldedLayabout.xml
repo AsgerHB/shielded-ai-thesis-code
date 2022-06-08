@@ -109,9 +109,9 @@ v=0, p=0</label>
 		<transition id="id7" controllable="false">
 			<source ref="id0"/>
 			<target ref="id2"/>
-			<label kind="guard" x="34" y="204">p == 0 &amp;&amp; v &lt;= 0</label>
+			<label kind="guard" x="34" y="204">p &lt;= 0 &amp;&amp; v &lt;= 0</label>
 			<label kind="synchronisation" x="68" y="187">bounce!</label>
-			<label kind="assignment" x="-34" y="221">v = -(0.91 - 0.06 + random(2*0.06))*v</label>
+			<label kind="assignment" x="-68" y="221">v = -(0.91 - 0.06 + random(2*0.06))*v, p = 0</label>
 			<nail x="289" y="246"/>
 		</transition>
 		<transition id="id8" controllable="false">
@@ -168,7 +168,7 @@ x' == 10</label>
 		<transition id="id16" controllable="false">
 			<source ref="id9"/>
 			<target ref="id10"/>
-			<label kind="guard" x="8" y="-51">x == 1</label>
+			<label kind="guard" x="8" y="-51">x &gt;= 1</label>
 			<label kind="assignment" x="8" y="-68">x = 0</label>
 		</transition>
 	</template>
