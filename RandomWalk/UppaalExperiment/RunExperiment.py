@@ -8,7 +8,7 @@ uppaaldir = "/home/asger/Documents/Files/AAU/10.Semester/uppaal/uppaal-4.1.20-st
 
 
 def clear_results():
-    os.system("rm -rd Results/*") # Danger-zone.
+    os.system("rm -rd Results/*") # Danger-zone. # I can comment out these lines to parse the same results again
     header = "Experiment;Runs;Death Costs;Avg. Cost;Avg. Deaths;Avg. Interventions"
     print(header)
     os.system(f"echo '{header}' > Results/Results.csv")
@@ -32,7 +32,7 @@ def append_results(experiment, runs, values, death_costs="-"):
     print(results_csv)
     os.system(f"echo '{results_csv}' >> Results/Results.csv")
 
-re_mean = re.compile("mean=([\d.]+)")
+re_mean = re.compile("mean=([\d.e-]+)")
 re_timelocked = re.compile("time-locked")
 
 def get_resultsdir(experiment, runs, iteration):
@@ -41,7 +41,7 @@ def get_resultsdir(experiment, runs, iteration):
 def run_experiment(experiment, model, queries, runs, iteration):
     resultsdir = get_resultsdir(experiment, runs, iteration)
     runs = runs or 0
-    os.system(f"mkdir -p {resultsdir}")
+    os.system(f"mkdir -p {resultsdir}") # I can comment out these lines to parse the same results again
     
     # Command to run UPPAAL verifier
     command = f"{uppaaldir}/bin/verifyta -s --epsilon 0.001 --max-iterations 1 --good-runs {runs} --total-runs {runs} --runs-pr-state {runs} {model} {queries}"
@@ -52,9 +52,9 @@ def run_experiment(experiment, model, queries, runs, iteration):
     queryresults = f"{resultsdir}/{experiment}.queryresults.txt"
 
     # Save the query so we know what we just ran
-    os.system(f"cat {queries} > {queryresults}")
+    os.system(f"cat {queries} > {queryresults}") # I can comment out these lines to parse the same results again
     # Run the command and save append it to the queryresults file.
-    os.system(f"{command} >> {queryresults}")
+    os.system(f"{command} >> {queryresults}") # I can comment out these lines to parse the same results again
 
     # Do regex on the queryresults and save the mean values using append_results.
     # Some kind of time lock occurs which messes up the results. If a time lock happens, I have to discard that query
@@ -77,7 +77,7 @@ def run_experiment(experiment, model, queries, runs, iteration):
 # Can't be done in the run_experiment step since I need the unshielded strategies for the post-shielding experiment.
 def cleanup_strategies(experiment, runs, iteration):
     resultsdir = get_resultsdir(experiment, runs, iteration)
-    os.system(f"mv Results/*.strategy.json {resultsdir}")
+    os.system(f"mv Results/*.strategy.json {resultsdir}") # I can comment out these lines to parse the same results again
 
 
 
