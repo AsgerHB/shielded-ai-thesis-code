@@ -79,6 +79,18 @@ if selected_file == nothing
 	md"# Please select file"
 end
 
+# ╔═╡ 2bb947a6-9927-4793-a9b1-ce19bd429624
+function experiment_order(a)
+	order = ["Layabout", "PreShielded", "NoShield", "PostShielded"]
+	return findall(==(a), order)[1]
+end
+
+# ╔═╡ 5dc4f261-5e46-4914-948b-0c45b9443a44
+selected_file
+
+# ╔═╡ bba93717-6370-417d-8b12-01d006623c6a
+rawdata = CSV.read(selected_file["data"], normalizenames=true, DataFrame)
+
 # ╔═╡ 42653c51-27fa-4ead-bf9e-4ef2646b4255
 md"""
 Looks like I can use this file for both BB results and RW results.
@@ -98,17 +110,11 @@ begin
 		avg_interventions_description = "Average interventions per 120s"
 	else
 		avg_cost_description = "Average cost per run"
-		avg_deaths_description = "Average runs lost"
+		avg_deaths_description = "Percent of runs lost"
 		avg_interventions_description = "Average interventions per run"
 	end
 	nothing
 end
-
-# ╔═╡ 5dc4f261-5e46-4914-948b-0c45b9443a44
-selected_file
-
-# ╔═╡ bba93717-6370-417d-8b12-01d006623c6a
-rawdata = CSV.read(selected_file["data"], normalizenames=true, DataFrame)
 
 # ╔═╡ b842083d-b6c0-49bb-9243-e03b2a65bfe2
 begin
@@ -119,16 +125,20 @@ begin
 	if problem == :BB
 		cleandata = rename(cleandata, :Avg_Swings => :Avg_Cost)
 	end
+	
+	cleandata = select(cleandata, [:Experiment, :Death_Costs, :Runs, :Avg_Cost, :Avg_Deaths, :Avg_Interventions])
+	cleandata = sort(cleandata, [:Experiment, :Death_Costs, :Runs])
+	cleandata = sort(cleandata, [:Experiment], by=experiment_order)
+	cleandata
 end
 
 # ╔═╡ 7904c209-eeea-4243-beb4-0e5a7fd47a56
 medians = 
 call(() -> begin
-	grouping =  groupby(cleandata, [:Experiment, :Runs, :Death_Costs])
+	grouping =  groupby(cleandata, [:Experiment, :Death_Costs, :Runs ])
 	medians = combine(grouping, 
 		:Avg_Cost => median, :Avg_Deaths => median, :Avg_Interventions => median,
 		renamecols=false)
-	medians = sort(medians, [:Experiment, :Death_Costs, :Runs])
 end)
 
 # ╔═╡ e0444e2e-0e77-4e5a-ac1e-64db46f2558f
@@ -154,9 +164,9 @@ end)
 
 # ╔═╡ d13faa16-897a-4d01-9b14-ff6d03f4a592
 md"""
-Marker Size: $(@bind marker_size NumberField(1:30, default=8))
+Marker Size: $(@bind marker_size NumberField(1:30, default=12))
 
-Line Width: $(@bind line_width NumberField(1:30, default=4))
+Line Width: $(@bind line_width NumberField(1:30, default=5))
 """
 
 # ╔═╡ d19884c3-a3c9-4df0-8220-7f1707cfe5ca
@@ -176,11 +186,12 @@ call(() -> begin
 	transform!(df, :Runs => r -> string.(r), renamecols=false)
 	@df df plot!(:Runs, :Avg_Cost, 
 		group=:Experiment,
-		markershape=:square,
-		markerstrokewidth=0,
+		markershape=:circle,
+		markerstrokewidth=1,
+		markerstrokecolor=:white,
 		linewidth=line_width,
-		markersize=marker_size,
-		color=colors.PUMPKIN,)
+		markersize=marker_size+2,
+		color=colortheme[1],)
 	
 	## Layabout ##
 	layabout_row = filter(:Experiment => ==("Layabout"), medians)
@@ -201,56 +212,16 @@ call(() -> begin
 	rename!(df, :Experiment_Death_Costs => :Label)
 	sort!(df, :Runs)
 	transform!(df, :Runs => r -> string.(r), renamecols=false)
+	c1, c2 = colortheme[2], colortheme[3]
 	@df df plot!(:Runs, :Avg_Cost, 
 		group=:Label,
-		markershape=[:diamond :hexagon :circle  :star4 :star6 :star8],
-		markerstrokewidth=0,
+		markershape=[:utriangle :diamond :pentagon :utriangle :diamond :pentagon],
+		markerstrokewidth=1,
+		markerstrokecolor=:white,
+		color=[c1 c1 c1 c2 c2 c2],
 		linewidth=line_width,
 		markersize=marker_size,
-		color=[colors.GREEN_SEA colors.EMERALD colors.NEPHRITIS colors.PETER_RIVER colors.BELIZE_HOLE colors.WISTERIA])
-	
-end)
-
-# ╔═╡ f1a5f5b1-17fd-4ac9-8ab2-cffeaa2e1613
-call(() -> begin
-	plot()
-
-	## Pre-shielded ##
-	df = DataFrame(medians)
-	filter!(:Experiment => e -> e == "PreShielded", df)
-	sort!(df, :Runs)
-	transform!(df, :Runs => r -> string.(r), renamecols=false)
-	@df df plot!(:Runs, :Avg_Cost, 
-		group=:Experiment,
-		markershape=:square,
-		markerstrokewidth=0,
-		linewidth=line_width,
-		markersize=marker_size,
-		color=colors.PUMPKIN,
-		xlabel="Training runs",
-		ylabel=avg_cost_description)
-
-	## Post-shielded & no shield ##
-	
-	df = DataFrame(medians)
-	filter!([:Experiment, :Death_Costs] => (e, d) ->  e == "NoShield" && d != "10", df)
-	#filter!([:Experiment, :Death_Costs] => (e, d) -> d != "-" || e != "NoShield", df)
-	make_label(experiment, d) = "$experiment d=$d"
-	transform!(df, [:Experiment, :Death_Costs] => ByRow(make_label), renamecols=false)
-	rename!(df, :Experiment_Death_Costs => :Label)
-	sort!(df, :Runs)
-	transform!(df, :Runs => r -> string.(r), renamecols=false)
-	@df df plot!(:Runs, :Avg_Cost, 
-		group=:Label,
-		markershape=[:diamond :pentagon :circle  :star4 :star6 :star8],
-		markerstrokewidth=0,
-		linewidth=line_width,
-		markersize=marker_size,
-		color=[colors.GREEN_SEA colors.EMERALD colors.NEPHRITIS colors.PETER_RIVER colors.BELIZE_HOLE colors.WISTERIA],
-		legend_position=:topright,
-		xlabel="Training runs",
-		ylabel=avg_cost_description)
-	
+	)
 end)
 
 # ╔═╡ 439297f0-8945-43c8-9141-e04dac3e94ee
@@ -273,24 +244,30 @@ end)
 
 # ╔═╡ 119d6b3e-d8fb-4206-93b0-2e6dc848ac5e
 call(() -> begin
-	df = DataFrame(medians)
-	filter!(:Experiment => ==("NoShield"), df)
-	#df = transform(df, :Runs => ByRow(r -> "$r runs"), renamecols=false)
-	#sort!(df, :Runs)
-	
-	@df df groupedbar(:Death_Costs, :Avg_Deaths, 
-		group=:Runs,
-		color=colortheme,
-		linecolor=colortheme,
-		#yscale=:log,
-		xlabel="d",
-		ylims=(0, 0.25),
-		bar_width=0.7,
-		ylabel=avg_deaths_description)
+	if problem == :BB
+		df = DataFrame(medians)
+		filter!(:Experiment => ==("NoShield"), df)
+		#df = transform(df, :Runs => ByRow(r -> "$r runs"), renamecols=false)
+		#sort!(df, :Runs)
+		
+		@df df groupedbar(:Death_Costs, :Avg_Deaths, 
+			group=:Runs,
+			color=colortheme,
+			linecolor=colortheme,
+			#yscale=:log,
+			xlabel="d",
+			ylims=lims,
+			bar_width=0.7,
+			ylabel=avg_deaths_description)
+	end
 end)
 
 # ╔═╡ 61bd91fc-6b0f-4fa5-a3dc-ea0f87c06cf1
 call(() -> begin
+	lims = Nothing
+	if problem == :BB
+		lims = (0,70)
+	end
 	df = DataFrame(medians)
 	filter!(:Experiment => ==("PostShielded"), df)
 	#df = transform(df, :Runs => ByRow(r -> "$r runs"), renamecols=false)
@@ -302,7 +279,7 @@ call(() -> begin
 		yscale=:none,
 		bar_width=0.2,
 		xlabel="d",
-		ylims=(0, 70),
+		ylims=lims,
 		ylabel=avg_interventions_description)
 end)
 
@@ -1551,17 +1528,17 @@ version = "0.9.1+5"
 # ╟─e8653f6f-19df-40ba-9633-82726b6b57a8
 # ╟─d4cac18b-1bf1-477d-84e1-ace714fc9967
 # ╟─e0c5c3e6-7fbc-449a-96b2-aadd647728d9
-# ╠═42653c51-27fa-4ead-bf9e-4ef2646b4255
+# ╠═2bb947a6-9927-4793-a9b1-ce19bd429624
 # ╠═74c5ce02-5171-425a-9bbd-14eb60c77504
 # ╠═5dc4f261-5e46-4914-948b-0c45b9443a44
 # ╠═bba93717-6370-417d-8b12-01d006623c6a
-# ╟─b842083d-b6c0-49bb-9243-e03b2a65bfe2
+# ╟─42653c51-27fa-4ead-bf9e-4ef2646b4255
+# ╠═b842083d-b6c0-49bb-9243-e03b2a65bfe2
 # ╠═7904c209-eeea-4243-beb4-0e5a7fd47a56
 # ╠═e0444e2e-0e77-4e5a-ac1e-64db46f2558f
 # ╠═829001ce-9f0b-45d2-88b6-d54c372f820d
 # ╟─d13faa16-897a-4d01-9b14-ff6d03f4a592
 # ╠═d19884c3-a3c9-4df0-8220-7f1707cfe5ca
-# ╠═f1a5f5b1-17fd-4ac9-8ab2-cffeaa2e1613
 # ╠═439297f0-8945-43c8-9141-e04dac3e94ee
 # ╠═119d6b3e-d8fb-4206-93b0-2e6dc848ac5e
 # ╠═61bd91fc-6b0f-4fa5-a3dc-ea0f87c06cf1
