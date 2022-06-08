@@ -11,7 +11,7 @@ saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code
 E[#<=30;1000] (max:total_cost) under DeathCosts1000
 
 /* formula 4 */
-E[#<=30;1000] (max:t>1) under DeathCosts1000
+E[#<=30;100000] (max:t>1) under DeathCosts1000
 
 /* formula 5 */
 E[#<=30;1000] (max:interventions) under DeathCosts1000
@@ -26,7 +26,7 @@ saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code
 E[#<=30;1000] (max:total_cost) under DeathCosts100
 
 /* formula 9 */
-E[#<=30;1000] (max:t>1) under DeathCosts100
+E[#<=30;100000] (max:t>1) under DeathCosts100
 
 /* formula 10 */
 E[#<=30;1000] (max:interventions) under DeathCosts100
@@ -41,7 +41,7 @@ saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code
 E[#<=30;1000] (max:total_cost) under DeathCosts10
 
 /* formula 14 */
-E[#<=30;1000] (max:t>1) under DeathCosts10
+E[#<=30;100000] (max:t>1) under DeathCosts10
 
 /* formula 15 */
 E[#<=30;1000] (max:interventions) under DeathCosts10

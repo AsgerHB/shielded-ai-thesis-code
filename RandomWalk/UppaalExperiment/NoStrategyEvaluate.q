@@ -4,7 +4,7 @@
 E[#<=30;1000] (max:total_cost)
 
 /* formula 2 */
-E[#<=30;1000] (max:t>1)
+E[#<=30;100000] (max:t>1)
 
 /* formula 3 */
 E[#<=30;1000] (max:interventions)

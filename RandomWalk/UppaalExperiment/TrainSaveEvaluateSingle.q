@@ -10,7 +10,7 @@ saveStrategy("/home/asger/Documents/Files/AAU/10.Semester/Speciale/Speciale-Code
 E[#<=30;1000] (max:total_cost) under PreShielded
 
 /* formula 4 */
-E[#<=30;1000] (max:t>1) under PreShielded
+E[#<=30;100000] (max:t>1) under PreShielded
 
 /* formula 5 */
 E[#<=30;1000] (max:interventions) under PreShielded
