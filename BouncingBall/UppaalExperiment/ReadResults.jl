@@ -85,7 +85,9 @@ Looks like I can use this file for both BB results and RW results.
 Only difference is if I have "Average swings" or "Average cost." 
 
 I will see if I can't be clever about this:
-$(@bind problem Radio(["BB" => :BB, "RW" => :RW], default="RW"))
+
+Select data type:
+$(@bind problem Select([:BB => "BB", :RW => "RW"], default=:RW))
 """
 
 # ╔═╡ 74c5ce02-5171-425a-9bbd-14eb60c77504
@@ -115,7 +117,7 @@ begin
 		rawdata)
 
 	if problem == :BB
-		cleandata = rename(cleandata, :Avg_Swings => Avg_Cost)
+		cleandata = rename(cleandata, :Avg_Swings => :Avg_Cost)
 	end
 end
 
