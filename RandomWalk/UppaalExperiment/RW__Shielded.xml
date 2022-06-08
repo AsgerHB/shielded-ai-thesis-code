@@ -68,17 +68,6 @@ const double tau_fast = 0.05;
 const double delta_slow = 0.1;
 const double tau_slow = 0.12;
 
-
-int steps = 1; // Total number of steps taken. Has to start at one to prevent division by zero
-int actual_steps = 0;
-
-void increase_steps() {
-    actual_steps++;
-    if (actual_steps &gt; 0) {
-        steps = actual_steps;
-    }
-}
-
 double total_cost = 0.0; 
 
 void updateFast() {
@@ -90,7 +79,6 @@ void updateFast() {
         t = t + tau_fast - epsilon + random(2*epsilon);
     }
     total_cost = total_cost + cost_function(x, t, FAST);
-    increase_steps();
 }
 
 
@@ -103,7 +91,6 @@ void updateSlow() {
         t = t + tau_slow - epsilon + random(2*epsilon);
     }
     total_cost = total_cost + cost_function(x, t, SLOW);
-    increase_steps();
 }
 
 /* Shielding */
@@ -226,7 +213,7 @@ system Process;
 			<comment/>
 		</query>
 		<query>
-			<formula>E[#&lt;=30;100] (max:interventions/steps)</formula>
+			<formula>E[#&lt;=30;100] (max:interventions)</formula>
 			<comment/>
 		</query>
 		<query>
