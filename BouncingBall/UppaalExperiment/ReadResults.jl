@@ -172,8 +172,8 @@ call(() -> begin
 	## Pre-shielded ##
 	df = DataFrame(medians)
 	filter!(:Experiment => e -> e == "PreShielded", df)
+	sort!(df, :Runs)
 	transform!(df, :Runs => r -> string.(r), renamecols=false)
-	sort!(df, :Runs, lt=(a, b)->(parse(Int, a) < parse(Int, b)))
 	@df df plot!(:Runs, :Avg_Cost, 
 		group=:Experiment,
 		markershape=:square,
@@ -196,14 +196,14 @@ call(() -> begin
 	df = DataFrame(medians)
 	filter!(:Experiment => e -> e == "PostShielded" || e == "NoShield", df)
 	#filter!([:Experiment, :Death_Costs] => (e, d) -> d != "-" || e != "NoShield", df)
-	transform!(df, :Runs => r -> string.(r), renamecols=false)
 	make_label(experiment, d) = "$experiment d=$d"
 	transform!(df, [:Experiment, :Death_Costs] => ByRow(make_label), renamecols=false)
 	rename!(df, :Experiment_Death_Costs => :Label)
-	sort!(df, :Runs, lt=(a, b)->(parse(Int, a) < parse(Int, b)))
+	sort!(df, :Runs)
+	transform!(df, :Runs => r -> string.(r), renamecols=false)
 	@df df plot!(:Runs, :Avg_Cost, 
 		group=:Label,
-		markershape=[:circle :octagon :pentagon :star4 :star6 :star8],
+		markershape=[:diamond :hexagon :circle  :star4 :star6 :star8],
 		markerstrokewidth=0,
 		linewidth=line_width,
 		markersize=marker_size,
@@ -218,8 +218,8 @@ call(() -> begin
 	## Pre-shielded ##
 	df = DataFrame(medians)
 	filter!(:Experiment => e -> e == "PreShielded", df)
+	sort!(df, :Runs)
 	transform!(df, :Runs => r -> string.(r), renamecols=false)
-	sort!(df, :Runs, lt=(a, b)->(parse(Int, a) < parse(Int, b)))
 	@df df plot!(:Runs, :Avg_Cost, 
 		group=:Experiment,
 		markershape=:square,
@@ -235,14 +235,14 @@ call(() -> begin
 	df = DataFrame(medians)
 	filter!([:Experiment, :Death_Costs] => (e, d) ->  e == "NoShield" && d != "10", df)
 	#filter!([:Experiment, :Death_Costs] => (e, d) -> d != "-" || e != "NoShield", df)
-	transform!(df, :Runs => r -> string.(r), renamecols=false)
 	make_label(experiment, d) = "$experiment d=$d"
 	transform!(df, [:Experiment, :Death_Costs] => ByRow(make_label), renamecols=false)
 	rename!(df, :Experiment_Death_Costs => :Label)
-	sort!(df, :Runs, lt=(a, b)->(parse(Int, a) < parse(Int, b)))
+	sort!(df, :Runs)
+	transform!(df, :Runs => r -> string.(r), renamecols=false)
 	@df df plot!(:Runs, :Avg_Cost, 
 		group=:Label,
-		markershape=[:circle :octagon :pentagon :star4 :star6 :star8],
+		markershape=[:diamond :pentagon :circle  :star4 :star6 :star8],
 		markerstrokewidth=0,
 		linewidth=line_width,
 		markersize=marker_size,
@@ -257,8 +257,9 @@ end)
 call(() -> begin
 	df = DataFrame(medians)
 	filter!(:Experiment => ==("NoShield"), df)
-	df = transform(df, :Runs => ByRow(r -> "$r runs"), renamecols=false)
-	df = sort(df, :Runs)
+	# Plots does not actually respect sorting, it just applies it's own garbage, non-natural sort.
+	#df = transform(df, :Runs => ByRow(r -> "$r runs"), renamecols=false)
+	#sort!(df, :Runs, lt=natural)
 	
 	@df df groupedbar(:Death_Costs, :Avg_Deaths, 
 		group=:Runs,
@@ -274,17 +275,17 @@ end)
 call(() -> begin
 	df = DataFrame(medians)
 	filter!(:Experiment => ==("NoShield"), df)
-	filter!(:Death_Costs => !=("10"), df)
-	df = transform(df, :Runs => ByRow(r -> "$r runs"), renamecols=false)
-	df = sort(df, :Runs)
+	#df = transform(df, :Runs => ByRow(r -> "$r runs"), renamecols=false)
+	#sort!(df, :Runs)
 	
 	@df df groupedbar(:Death_Costs, :Avg_Deaths, 
 		group=:Runs,
 		color=colortheme,
 		linecolor=colortheme,
-		yscale=:none,
+		#yscale=:log,
 		xlabel="d",
-		bar_width=0.4,
+		ylims=(0, 0.25),
+		bar_width=0.7,
 		ylabel=avg_deaths_description)
 end)
 
@@ -292,8 +293,8 @@ end)
 call(() -> begin
 	df = DataFrame(medians)
 	filter!(:Experiment => ==("PostShielded"), df)
-	df = transform(df, :Runs => ByRow(r -> "$r runs"), renamecols=false)
-	df = sort(df, :Runs)
+	#df = transform(df, :Runs => ByRow(r -> "$r runs"), renamecols=false)
+	#sort!(df, :Runs, lt=natural)
 	@df df groupedbar(:Death_Costs, :Avg_Interventions, 
 		group=:Runs,
 		color=colortheme,
@@ -301,6 +302,7 @@ call(() -> begin
 		yscale=:none,
 		bar_width=0.2,
 		xlabel="d",
+		ylims=(0, 70),
 		ylabel=avg_interventions_description)
 end)
 
@@ -1549,11 +1551,11 @@ version = "0.9.1+5"
 # ╟─e8653f6f-19df-40ba-9633-82726b6b57a8
 # ╟─d4cac18b-1bf1-477d-84e1-ace714fc9967
 # ╟─e0c5c3e6-7fbc-449a-96b2-aadd647728d9
-# ╟─42653c51-27fa-4ead-bf9e-4ef2646b4255
+# ╠═42653c51-27fa-4ead-bf9e-4ef2646b4255
 # ╠═74c5ce02-5171-425a-9bbd-14eb60c77504
 # ╠═5dc4f261-5e46-4914-948b-0c45b9443a44
 # ╠═bba93717-6370-417d-8b12-01d006623c6a
-# ╠═b842083d-b6c0-49bb-9243-e03b2a65bfe2
+# ╟─b842083d-b6c0-49bb-9243-e03b2a65bfe2
 # ╠═7904c209-eeea-4243-beb4-0e5a7fd47a56
 # ╠═e0444e2e-0e77-4e5a-ac1e-64db46f2558f
 # ╠═829001ce-9f0b-45d2-88b6-d54c372f820d
