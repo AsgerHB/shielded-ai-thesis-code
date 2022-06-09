@@ -364,7 +364,7 @@ function draw(grid::Grid; colors=[:white, :black], show_grid=false)
 					aspect_ratio=:equal, 
 					clim=(1, length(colors)))
 
-	if show_grid && length(grid.x_min:grid.G:grid.x_max) < 100 || true
+	if show_grid && length(grid.x_min:grid.G:grid.x_max) < 100
 		vline!(grid.x_min:grid.G:grid.y_max, color="#afafaf", label=nothing)
 		hline!(grid.y_min:grid.G:grid.y_max, color="#afafaf", label=nothing)
 	end
@@ -611,6 +611,8 @@ end
 
 # ╔═╡ fc2dafd2-aea5-49c9-92d3-f7b478be3be0
 md"""
+show grid: $(@bind show_grid CheckBox(default=true))
+
 show step: $(@bind show_step CheckBox(default=true))
 """
 
@@ -709,7 +711,7 @@ end
 
 # ╔═╡ cb460b6d-aa08-4472-bab9-737c89e2224f
 begin
-	shieldplot = draw(shield, colors=shieldcolors, show_grid=true)
+	shieldplot = draw(shield, colors=shieldcolors, show_grid=show_grid)
 	plot_with_size!(x_max, y_max)
 	show_legend!(colors=shieldcolors)
 	if show_step
@@ -1801,7 +1803,7 @@ version = "0.9.1+5"
 # ╟─fc2dafd2-aea5-49c9-92d3-f7b478be3be0
 # ╟─be4a5a08-79b8-4ac9-8396-db5d62eb3f97
 # ╟─f1e3d59d-4a15-43c1-8717-b736c90e127c
-# ╟─cb460b6d-aa08-4472-bab9-737c89e2224f
+# ╠═cb460b6d-aa08-4472-bab9-737c89e2224f
 # ╟─896993db-f8d4-492b-bff1-463658587a83
 # ╠═397ca36e-bd4a-45da-9f26-573c10a938fa
 # ╠═97962767-65eb-4b22-80bb-e352ec60e3e8
