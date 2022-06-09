@@ -107,7 +107,7 @@ begin
 	if problem == :BB
 		avg_cost_description = "Average swings per 120s"
 		avg_deaths_description = "Average deaths per 120s"
-		avg_interventions_description = "Average interventions per 120s"
+		avg_interventions_description = "% interventions"
 	else
 		avg_cost_description = "Average cost per run"
 		avg_deaths_description = "% runs lost"
@@ -133,6 +133,9 @@ begin
 	if problem == :RW
 		# Turn fraction died into percentages
 		cleandata = transform(cleandata, :Avg_Deaths => x -> x*100, renamecols=false)
+	elseif problem == :BB
+		# Turn number of interventions into % interventions
+		cleandata = transform(cleandata, :Avg_Interventions => x -> (x/1200)*100, renamecols=false)
 	end
 	cleandata
 end
@@ -155,16 +158,6 @@ call(() -> begin
 		:Avg_Cost => std, :Avg_Deaths => std, :Avg_Interventions => std,
 		renamecols=true)
 	df = sort(df, [:Experiment, :Death_Costs, :Runs])
-end)
-
-# ╔═╡ 829001ce-9f0b-45d2-88b6-d54c372f820d
-counts = 
-call(() -> begin
-	grouping =  groupby(cleandata, [:Experiment, :Runs, :Death_Costs])
-	df = combine(grouping, 
-		nrow => :Count,
-		renamecols=true)
-	df = sort(df, :Count)
 end)
 
 # ╔═╡ d13faa16-897a-4d01-9b14-ff6d03f4a592
@@ -231,6 +224,11 @@ end)
 
 # ╔═╡ 439297f0-8945-43c8-9141-e04dac3e94ee
 call(() -> begin
+	lims = Nothing
+	if problem == :RW
+		#lims = (0, 10)
+	end
+	
 	df = DataFrame(medians)
 	filter!(:Experiment => ==("NoShield"), df)
 	# Plots does not actually respect sorting, it just applies it's own garbage, non-natural sort.
@@ -262,7 +260,7 @@ call(() -> begin
 			linecolor=colortheme,
 			#yscale=:log,
 			xlabel="d",
-			ylims=lims,
+			ylims=(0, 0.2),
 			bar_width=0.7,
 			ylabel=avg_deaths_description)
 	end
@@ -272,7 +270,7 @@ end)
 call(() -> begin
 	lims = Nothing
 	if problem == :BB
-		lims = (0,70)
+		lims = (0,6)
 	end
 	df = DataFrame(medians)
 	filter!(:Experiment => ==("PostShielded"), df)
@@ -1543,7 +1541,6 @@ version = "0.9.1+5"
 # ╠═b842083d-b6c0-49bb-9243-e03b2a65bfe2
 # ╠═7904c209-eeea-4243-beb4-0e5a7fd47a56
 # ╠═e0444e2e-0e77-4e5a-ac1e-64db46f2558f
-# ╠═829001ce-9f0b-45d2-88b6-d54c372f820d
 # ╟─d13faa16-897a-4d01-9b14-ff6d03f4a592
 # ╠═d19884c3-a3c9-4df0-8220-7f1707cfe5ca
 # ╠═439297f0-8945-43c8-9141-e04dac3e94ee

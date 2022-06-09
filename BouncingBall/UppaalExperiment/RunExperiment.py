@@ -33,7 +33,7 @@ def append_results(experiment, runs, values, death_costs="-"):
     print(results_csv)
     os.system(f"echo '{results_csv}' >> Results/Results.csv")
 
-re_mean = re.compile("mean=([\d.]+)")
+re_mean = re.compile("mean=([\d.e-]+)")
 re_timelocked = re.compile("time locked")
 
 def get_resultsdir(experiment, runs, iteration):
