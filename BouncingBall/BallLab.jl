@@ -21,6 +21,43 @@ begin
 	include("My Library/Ball.jl")
 end
 
+# ╔═╡ a3410dd4-73af-4593-9342-b0e8307dd26a
+md"""
+## Color shceme
+
+Colors by [Flat UI](https://flatuicolors.com/palette/defo)
+"""
+
+# ╔═╡ 614a08eb-c7dc-4a6a-8361-322015ea77a1
+begin
+	colors = 
+	(TURQUOISE = colorant"#1abc9c", 
+	EMERALD = colorant"#2ecc71", 
+	PETER_RIVER = colorant"#3498db", 
+	AMETHYST = colorant"#9b59b6", 
+	WET_ASPHALT = colorant"#34495e",
+	
+	GREEN_SEA   = colorant"#16a085", 
+	NEPHRITIS   = colorant"#27ae60", 
+	BELIZE_HOLE  = colorant"#2980b9", 
+	WISTERIA     = colorant"#8e44ad", 
+	MIDNIGHT_BLUE = colorant"#2c3e50", 
+	
+	SUNFLOWER = colorant"#f1c40f",
+	CARROT   = colorant"#e67e22",
+	ALIZARIN = colorant"#e74c3c",
+	CLOUDS   = colorant"#ecf0f1",
+	CONCRETE = colorant"#95a5a6",
+	
+	ORANGE = colorant"#f39c12",
+	PUMPKIN = colorant"#d35400",
+	POMEGRANATE = colorant"#c0392b",
+	SILVER = colorant"#bdc3c7",
+	ASBESTOS = colorant"#7f8c8d")
+	
+	[colors...]
+end
+
 # ╔═╡ da2f3b65-c072-4d54-99b5-83cb9d070d85
 call(f) = f()
 
@@ -34,27 +71,80 @@ e_kin(g, v) = 0.5*v^2
 e_mek(g, v, p) = e_kin(g, v) + e_pot(g, p)
 
 # ╔═╡ 7b428a54-05f5-48d3-ad7b-d2ee7fd8b167
+@bind mechanics PlutoUI.combine() do Child
 md"""
-`v = ` $(@bind v NumberField(-100:1:100, default = 0))
+### Configure parameters controlling the ball
 
-`p = ` $(@bind p NumberField(0:1:100, default = 4))
+`t_hit = ` $(Child("t_hit", NumberField(-100:0.01:100, default=0.10)))
 
-`t = ` $(@bind t NumberField(0.01:0.01:1, default = 0.1))
+`g = ` $(Child("g", NumberField(-100:0.01:100, default=-9.81)))
 
-`g = ` $(@bind g NumberField(0.01:0.01:100, default = 9.81))
+`β1 = ` $(Child("β1", NumberField(-100:0.01:100, default=0.91)))
+`ϵ1 = ` $(Child("ϵ1", NumberField(-100:0.01:100, default=0.06)))
+
+`β2  = ` $(Child("β2", NumberField(-100:0.01:100, default=0.95)))
+`ϵ2  = ` $(Child("ϵ2", NumberField(-100:0.01:100, default=0.05)))
+
+`v_hit = ` $(Child("v_hit", NumberField(-100:0.01:100, default=-4)))
+`p_hit = ` $(Child("p_hit", NumberField(-100:0.01:100, default=4)))
 """
+end
 
 # ╔═╡ 0ad2d3c9-3a81-4582-b7dc-52225e0c99e9
 velocity_from_e_kin(e) = sqrt(2*e)
 
 # ╔═╡ 72d3376b-c91a-43c6-b237-53e83970fd4f
-velocity_from_e_kin(e_kin(g, 4))
+velocity_from_e_kin(e_kin(mechanics.g, 4))
 
 # ╔═╡ dc918da4-5ab4-4795-a220-67ffbccb97d1
-position_from_e_pot(e) = e/g
+position_from_e_pot(e) = e/mechanics.g
 
 # ╔═╡ 5a251063-64e8-4ced-8e28-34cb4812f931
-position_from_e_pot(e_mek(g, 0, 4))
+position_from_e_pot(e_mek(mechanics.g, 0, 4))
+
+# ╔═╡ 52b72834-46ea-44de-8b44-013c4574f2d2
+vs, ps, ts = simulate_sequence(mechanics, 0, 2, (_, _) -> "nohit", 8)
+
+# ╔═╡ 6fc7e195-fb68-4544-a952-7fb3dc76fd94
+every_frames = 10
+
+# ╔═╡ a6413925-620b-4b3a-be7d-940c983a6b14
+animation = call(() -> begin
+	pmax = maximum(ps)
+	tmax = maximum(ts)
+	vmin = minimum(vs)
+	vmax = maximum(vs)
+	layout = @layout [a b]
+	animation = @animate for (i, _) in enumerate(ts)
+		p1 = plot(ts[1:i], ps[1:i],
+				  xlims=(0, tmax), 
+				  ylims=(0, pmax),
+				  xlabel="t",
+				  ylabel="p",
+				  color=colors.WET_ASPHALT,
+			  	  linewidth=2)
+		hline!([ps[i]], color=colors.NEPHRITIS)
+		p2 = plot(vs[1:i], ps[1:i],
+				  xlims=(vmin, vmax), 
+				  ylims=(0, pmax),
+				  xlabel="v",
+				  ylabel="p",
+				  color=colors.WET_ASPHALT,
+			  	  linewidth=2)
+		hline!([ps[i]], color=colors.NEPHRITIS)
+		plot(p2, p1, 
+			layout=layout, 
+			size=(800, 400), 
+			legend=nothing)
+	end every every_frames
+	animation
+end)
+
+# ╔═╡ 03adbb0e-f5aa-40e9-a5bd-84eb5f1e6268
+fps = (1/mechanics.t_hit) / every_frames
+
+# ╔═╡ 1401350b-3107-459c-8e80-ecc3fbb05739
+gif(animation, "bouncingball.gif", fps = fps)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -975,6 +1065,8 @@ version = "0.9.1+5"
 
 # ╔═╡ Cell order:
 # ╠═9c8abfbc-a5f0-11ec-3a9b-9bfd0b447638
+# ╟─a3410dd4-73af-4593-9342-b0e8307dd26a
+# ╟─614a08eb-c7dc-4a6a-8361-322015ea77a1
 # ╠═da2f3b65-c072-4d54-99b5-83cb9d070d85
 # ╠═f93a65f3-9bdf-493b-994c-a26f34818a96
 # ╠═a3af719b-3b92-4c39-a95e-478d5b3179a2
@@ -984,5 +1076,10 @@ version = "0.9.1+5"
 # ╠═72d3376b-c91a-43c6-b237-53e83970fd4f
 # ╠═dc918da4-5ab4-4795-a220-67ffbccb97d1
 # ╠═5a251063-64e8-4ced-8e28-34cb4812f931
+# ╠═52b72834-46ea-44de-8b44-013c4574f2d2
+# ╠═6fc7e195-fb68-4544-a952-7fb3dc76fd94
+# ╠═a6413925-620b-4b3a-be7d-940c983a6b14
+# ╠═03adbb0e-f5aa-40e9-a5bd-84eb5f1e6268
+# ╟─1401350b-3107-459c-8e80-ecc3fbb05739
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
