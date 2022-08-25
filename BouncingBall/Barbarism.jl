@@ -504,15 +504,9 @@ function get_transitions(grid, resolution, mechanics; upto_t=false)
 	hit, nohit
 end			
 
-# ╔═╡ d2b82214-239b-4a5c-9654-49006caaa295
-begin
-	reachable_hit, reachable_nohit = get_transitions(grid, resolution, mechanics, upto_t=upto_t)
-	reachable_nohit[square.iv, square.ip]
-end
-
 # ╔═╡ 02893fb2-58ce-46f9-b609-3b2cb13e67b0
 call(() -> begin
-	resolution = 2
+	resolution = 14
 	mechanics = merge(mechanics, (t_hit = 0.32,))
 	grid = Grid(1, -12, 5, 0, 10)
 	v0, p0 = 3, 5
@@ -545,6 +539,12 @@ call(() -> begin
 	vs, ps, ts = simulate_sequence(merge(mechanics, (t_hit = 0.001,)), v_middle, p_middle, (_, _)->"nohit", mechanics.t_hit, unlucky=true)
 	plot!(vs, ps, color=colors.NEPHRITIS, linewidth=2, linestyle=:dash, label="nohit", legend=:topright)
 end)
+
+# ╔═╡ d2b82214-239b-4a5c-9654-49006caaa295
+begin
+	reachable_hit, reachable_nohit = get_transitions(grid, resolution, mechanics, upto_t=upto_t)
+	reachable_nohit[square.iv, square.ip]
+end
 
 # ╔═╡ 8ee09119-9eba-4dfd-ad25-5496e714892c
 """Compute the new value of a single square.
@@ -1675,23 +1675,23 @@ version = "0.9.1+5"
 # ╠═b225581f-819b-410b-81c7-1d6232b2fb03
 # ╠═fa5f8515-8f89-4ea2-8264-212687cc621d
 # ╟─ce05cd68-38cd-4990-998b-56ae65752dfa
-# ╠═72e60c01-cbe9-48dc-807a-28fcaac493fa
-# ╠═a5b084ae-b4e7-431c-ab89-a239e9481000
+# ╟─72e60c01-cbe9-48dc-807a-28fcaac493fa
+# ╟─a5b084ae-b4e7-431c-ab89-a239e9481000
 # ╠═2a7e7dfe-ba87-4104-9456-34580f4f36f2
-# ╠═d0f21ea3-573f-4f4e-af01-f520bca74323
-# ╠═20f6e0cd-767f-4de5-b7ee-cf77f01126a7
-# ╠═47a14ed7-e795-4e05-9d01-c7510c2c13bb
-# ╠═f10b185d-212b-4882-b64e-6dc67d88f5e9
+# ╟─d0f21ea3-573f-4f4e-af01-f520bca74323
+# ╟─20f6e0cd-767f-4de5-b7ee-cf77f01126a7
+# ╟─47a14ed7-e795-4e05-9d01-c7510c2c13bb
+# ╟─f10b185d-212b-4882-b64e-6dc67d88f5e9
 # ╟─d8eb0ab7-b335-4191-adc5-586ad4dab074
 # ╟─21cbae28-9e2a-4a45-8157-d2ef2a0189e9
+# ╠═02893fb2-58ce-46f9-b609-3b2cb13e67b0
 # ╟─2716a75b-db77-4de2-87fe-8460dfa4a8ad
 # ╟─14fadc22-1218-43c1-8e7b-7b58256594d1
 # ╟─7fff10bd-8d93-41fa-ba2b-73756a73ffeb
 # ╟─869f2e34-f9b7-4051-b8fc-32dbc5ba9d9a
 # ╠═d2b82214-239b-4a5c-9654-49006caaa295
-# ╠═02893fb2-58ce-46f9-b609-3b2cb13e67b0
-# ╠═8ee09119-9eba-4dfd-ad25-5496e714892c
-# ╠═04b99556-60d4-46a8-8714-e3f349df9e1a
+# ╟─8ee09119-9eba-4dfd-ad25-5496e714892c
+# ╟─04b99556-60d4-46a8-8714-e3f349df9e1a
 # ╠═030b4085-0c00-470b-82fa-1cc603dd189f
 # ╠═b58f2d76-15a4-4067-8309-09f962b5f16c
 # ╠═9d9132b8-4df0-4f45-a9c9-58b99c280a9c

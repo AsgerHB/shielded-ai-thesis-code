@@ -222,7 +222,9 @@ if max_steps >= 1
 					grid, 
 					resolution, 
 					max_steps=max_steps, 
-					animate=animate)
+					animate=animate,
+					#colors=shieldcolors
+		)
 	(;shield, terminated_early, animation)
 else
 	shield, terminated_early, animation = grid, true, nothing
