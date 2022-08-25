@@ -160,10 +160,11 @@ end
 
 function make_shield(   ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid;
 					    max_steps=1000, 
-						animate=false)
+						animate=false,
+						colors=[:white, :blue, :red])
 	transitions = get_transitions(ϵ, δ_fast, δ_slow, τ_fast, τ_slow, grid)
 	
-	return make_shield(transitions..., grid, max_steps=max_steps, animate=animate)
+	return make_shield(transitions..., grid, max_steps=max_steps, animate=animate, colors=colors)
 end
 
 
