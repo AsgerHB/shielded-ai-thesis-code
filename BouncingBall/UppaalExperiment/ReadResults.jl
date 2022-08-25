@@ -222,6 +222,102 @@ call(() -> begin
 	)
 end)
 
+# ╔═╡ 0f8633b1-af76-4fb7-9822-7abd90a35a06
+md"""
+
+Pre-shielded: $(@bind pre_shielded CheckBox(default=true))
+
+Post-shielded: $(@bind post_shielded CheckBox(default=true))
+
+No Shield: $(@bind no_shield CheckBox(default=true))
+
+Layabout: $(@bind layabout CheckBox(default=true))
+"""
+
+# ╔═╡ b11d7a45-2e55-4ccb-82f8-d09cb669719b
+call(() -> begin
+	legend_position = problem == :BB ? (0.7, 0.4) : (0.7, 0.8)
+	
+	plot(size=(600,700),
+		ylims=(20, 28),
+		#xlims=(1500, 12000),
+		legend_position=legend_position,
+		xlabel="Training runs",
+		ylabel=avg_cost_description)
+
+	
+	make_label(experiment, d) = "$experiment d=$d"
+
+	## Pre-shielded ##
+	if pre_shielded
+		df = DataFrame(medians)
+		filter!(:Experiment => e -> e == "PreShielded", df)
+		sort!(df, :Runs)
+		transform!(df, :Runs => r -> string.(r), renamecols=false)
+		p1 = @df df plot!(:Runs, :Avg_Cost, 
+			group=:Experiment,
+			markershape=:star,
+			markerstrokewidth=1,
+			markerstrokecolor=:white,
+			linewidth=line_width,
+			markersize=marker_size+4,
+			color=colortheme[1],)
+	end
+
+	## Post-shielded ##
+	if post_shielded
+		df = DataFrame(medians)
+		filter!(:Experiment => e -> e == "PostShielded", df)
+		transform!(df, [:Experiment, :Death_Costs] => ByRow(make_label), renamecols=false)
+		rename!(df, :Experiment_Death_Costs => :Label)
+		sort!(df, :Runs)
+		transform!(df, :Runs => r -> string.(r), renamecols=false)
+		c1, c2 = colortheme[2], colortheme[3]
+		p1 = @df df plot!(:Runs, :Avg_Cost, 
+			group=:Label,
+			markershape=[:utriangle :diamond :pentagon],
+			markerstrokewidth=1,
+			markerstrokecolor=:white,
+			color=c2,
+			linewidth=line_width,
+			markersize=marker_size,
+		)
+	end
+
+	## No shield ##
+	if no_shield
+		df = DataFrame(medians)
+		filter!(:Experiment => e -> e == "NoShield", df)
+		transform!(df, [:Experiment, :Death_Costs] => ByRow(make_label), renamecols=false)
+		rename!(df, :Experiment_Death_Costs => :Label)
+		sort!(df, :Runs)
+		transform!(df, :Runs => r -> string.(r), renamecols=false)
+		c1, c2 = colortheme[2], colortheme[3]
+		p1 = @df df plot!(:Runs, :Avg_Cost, 
+			group=:Label,
+			markershape=[:utriangle :diamond :pentagon],
+			markerstrokewidth=1,
+			markerstrokecolor=:white,
+			color=c1,
+			linewidth=line_width,
+			markersize=marker_size,
+		)
+	end
+	
+	## Layabout ##
+	if layabout
+		layabout_row = filter(:Experiment => ==("Layabout"), medians)
+		
+		p1 = @df layabout_row hline!(:Avg_Cost,
+			label="Shielded Layabout",
+			linestyle=:dash,
+			linewidth=line_width+3,
+			color=colors.WET_ASPHALT)
+	end
+	
+	p1
+end)
+
 # ╔═╡ 439297f0-8945-43c8-9141-e04dac3e94ee
 call(() -> begin
 	lims = Nothing
@@ -1543,6 +1639,8 @@ version = "0.9.1+5"
 # ╠═e0444e2e-0e77-4e5a-ac1e-64db46f2558f
 # ╟─d13faa16-897a-4d01-9b14-ff6d03f4a592
 # ╠═d19884c3-a3c9-4df0-8220-7f1707cfe5ca
+# ╟─0f8633b1-af76-4fb7-9822-7abd90a35a06
+# ╠═b11d7a45-2e55-4ccb-82f8-d09cb669719b
 # ╠═439297f0-8945-43c8-9141-e04dac3e94ee
 # ╠═119d6b3e-d8fb-4206-93b0-2e6dc848ac5e
 # ╠═61bd91fc-6b0f-4fa5-a3dc-ea0f87c06cf1
